@@ -262,7 +262,13 @@ export default function MapCanvas({ height, onNodeSelected, showBus = true, zone
     if (!map) return
     if (!Array.isArray(center) || center.length !== 2) return
     try {
-      map.setCenter(center as [number, number])
+      map.flyTo({
+        center: center as [number, number],
+        zoom: 15, // 自動調整到適合查看設施的層級
+        speed: 1.2, // 平滑移動速度
+        curve: 1.42, // 移動軌跡曲率
+        essential: true
+      })
     } catch {}
   }, [center])
 

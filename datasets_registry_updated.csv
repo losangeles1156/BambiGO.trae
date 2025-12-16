@@ -1,0 +1,130 @@
+dataset_id,provider,domain,data_name,data_type,format,access_type,source_urls,base_url,endpoint_or_path,api_key_required,api_key_scope,authority_level,notes
+ds_001,歩行空間ネットワークデータ（台東区上野駅周辺）,步行空間,CSV形式（link.csv）GeoJSON形式（link.geojson）,static,CSV、GeoJSON,file,https://ckan.hokonavi.go.jp/dataset/2df4cb39-8b2e-4692-97ea-3f6b4132c109/resource/d132ec71-749e-4b38-85d2-c2f2a78da29c/download/link.csv|https://ckan.hokonavi.go.jp/dataset/2df4cb39-8b2e-4692-97ea-3f6b4132c109/resource/16c453cb-21c0-4e38-8975-0a35803b7edc/download/link.geojson|https://ckan.hokonavi.go.jp/dataset/2df4cb39-8b2e-4692-97ea-3f6b4132c109/resource/18dc2190-3c9b-40e6-8fe0-ec0d386a017d/download/node.csv|https://ckan.hokonavi.go.jp/dataset/2df4cb39-8b2e-4692-97ea-3f6b4132c109/resource/80140abb-8e4b-4083-b6e6-c96e28221bec/download/node.geojson,https://ckan.hokonavi.go.jp,/dataset/2df4cb39-8b2e-4692-97ea-3f6b4132c109/resource/d132ec71-749e-4b38-85d2-c2f2a78da29c/download/link.csv,False,,PRIMARY,国土交通省が整備した、台東区上野駅周辺の歩行空間ネットワークデータです。 データの仕様については、「歩行空間ネットワークデータ整備仕様（2024年7月）」を参照ください。
+ds_002,歩行空間ネットワークデータ（東京駅周辺）,步行空間,CSV形式（link.csv）GeoJSON形式（link.geojson）,static,CSV、GeoJSON,file,https://ckan.hokonavi.go.jp/dataset/8ef1f4a8-1848-4491-9a87-ac13b706307c/resource/e60c148a-cc2b-442f-854e-3ab8a600fefa/download/link.csv|https://ckan.hokonavi.go.jp/dataset/8ef1f4a8-1848-4491-9a87-ac13b706307c/resource/00e59f21-4074-4d50-8616-93235fbb9464/download/link.geojson|https://ckan.hokonavi.go.jp/dataset/8ef1f4a8-1848-4491-9a87-ac13b706307c/resource/9f2a7b81-7d52-4451-bf5c-9f668d0c62c8/download/node.csv|https://ckan.hokonavi.go.jp/dataset/8ef1f4a8-1848-4491-9a87-ac13b706307c/resource/58536efe-b272-4aa7-a303-2993826ede60/download/node.geojson,https://ckan.hokonavi.go.jp,/dataset/8ef1f4a8-1848-4491-9a87-ac13b706307c/resource/e60c148a-cc2b-442f-854e-3ab8a600fefa/download/link.csv,False,,PRIMARY,国土交通省が整備した、東京駅周辺の歩行空間ネットワークデータです。 データの仕様については、「歩行空間ネットワークデータ整備仕様（2024年7月）」を参照ください。
+ds_003,歩行空間ネットワークデータ（皇居外苑、日本武道館を含む千代田区、中央区周辺）,步行空間,CSV形式（link.csv）GeoJSON形式（link.geojson）,static,CSV、GeoJSON,file,https://ckan.hokonavi.go.jp/dataset/dee0869a-c58f-445e-9a8c-4d3fc31be344/resource/1e3e2759-0020-4674-9394-b3c3a8ba3372/download/link.csv|https://ckan.hokonavi.go.jp/dataset/dee0869a-c58f-445e-9a8c-4d3fc31be344/resource/1ced54f1-ebba-4b91-a6cf-f80a965719ad/download/link.geojson|https://ckan.hokonavi.go.jp/dataset/dee0869a-c58f-445e-9a8c-4d3fc31be344/resource/a57d319c-fb9a-4957-a4d3-373c145642c9/download/node.csv|https://ckan.hokonavi.go.jp/dataset/dee0869a-c58f-445e-9a8c-4d3fc31be344/resource/727a6bcd-0716-4d9b-8f4b-bb7ca71ae691/download/node.geojson,https://ckan.hokonavi.go.jp,/dataset/dee0869a-c58f-445e-9a8c-4d3fc31be344/resource/1e3e2759-0020-4674-9394-b3c3a8ba3372/download/link.csv,False,,PRIMARY,国土交通省が整備した、皇居外苑、日本武道館を含む千代田区、中央区周辺の歩行空間ネットワークデータです。
+ds_004,歩行空間ネットワークデータ（都営地下鉄大江戸線 上野御徒町駅）,步行空間,歩行空間ネットワークデータ（都営地下鉄大江戸線 上野御徒町駅）,static,CSV、GeoJSON、PDF、Shapefile,file,https://api-public.odpt.org/api/v4/files/hokonavi/data/nwd_oedo_ueno-okachimachi_shapefile.zip|https://api-public.odpt.org/api/v4/files/hokonavi/data/nwd_oedo_ueno-okachimachi_geojson.zip|https://api-public.odpt.org/api/v4/files/hokonavi/data/nwd_oedo_ueno-okachimachi_csv.zip|https://api-public.odpt.org/api/v4/files/hokonavi/data/stationmap_oedo_ueno-okachimachi_geojson.zip|https://api-public.odpt.org/api/v4/files/hokonavi/data/stationmap_oedo_ueno-okachimachi_shapefile.zip,https://api-public.odpt.org,/api/v4/files/hokonavi/data/nwd_oedo_ueno-okachimachi_shapefile.zip,True,COMPETITION_LIMITED,SECONDARY,"本データセットは、都営地下鉄大江戸線 上野御徒町駅の構内図データをもとにして、国土交通省が整備した地理空間データです。
+
+歩行経路や空間構成を、「歩行空間ネットワークデータ」と「構内地図データ」として整備しました。
+
+歩行空間ネットワークデータ：
+「歩行空間ネットワークデータ整備仕様（国土交通省: 2024年7月）」に準拠。
+通路・階段・エレベータなどをリンク（線）とノード（点）で表現し、駅構内の歩行経路を構築しています。
+構内地図データ：
+「階層別屋内地理空間情報データ仕様書（国土地理院: 2019年3月）」に準拠。
+駅構内の建物、空間、設備などを階層別に表現しています。
+確認用データ：
+歩行空間ネットワークデータ、構内地図データを重ね合わせて表現したPDFデータです。
+データ全体の見取り図、凡例、階層構造などをまとめています。
+これらのデータを組み合わせることで、駅構内における歩行経路解析、バリアフリー経路探索、構内案内などに利用できます。"
+ds_005,東京都交通局,鐵道,東京都交通局 鉄道関連リアルタイム情報,realtime,Protocol Buffers,api,https://api-public.odpt.org/api/v4/gtfs/realtime/toei_odpt_train_vehicle|https://api-public.odpt.org/api/v4/gtfs/realtime/toei_odpt_train_trip_update|https://api-public.odpt.org/api/v4/gtfs/realtime/toei_odpt_train_alert|https://api-public.odpt.org/api/v4/gtfs/realtime/ToeiBus|https://api-public.odpt.org/api/v4/files/Toei/data/Toei-Train-GTFS.zip,https://api-public.odpt.org,/api/v4/gtfs/realtime/toei_odpt_train_vehicle,True,COMPETITION_LIMITED,SECONDARY,東京都交通局の都営地下鉄、東京さくらトラム（都電荒川線）、日暮里・舎人ライナーについて、GTFS-RT形式による鉄道関連リアルタイム情報を提供します。
+ds_006,東京都交通局,鐵道、公車,東京都交通局 バス停情報,static,JSON,api,https://api-public.odpt.org/api/v4/odpt:BusstopPole?odpt:operator=odpt.Operator:Toei|https://api-public.odpt.org/api/v4/odpt:RailwayFare?odpt:operator=odpt.Operator:Toei|https://api-public.odpt.org/api/v4/odpt:TrainTimetable?odpt:operator=odpt.Operator:Toei|https://api-public.odpt.org/api/v4/odpt:BusroutePattern?odpt:operator=odpt.Operator:Toei|https://api-public.odpt.org/api/v4/odpt:BusstopPoleTimetable?odpt:operator=odpt.Operator:Toei|https://api-public.odpt.org/api/v4/odpt:Train?odpt:operator=odpt.Operator:Toei|https://api-public.odpt.org/api/v4/odpt:BusTimetable?odpt:operator=odpt.Operator:Toei,https://api-public.odpt.org,/api/v4/odpt:BusstopPole?odpt:operator=odpt.Operator:Toei,True,COMPETITION_LIMITED,SECONDARY,東京都交通局のバス停情報を提供します。※APIからの出力結果が、上限の1000件を越える場合、出力は1000件までとなります。上限を越えた部分のデータを利用したい場合は、以下のURLから全データを取得し、必要なデータを抽出してご利用ください（API仕様の詳細を知りたい場合は、 開発者サイトでのユーザ登録後、開発者サイト内の各種関連ドキュメントをご参照ください）。
+ds_007,東京都交通局,鐵道、公車,,static,JSON,api,https://api-public.odpt.org/api/v4/odpt:Railway?odpt:operator=odpt.Operator:Toei|https://api-public.odpt.org/api/v4/odpt:Station?odpt:operator=odpt.Operator:Toei|https://api-public.odpt.org/api/v4/odpt:StationTimetable?odpt:operator=odpt.Operator:Toei|https://api-public.odpt.org/api/v4/odpt:PassengerSurvey?odpt:operator=odpt.Operator:Toei|https://api-public.odpt.org/api/v4/odpt:BusroutePatternFare?odpt:operator=odpt.Operator:Toei,https://api-public.odpt.org,/api/v4/odpt:Railway?odpt:operator=odpt.Operator:Toei,True,COMPETITION_LIMITED,SECONDARY,※APIからの出力結果が、上限の1000件を越える場合、出力は1000件までとなります。上限を越えた部分のデータを利用したい場合は、以下のURLから全データを取得し、必要なデータを抽出してご利用ください
+ds_008,東京都交通局,鐵道、公車,東京都交通局 バス関連情報,static,GTFS-JP,file,https://api-public.odpt.org/api/v4/files/Toei/data/ToeiBus-GTFS.zip|https://api-public.odpt.org/api/v4/odpt:Bus?odpt:operator=odpt.Operator:Toei,https://api-public.odpt.org,/api/v4/files/Toei/data/ToeiBus-GTFS.zip,True,COMPETITION_LIMITED,SECONDARY,※当データは、開発者サイトでのユーザ登録後、以下のURLからもアクセス可能です。
+ds_009,東京メトロ,鐵道,東京メトロ 鉄道関連リアルタイム情報 ,realtime,Protocol Buffers,api,https://api.odpt.org/api/v4/gtfs/realtime/tokyometro_odpt_train_alert?acl:consumerKey=[発行されたアクセストークン/YOUR_ACCESS_TOKEN]|https://api.odpt.org/api/v4/files/TokyoMetro/data/TokyoMetro-Train-GTFS.zip?acl:consumerKey=[発行されたアクセストークン/YOUR_ACCESS_TOKEN],https://api.odpt.org,/api/v4/gtfs/realtime/tokyometro_odpt_train_alert?acl:consumerKey=[発行されたアクセストークン/YOUR_ACCESS_TOKEN],True,COMPETITION_LIMITED,SECONDARY,東京メトロについて、GTFS-RT形式による鉄道関連リアルタイム情報を提供します。
+ds_010,東京メトロ,鐵道,東京メトロ 運賃情報         ,static,JSON,api,https://api.odpt.org/api/v4/odpt:RailwayFare?odpt:operator=odpt.Operator:TokyoMetro&acl:consumerKey=[発行されたアクセストークン/YOUR_ACCESS_TOKEN]|https://api.odpt.org/api/v4/odpt:Station?odpt:operator=odpt.Operator:TokyoMetro&acl:consumerKey=[発行されたアクセストークン/YOUR_ACCESS_TOKEN]|https://api.odpt.org/api/v4/odpt:Railway?odpt:operator=odpt.Operator:TokyoMetro&acl:consumerKey=[発行されたアクセストークン/YOUR_ACCESS_TOKEN]|https://api.odpt.org/api/v4/odpt:StationTimetable?odpt:operator=odpt.Operator:TokyoMetro&acl:consumerKey=[発行されたアクセストークン/YOUR_ACCESS_TOKEN]|https://api.odpt.org/api/v4/odpt:TrainInformation?odpt:operator=odpt.Operator:TokyoMetro&acl:consumerKey=[発行されたアクセストークン/YOUR_ACCESS_TOKEN]|https://api.odpt.org/api/v4/odpt:TrainTimetable?odpt:operator=odpt.Operator:TokyoMetro&acl:consumerKey=[発行されたアクセストークン/YOUR_ACCESS_TOKEN]|https://api.odpt.org/api/v4/odpt:PassengerSurvey?odpt:operator=odpt.Operator:TokyoMetro&acl:consumerKey=[発行されたアクセストークン/YOUR_ACCESS_TOKEN],https://api.odpt.org,/api/v4/odpt:RailwayFare?odpt:operator=odpt.Operator:TokyoMetro&acl:consumerKey=[発行されたアクセストークン/YOUR_ACCESS_TOKEN],True,COMPETITION_LIMITED,SECONDARY,"東京メトロの運賃情報を提供します。 / Fare information of Tokyo Metro
+
+※本データは、開発者サイトでユーザ登録していただくことによりご利用できます。"
+ds_011,JR東日本,鐵道, [Challenge 2025 only],static,JSON,api,https://api-challenge.odpt.org/api/v4/odpt:Train?odpt:operator=odpt.Operator:JR-East&acl:consumerKey=[Access_Token_for_Challenge2025]|https://api-challenge.odpt.org/api/v4/odpt:Railway?odpt:operator=odpt.Operator:JR-East&acl:consumerKey=[Access_Token_for_Challenge2025]|https://api-challenge.odpt.org/api/v4/odpt:StationTimetable?odpt:operator=odpt.Operator:JR-East&acl:consumerKey=[Access_Token_for_Challenge2025]|https://api-challenge.odpt.org/api/v4/odpt:TrainTimetable?odpt:operator=odpt.Operator:JR-East&acl:consumerKey=[Access_Token_for_Challenge2025]|https://api-challenge.odpt.org/api/v4/odpt:PassengerSurvey?odpt:operator=odpt.Operator:JR-East&acl:consumerKey=[Access_Token_for_Challenge2025]|https://api-challenge.odpt.org/api/v4/odpt:Station?odpt:operator=odpt.Operator:JR-East&acl:consumerKey=[Access_Token_for_Challenge2025],https://api-challenge.odpt.org,/api/v4/odpt:Train?odpt:operator=odpt.Operator:JR-East&acl:consumerKey=[Access_Token_for_Challenge2025],True,COMPETITION_LIMITED,SECONDARY,"東日本旅客鉄道(JR東日本)の関東エリアの一部の路線についての列車ロケーション情報を提供します。 / Train location information of JR East
+
+東京都、神奈川県、埼玉県とその周辺の一部の在来線を対象とします。
+新幹線は含みません。
+相模線、鶴見線、南武支線、八高線は含みません。
+常磐線は羽鳥以南のみ、高崎線は神保原以南のみ、青梅線は立川-青梅間のみを対象とします。
+中央線は甲府以東を対象とします。
+臨時列車、他路線直通列車などの一部は含まない場合があります。
+「公共交通オープンデータチャレンジ限定ライセンス」およびその特定利用条件をよく読んで、ご利用ください。"
+ds_012,JR東日本,鐵道,,static,GTFS/GTFS-JP,file,https://api-challenge.odpt.org/api/v4/files/JR-East/data/JR-East-Train-GTFS.zip?acl:consumerKey=[Access_Token_for_Challenge2025],https://api-challenge.odpt.org,/api/v4/files/JR-East/data/JR-East-Train-GTFS.zip?acl:consumerKey=[Access_Token_for_Challenge2025],True,COMPETITION_LIMITED,SECONDARY,"【チャレンジ2025限定】
+東日本旅客鉄道(JR東日本)の関東エリアの一部の路線について、GTFS形式による鉄道関連情報を提供します。 
+東京都、神奈川県、埼玉県、千葉県とその周辺の一部の在来線を対象とします。
+新幹線は含みません。
+常磐線は坂元以南のみ、中央線は高尾以東のみを対象とします。
+上越線、吾妻線は特急列車のみを対象とします。
+中央線、青梅線の特急列車は含みません。
+臨時列車、他路線直通列車などの一部は含まない場合があります。
+「公共交通オープンデータチャレンジ限定ライセンス」およびその特定利用条件をよく読んで、ご利用ください。"
+ds_013,TOKYO CRUISE SHIP,渡輪,TOKYO CRUISE-20250402,static,GTFS/GTFS-JP,file,https://api.odpt.org/api/v4/files/odpt/TokyoCruiseShip/AllLines.zip?date=20250402&acl:consumerKey=[アクセストークン/YOUR_ACCESS_TOKEN],https://api.odpt.org,/api/v4/files/odpt/TokyoCruiseShip/AllLines.zip?date=20250402&acl:consumerKey=[アクセストークン/YOUR_ACCESS_TOKEN],True,COMPETITION_LIMITED,SECONDARY,"有効期間 : 2025年7月1日 〜 2026年3月31日 
+バージョン : 2.0
+公共交通オープンデータ基本ライセンス、および、その特定利用条件をよく読んで、ご利用ください。"
+ds_014,首都圏新都市鉄道,鐵道,つくばエクスプレス鉄道関連情報,static,GTFS/GTFS-JP,file,https://api.odpt.org/api/v4/files/MIR/data/MIR-Train-GTFS.zip?acl:consumerKey=[発行されたアクセストークン/YOUR_ACCESS_TOKEN],https://api.odpt.org,/api/v4/files/MIR/data/MIR-Train-GTFS.zip?acl:consumerKey=[発行されたアクセストークン/YOUR_ACCESS_TOKEN],True,COMPETITION_LIMITED,SECONDARY,首都圏新都市鉄道（つくばエクスプレス）について、GTFS形式による鉄道関連情報を提供します。
+ds_015,首都圏新都市鉄道,鐵道,首都圏新都市鉄道乗降者数情報,static,JSON,api,https://api.odpt.org/api/v4/odpt:PassengerSurvey?odpt:operator=odpt.Operator:MIR&acl:consumerKey=[発行されたアクセストークン/YOUR_ACCESS_TOKEN],https://api.odpt.org,/api/v4/odpt:PassengerSurvey?odpt:operator=odpt.Operator:MIR&acl:consumerKey=[発行されたアクセストークン/YOUR_ACCESS_TOKEN],True,COMPETITION_LIMITED,SECONDARY,首都圏新都市鉄道（つくばエクスプレス）の乗降者数情報を提供します。
+ds_016,首都圏新都市鉄道,鐵道,鉄道関連リアルタイム情報,realtime,Protocol Buffers,api,https://api.odpt.org/api/v4/gtfs/realtime/mir_odpt_train_alert?acl:consumerKey=[発行されたアクセストークン/YOUR_ACCESS_TOKEN],https://api.odpt.org,/api/v4/gtfs/realtime/mir_odpt_train_alert?acl:consumerKey=[発行されたアクセストークン/YOUR_ACCESS_TOKEN],True,COMPETITION_LIMITED,SECONDARY,運行情報(Alert)を提供します。
+ds_017,千代田区地域福祉交通,公車,千代田区地域福祉交通「風ぐるま」,static,GTFS/GTFS-JP,file,https://api.odpt.org/api/v4/files/odpt/HitachiAutomobileTransportation/Chiyoda_ALLLINES.zip?date=20250601&acl:consumerKey=[アクセストークン/YOUR_ACCESS_TOKEN],https://api.odpt.org,/api/v4/files/odpt/HitachiAutomobileTransportation/Chiyoda_ALLLINES.zip?date=20250601&acl:consumerKey=[アクセストークン/YOUR_ACCESS_TOKEN],True,COMPETITION_LIMITED,SECONDARY,"2025年6月1日の千代田区地域福祉交通「風ぐるま」のデータです。
+
+※本データは、開発者サイト でのユーザ登録後、以下のURLからもアクセス可能です。"
+ds_018,台東区コミュニティバス,公車,台東区コミュニティバス,static,GTFS/GTFS-JP,file,https://api.odpt.org/api/v4/files/odpt/TokyoTaitoCity/megurinCCBY40.zip?date=20251028&acl:consumerKey=[アクセストークン/YOUR_ACCESS_TOKEN],https://api.odpt.org,/api/v4/files/odpt/TokyoTaitoCity/megurinCCBY40.zip?date=20251028&acl:consumerKey=[アクセストークン/YOUR_ACCESS_TOKEN],True,COMPETITION_LIMITED,SECONDARY,※本データは、開発者サイト でのユーザ登録後、以下のURLからもアクセス可能です。
+ds_019,東武バス,公車, [Challenge 2025 only],static,	JSON,api,https://api-challenge.odpt.org/api/v4/odpt:BusstopPole?odpt:operator=odpt.Operator:TobuBus&acl:consumerKey=[Access_Token_for_Challenge2025],https://api-challenge.odpt.org,/api/v4/odpt:BusstopPole?odpt:operator=odpt.Operator:TobuBus&acl:consumerKey=[Access_Token_for_Challenge2025],True,COMPETITION_LIMITED,SECONDARY,"【チャレンジ2025限定】
+東武バスのバス停情報を提供します。"
+ds_020,東急バス,公車,東急バス バス停時刻表,static,JSON,api,https://api.odpt.org/api/v4/odpt:BusstopPoleTimetable?odpt:operator=odpt.Operator:TokyuBus&acl:consumerKey=[発行されたアクセストークン/YOUR_ACCESS_TOKEN],https://api.odpt.org,/api/v4/odpt:BusstopPoleTimetable?odpt:operator=odpt.Operator:TokyuBus&acl:consumerKey=[発行されたアクセストークン/YOUR_ACCESS_TOKEN],True,COMPETITION_LIMITED,SECONDARY,東急バスのバス停時刻表を提供します。
+ds_021,OpenStreet,共享單車,Bikeshare information (GBFS format) of OpenStreet,static,GBFS,api,https://api-public.odpt.org/api/v4/gbfs/hellocycling/gbfs.json,https://api-public.odpt.org,/api/v4/gbfs/hellocycling/gbfs.json,True,COMPETITION_LIMITED,SECONDARY,OpenStreet（ハローサイクリング）のバイクシェア関連情報(GBFS形式)を提供します。
+ds_022,ドコモ・バイクシェア バイクシェア関連情報（東京エリア）,共享單車,Bikeshare information (GBFS format) ,static,GBFS,api,https://api-public.odpt.org/api/v4/gbfs/docomo-cycle-tokyo/gbfs.json,https://api-public.odpt.org,/api/v4/gbfs/docomo-cycle-tokyo/gbfs.json,True,COMPETITION_LIMITED,SECONDARY,ドコモ・バイクシェアの東京都内エリアのバイクシェア関連情報を提供します。
+ds_023,気象データ高度利用ポータルサイト,氣象,「最新の気象データ」CSVダウンロードについて,static,XML、CVS,,,,,False,,PRIMARY,"全国のアメダスの最新の降水量、最高・最低気温、最大風速、積雪深などのデータを、
+　機械判読に適したデータ形式（CSV形式）でダウンロードすることができます。
+気象庁ホームページを通じて公開する気象庁防災情報XMLフォーマット形式電文（以下、XML形式電文という。）は、""PULL型""でのみ提供しております。"
+ds_024,国土地理院 基盤地図情報サイト,地理,基盤地図情報,static,PDF、ZIP,,,,,False,,PRIMARY,
+ds_025,東京都：オープンデータカタログサイト,開放數據,東京都防災マップ 避難所・避難場所一覧データ,static,CVS、PDF,file,https://www.opendata.metro.tokyo.lg.jp/soumu/130001_evacuation_center.csv,https://www.opendata.metro.tokyo.lg.jp,/soumu/130001_evacuation_center.csv,False,,PRIMARY,"東京都防災マップに掲載している避難所、避難場所の一覧です。なお、本情報は、原則として令和3年4月1日基準での情報です。データ利用に当たっては、東京都提供の「避難所、避難場所データ オープンデータ」を利用していることを表示してください。
+本データはクリエイティブ・コモンズ・ライセンス表示 4.0 国際の下に提供いたします。また、利用者がOpen Data CommonsによるODC BY又はODbLでの利用を希望する場合に、それを妨げるものではありません。
+・掲載されている工事は、2025年12月～2026年1月に実施予定の工事です。
+
+・掲載されている工事以外にも実施される工事があります。（緊急工事、小規模工事など）
+
+・工事内容は変更されることもあります。"
+ds_026,,,,static,nan,,,,,False,,PRIMARY,
+ds_027,,,,static,nan,,,,,False,,PRIMARY,
+ds_028,數據類別 (Category),數據名稱 (Name),來源機構 (Provider),static,獲取方式 (Method),,,,,False,,PRIMARY,用途 (BambiGO L3 Tag)
+ds_029,微設施,公共廁所與無障礙設施,OpenStreetMap (OSM)、各車站バリアフリー地圖,static,API (Overpass API),,,,,False,,PRIMARY,"amenity=toilets
+
+diaper=yes (尿布台)
+
+wheelchair=yes (輪椅友善)"
+ds_030,微設施,置物櫃 (Coin Lockers),OpenStreetMap (OSM),static,API (Overpass API),,,,,False,,PRIMARY,"amenity=lockers
+
+payment:suica=yes (可刷卡)"
+ds_031,微設施,車站置物櫃資訊,ODPT (輔助),static,API (odpt:StationFacility),,,,,False,,PRIMARY,驗證車站內是否有置物櫃設施
+ds_032,微設施,行李寄存服務,ecbo cloak (商業)コインロッカーなび、メトロコマース,static,爬蟲 / Deep Link,,,,,False,,PRIMARY,L4 導流： 當置物櫃滿時，引導至合作店家寄存；n8n 定期抓取
+ds_033,微設施,充電 / Wi-Fi 熱點,OpenStreetMap (OSM),static,API (Overpass API),,,,,False,,PRIMARY,"amenity=charging_station
+
+internet_access=wlan"
+ds_034,微設施,便利商店 (ATM/補給),OpenStreetMap (OSM),static,API (Overpass API),,,,,False,,PRIMARY,"shop=convenience
+
+atm=yes"
+ds_035,微設施,飲水機 / 免費休息處,MyMizu / OSM,static,API (Overpass API),,,,,False,,PRIMARY,"amenity=drinking_water
+
+amenity=bench"
+ds_036,防災,避難場所,東京都 Open Data,static,CSV / API,,,,,False,,PRIMARY,Trip Guard: 緊急狀況時的最近避難點導引
+ds_037,觀光景點,觀光景點描述,官方觀光 PDF、區役所網站,static,PDF / HTML,,,,,False,,PRIMARY,Phase3
+ds_038,活動/事件,活動/事件,區役所活動頁面、祭典網站,static,Web 爬蟲,,,,,False,,PRIMARY,n8n 定期抓取
+ds_039,,,,static,nan,,,,,False,,PRIMARY,
+ds_040,Phase 1：ODPT 核心鐵道/巴士數據,,,static,nan,,,,,False,,PRIMARY,
+ds_041,━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━,,,static,nan,,,,,False,,PRIMARY,
+ds_042,✓ 東京Metro GTFS + JSON,,,static,nan,,,,,False,,PRIMARY,
+ds_043,✓ 都營 GTFS + JSON,,,static,nan,,,,,False,,PRIMARY,
+ds_044,✓ JR東日本 GTFS（競賽限定）,,,static,nan,,,,,False,,PRIMARY,
+ds_045,✓ 社區巴士（めぐりん、風ぐるま）,,,static,nan,,,,,False,,PRIMARY,
+ds_046,→ 產出：基本路線查詢,,,static,nan,,,,,False,,PRIMARY,
+ds_047,,,,static,nan,,,,,False,,PRIMARY,
+ds_048,Phase 2：即時數據,,,static,nan,,,,,False,,PRIMARY,
+ds_049,━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━,,,static,nan,,,,,False,,PRIMARY,
+ds_050,✓ GTFS-RT（Metro、都營）,,,static,nan,,,,,False,,PRIMARY,
+ds_051,✓ 運行異常資訊,,,static,nan,,,,,False,,PRIMARY,
+ds_052,✓ 巴士位置資訊,,,static,nan,,,,,False,,PRIMARY,
+ds_053,→ 產出：即時狀態、Trip Guard,,,static,nan,,,,,False,,PRIMARY,
+ds_054,,,,static,nan,,,,,False,,PRIMARY,
+ds_055,Phase 3：多模式 + 基礎設施,,,static,nan,,,,,False,,PRIMARY,
+ds_056,━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━,,,static,nan,,,,,False,,PRIMARY,
+ds_057,✓ GBFS 共享單車,,,static,nan,,,,,False,,PRIMARY,
+ds_058,✓ 步行空間 GeoJSON,,,static,nan,,,,,False,,PRIMARY,
+ds_059,✓ OSM 廁所/基礎設施,,,static,nan,,,,,False,,PRIMARY,
+ds_060,✓ 無障礙地圖資訊,,,static,nan,,,,,False,,PRIMARY,
+ds_061,→ 產出：多模式路線、無障礙導航,,,static,nan,,,,,False,,PRIMARY,
+ds_062,,,,static,nan,,,,,False,,PRIMARY,
+ds_063,Phase 4：進階設施,,,static,nan,,,,,False,,PRIMARY,
+ds_064,━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━,,,static,nan,,,,,False,,PRIMARY,
+ds_065,✓ 置物櫃（爬蟲）,,,static,nan,,,,,False,,PRIMARY,
+ds_066,✓ ATM、充電站（OSM）,,,static,nan,,,,,False,,PRIMARY,
+ds_067,→ 產出：完整 L3 微需求解答,,,static,nan,,,,,False,,PRIMARY,
+ds_068,,,,static,nan,,,,,False,,PRIMARY,
+ds_069,Phase 5：觀光內容,,,static,nan,,,,,False,,PRIMARY,
+ds_070,━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━,,,static,nan,,,,,False,,PRIMARY,
+ds_071,✓ 觀光景點描述（Dify RAG）,,,static,nan,,,,,False,,PRIMARY,
+ds_072,✓ 活動/事件資訊（爬蟲）,,,static,nan,,,,,False,,PRIMARY,
+ds_073,→ 產出：L1 景點語意、分流推薦,,,static,nan,,,,,False,,PRIMARY,

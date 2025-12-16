@@ -1,0 +1,58 @@
+{
+  "name": "bambigo-web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "lint:ci": "eslint . --max-warnings=0",
+    "init:schema": "tsx scripts/init_schema.ts",
+    "schema:v4.1": "tsx scripts/setup_v4_1_schema.ts",
+    "fetch:odpt": "tsx scripts/fetch_tokyo_odpt.ts",
+    "export:geojson": "tsx scripts/export_geojson.ts",
+    "dev:setup": "tsx scripts/dev_check_env.ts && tsx scripts/setup_v4_1_schema.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest",
+    "test:ci": "vitest --run --coverage"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.87.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.561.0",
+    "maplibre-gl": "^5.14.0",
+    "next": "16.0.10",
+    "next-intl": "^4.6.0",
+    "react": "19.2.1",
+    "react-dom": "19.2.1",
+    "tailwind-merge": "^3.4.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/pg": "^8.16.0",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "babel-plugin-react-compiler": "1.0.0",
+    "dotenv": "^17.2.3",
+    "eslint": "^9",
+    "eslint-config-next": "16.0.10",
+    "pg": "^8.16.3",
+    "tailwindcss": "^4",
+    "tsx": "^4.21.0",
+    "typescript": "^5",
+    "vitest": "^4.0.15"
+  }
+  ,
+  "vitest": {
+    "coverage": {
+      "provider": "v8",
+      "reporter": ["text", "lcov"],
+      "lines": 70,
+      "functions": 70,
+      "branches": 70,
+      "statements": 70
+    }
+  }
+}

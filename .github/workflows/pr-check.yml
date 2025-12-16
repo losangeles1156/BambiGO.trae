@@ -1,0 +1,58 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+      - 'release/**'
+    paths:
+      - 'bambigo-web/**'
+
+concurrency:
+  group: pr-checks-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+jobs:
+  lint-typecheck-test:
+    name: Lint / Typecheck / Test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'bambigo-web/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: bambigo-web
+        run: npm ci
+
+      - name: Lint (no warnings)
+        working-directory: bambigo-web
+        run: npm run lint:ci
+
+      - name: Typecheck
+        working-directory: bambigo-web
+        run: npm run typecheck
+
+      - name: Test with coverage
+        working-directory: bambigo-web
+        run: npm run test:ci
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vitest-coverage
+          path: |
+            bambigo-web/coverage
+            bambigo-web/coverage/lcov.info
+          if-no-files-found: warn

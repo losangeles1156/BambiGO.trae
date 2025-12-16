@@ -1,0 +1,35 @@
+數據類別,提供機構,數據名稱,數據格式,API URL / 下載方式,BambiGO 用途,開發階段
+鐵道,東京都交通局,都營地下鉄 GTFS-RT 運行情報,Protocol Buffers,https://api-public.odpt.org/api/v4/gtfs/realtime/toei_odpt_train_alert,L2 即時狀態 / Trip Guard,Phase 2
+鐵道,東京都交通局,都營 駅情報・時刻表・運行情報,JSON,https://api-public.odpt.org/api/v4/odpt:Station?odpt:operator=odpt.Operator:Toei,L1 節點建立,Phase 1
+鐵道,東京都交通局,都營 列車ロケーション,JSON,https://api-public.odpt.org/api/v4/odpt:Train?odpt:operator=odpt.Operator:Toei,L2 列車位置,Phase 2
+公車,東京都交通局,都營バス GTFS,GTFS-JP,https://api-public.odpt.org/api/v4/files/Toei/data/ToeiBus-GTFS.zip,L1 巴士路線,Phase 1
+公車,東京都交通局,都營バス停情報・時刻表,JSON,https://api-public.odpt.org/api/v4/odpt:BusstopPole?odpt:operator=odpt.Operator:Toei,L1 巴士站點,Phase 1
+公車,東京都交通局,都營バスロケーション,JSON,https://api-public.odpt.org/api/v4/odpt:Bus?odpt:operator=odpt.Operator:Toei,L2 巴士即時位置,Phase 2
+鐵道,東京メトロ,東京Metro GTFS-RT 運行情報,Protocol Buffers,https://api.odpt.org/api/v4/gtfs/realtime/tokyometro_odpt_train_alert?acl:consumerKey=YOUR_KEY,L2 即時狀態 / Trip Guard,Phase 2
+鐵道,東京メトロ,東京Metro 駅情報・時刻表・運賃,JSON,https://api.odpt.org/api/v4/odpt:Station?odpt:operator=odpt.Operator:TokyoMetro&acl:consumerKey=YOUR_KEY,L1 節點建立,Phase 1
+鐵道,JR東日本,JR東日本 列車ロケーション（競賽限定）,JSON,https://api-challenge.odpt.org/api/v4/odpt:Train?odpt:operator=odpt.Operator:JR-East&acl:consumerKey=CHALLENGE_KEY,L2 列車位置,Phase 2
+鐵道,JR東日本,JR東日本 GTFS（競賽限定）,GTFS,https://api-challenge.odpt.org/api/v4/files/JR-East/data/JR-East-Train-GTFS.zip?acl:consumerKey=CHALLENGE_KEY,L1 節點建立,Phase 1
+鐵道,首都圏新都市鉄道,つくばエクスプレス GTFS,GTFS-JP,https://api.odpt.org/api/v4/files/MIR/data/MIR-Train-GTFS.zip?acl:consumerKey=YOUR_KEY,L1 路線（範圍外備用）,Phase 1
+鐵道,首都圏新都市鉄道,TX GTFS-RT 運行情報,Protocol Buffers,https://api.odpt.org/api/v4/gtfs/realtime/mir_odpt_train_alert?acl:consumerKey=YOUR_KEY,L2 即時狀態,Phase 2
+公車,千代田区,千代田区「風ぐるま」GTFS,GTFS-JP,https://api.odpt.org/api/v4/files/odpt/HitachiAutomobileTransportation/Chiyoda_ALLLINES.zip?acl:consumerKey=YOUR_KEY,L1 社區巴士,Phase 1
+公車,台東区,台東区「めぐりん」GTFS,GTFS-JP,https://api.odpt.org/api/v4/files/odpt/TokyoTaitoCity/megurinCCBY40.zip?acl:consumerKey=YOUR_KEY,L1 社區巴士,Phase 1
+公車,東武バス,東武バス 停留所・路線（競賽限定）,JSON,https://api-challenge.odpt.org/api/v4/odpt:BusstopPole?odpt:operator=odpt.Operator:TobuBus&acl:consumerKey=CHALLENGE_KEY,L1 巴士站點,Phase 1
+公車,東急バス,東急バス 時刻表・路線,JSON,https://api.odpt.org/api/v4/odpt:BusstopPoleTimetable?odpt:operator=odpt.Operator:TokyuBus&acl:consumerKey=YOUR_KEY,L1 巴士站點,Phase 1
+渡輪,TOKYO CRUISE,TOKYO CRUISE GTFS,GTFS-JP,https://api.odpt.org/api/v4/files/odpt/TokyoCruiseShip/AllLines.zip?acl:consumerKey=YOUR_KEY,L1 水上巴士（觀光）,Phase 3
+共享單車,ドコモ・バイクシェア,東京 GBFS,GBFS,https://api-public.odpt.org/api/v4/gbfs/docomo-cycle-tokyo/gbfs.json,L1 共享單車站點 / L4 導流,Phase 3
+共享單車,OpenStreet,ハローサイクリング GBFS,GBFS,https://api-public.odpt.org/api/v4/gbfs/hellocycling/gbfs.json,L1 共享單車站點 / L4 導流,Phase 3
+步行空間,国土交通省,上野駅周辺 歩行空間ネットワーク,GeoJSON,download,無障礙路徑規劃,Phase 3
+步行空間,国土交通省,東京駅周辺 歩行空間ネットワーク,GeoJSON,download,無障礙路徑規劃,Phase 3
+步行空間,国土交通省,千代田区・中央区 歩行空間ネットワーク,GeoJSON,download,無障礙路徑規劃,Phase 3
+步行空間,国土交通省,都営大江戸線 上野御徒町駅 構内,GeoJSON,download,站內導航,Phase 3
+氣象,気象庁,最新気象データ CSV,CSV,download,L2 天氣狀態,Phase 2
+防災,東京都,避難所・避難場所一覧,CSV,https://www.opendata.metro.tokyo.lg.jp/soumu/130001_evacuation_center.csv,Trip Guard 緊急導引,Phase 2
+地理,国土地理院,基盤地図情報,ZIP,download,地圖底圖,Phase 1
+微設施,OpenStreetMap,公共廁所,GeoJSON,Overpass API: amenity=toilets,L3 設施,Phase 2
+微設施,OpenStreetMap,置物櫃,GeoJSON,Overpass API: amenity=lockers,L3 設施,Phase 2
+微設施,OpenStreetMap,便利商店・ATM,GeoJSON,Overpass API: shop=convenience,L3 設施,Phase 2
+微設施,OpenStreetMap,充電站・Wi-Fi,GeoJSON,Overpass API: amenity=charging_station,L3 設施,Phase 2
+微設施,OpenStreetMap,飲水機・休息椅,GeoJSON,Overpass API: amenity=drinking_water,L3 設施,Phase 2
+微設施,ecbo cloak,行李寄存服務,Web 爬蟲,https://cloak.ecbo.io/,L4 商業導流,Phase 3
+觀光,各區役所,觀光景點描述,PDF/HTML,手動整理至 Dify RAG,L1 景點語意,Phase 3
+活動,各區役所,活動・祭典資訊,Web 爬蟲,n8n 定期抓取,L2 事件狀態,Phase 3

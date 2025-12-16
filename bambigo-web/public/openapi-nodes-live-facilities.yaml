@@ -1,0 +1,259 @@
+openapi: 3.0.3
+info:
+  title: BambiGO Aggregated API - Nodes + Live + Facilities
+  version: 1.0.0
+  description: Aggregated endpoint that composes `/api/nodes`, `/api/live`, and `/api/facilities` into one payload.
+servers:
+  - url: /
+paths:
+  /api/nodes/live/facilities:
+    get:
+      summary: Aggregate nodes, live mobility, and facilities
+      description: |
+        Returns an aggregated payload combining nearby nodes (GeoJSON FeatureCollection), live mobility data, and facilities related to a node or bounding box.
+        Requires either `node_id` or `bbox`.
+      parameters:
+        - name: node_id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Target node identifier. Enables facilities and live mobility aggregation relative to the node.
+        - name: bbox
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: '^[-0-9\.]+,[-0-9\.]+,[-0-9\.]+,[-0-9\.]+$'
+          description: Bounding box in `minLon,minLat,maxLon,maxLat` used to select nodes and live mobility stations.
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [station, bus_stop]
+          description: Optional node type filter applied to `/api/nodes`.
+        - name: limit_nodes
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10000
+          description: Limit for nodes returned via `/api/nodes`.
+        - name: limit_mobility
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+          description: Limit for mobility stations returned via `/api/live`.
+        - name: limit_facilities
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+          description: Limit for facilities returned via `/api/facilities`.
+        - name: suitability
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Suitability tag filter applied to facilities.
+        - name: min_confidence
+          in: query
+          required: false
+          schema:
+            type: number
+            minimum: 0
+            maximum: 1
+          description: Minimum confidence for suitability tag when `suitability` is provided.
+      responses:
+        '200':
+          description: Aggregated payload
+          headers:
+            X-API-Version:
+              description: API contract version
+              schema:
+                type: string
+                example: v4.1-strict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AggregatedResponse'
+        '400':
+          description: Invalid or missing parameters
+          headers:
+            X-API-Version:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limited
+          headers:
+            X-API-Version:
+              schema:
+                type: string
+            Retry-After:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    AggregatedResponse:
+      type: object
+      properties:
+        nodes:
+          $ref: '#/components/schemas/FeatureCollection'
+        live:
+          $ref: '#/components/schemas/LiveResponse'
+        facilities:
+          $ref: '#/components/schemas/FacilitiesResponse'
+        updated_at:
+          type: string
+          format: date-time
+      required: [nodes, live, facilities, updated_at]
+    FeatureCollection:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [FeatureCollection]
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/Feature'
+      required: [type, features]
+    Feature:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [Feature]
+        geometry:
+          $ref: '#/components/schemas/Geometry'
+        properties:
+          type: object
+      required: [type, geometry, properties]
+    Geometry:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [Point]
+        coordinates:
+          type: array
+          items:
+            type: number
+          minItems: 2
+          maxItems: 3
+      required: [type, coordinates]
+    LiveResponse:
+      type: object
+      properties:
+        node_id:
+          nullable: true
+          type: string
+        bbox:
+          nullable: true
+          type: array
+          items:
+            type: number
+          minItems: 4
+          maxItems: 4
+        transit:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [normal, delayed, suspended, unknown]
+            delay_minutes:
+              nullable: true
+              type: number
+          required: [status]
+        mobility:
+          type: object
+          properties:
+            stations:
+              type: array
+              items:
+                $ref: '#/components/schemas/LiveMobilityStation'
+          required: [stations]
+        updated_at:
+          type: string
+          format: date-time
+      required: [transit, mobility, updated_at]
+    LiveMobilityStation:
+      type: object
+      properties:
+        id: { type: string }
+        system_id: { type: string }
+        system_name: { nullable: true, type: string }
+        name: { type: string }
+        lon: { type: number }
+        lat: { type: number }
+        capacity: { nullable: true, type: number }
+        vehicle_types: { nullable: true, type: array, items: { type: string } }
+        bikes_available: { type: number }
+        docks_available: { type: number }
+        is_renting: { type: boolean }
+        is_returning: { type: boolean }
+        status_updated_at: { nullable: true, type: string }
+        app_deeplink: { nullable: true, type: string }
+      required: [id, system_id, name, lon, lat, bikes_available, docks_available, is_renting, is_returning]
+    FacilitiesResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/FacilityItem'
+      required: [items]
+    FacilityItem:
+      type: object
+      properties:
+        id: { type: string }
+        node_id: { nullable: true, type: string }
+        city_id: { nullable: true, type: string }
+        type: { type: string }
+        name: { type: object, additionalProperties: { type: string } }
+        distance_meters: { nullable: true, type: number }
+        direction: { nullable: true, type: string }
+        floor: { nullable: true, type: string }
+        has_wheelchair_access: { type: boolean }
+        has_baby_care: { type: boolean }
+        is_free: { type: boolean }
+        is_24h: { type: boolean }
+        current_status: { type: string }
+        status_updated_at: { nullable: true, type: string }
+        attributes: {}
+        booking_url: { nullable: true, type: string }
+        suitability_tags:
+          type: array
+          items:
+            type: object
+            properties:
+              tag: { type: string }
+              confidence: { type: number }
+            required: [tag, confidence]
+      required: [id, type, has_wheelchair_access, has_baby_care, is_free, is_24h, current_status]
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code: { type: string }
+            message: { type: string }
+            details: { type: object }
+          required: [code, message]
+

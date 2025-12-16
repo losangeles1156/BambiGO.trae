@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* UI Components layer: unify Header/Card/Chip styles (plain CSS to avoid @apply issues) */
+.ui-header { background: #fff; border-bottom: 1px solid #f1f5f9; position: sticky; top: 0; z-index: 50; }
+.ui-header__bar { max-width: 80rem; margin: 0 auto; padding: 0 1rem; }
+.ui-header__row { display: flex; align-items: center; justify-content: space-between; height: 4rem; }
+.ui-header__btn { padding: 0.5rem; border-radius: 0.5rem; transition: background-color 150ms ease; }
+.ui-header__btn:hover { background: #f3f4f6; }
+.ui-header__btn:focus-visible { outline: none; }
+.ui-header__location { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; border-radius: 0.5rem; transition: background-color 150ms ease; }
+.ui-header__location:hover { background: #f8fafc; }
+.ui-header__location:focus-visible { outline: none; }
+
+.ui-card { background: #fff; border-radius: 0.75rem; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); transition: box-shadow 150ms ease; }
+.ui-card:hover { box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); }
+.ui-card--compact { border-radius: 0.5rem; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+.ui-card__title { font-size: 1rem; font-weight: 600; color: #111827; }
+.ui-section__title { font-size: 0.875rem; font-weight: 500; color: #374151; }
+
+.ui-chip { display: inline-flex; align-items: center; border-radius: 999px; padding: 0.25rem 0.75rem; font-size: 0.75rem; font-weight: 500; }
+.ui-chip--gray { background: #f3f4f6; color: #1f2937; }
+.ui-chip--yellow { background: #fef3c7; color: #78350f; }
+.ui-chip--purple { background: #ede9fe; color: #4c1d95; }
+.ui-chip--blue { background: #dbeafe; color: #1e3a8a; }
+.ui-chip--green { background: #d1fae5; color: #065f46; }
+
+.ui-card button:focus-visible { outline: none; }

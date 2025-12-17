@@ -22,6 +22,19 @@ AI_PROVIDER=mock
 DATABASE_URL=postgres://user:pass@host:5432/dbname
 ```
 
+### v2.1 指南補充（同步 bambigo-v2.1）
+- 新增 L1 生活機能標籤與分階段實作建議
+- 採用 AI 三層混合架構（Rule/SLM/LLM），降低成本與延遲
+- 同心圓數據策略：核心圈 → 緩衝圈 → 外部圈（優雅降級）
+
+### 追加環境變數
+- Supabase：`NEXT_PUBLIC_SUPABASE_URL`、`NEXT_PUBLIC_SUPABASE_ANON_KEY`、`SUPABASE_SERVICE_ROLE_KEY`
+- ODPT：`ODPT_API_KEY`、`ODPT_CHALLENGE_KEY`
+- Dify：`DIFY_API_KEY`、`DIFY_API_URL`
+- LINE（Phase 3）：`LINE_CHANNEL_ACCESS_TOKEN`、`LINE_CHANNEL_SECRET`
+
+更多細節請參考本地 `bambigo-v2.1/README.md` 與 `.trae/rules`（若存在）。
+
 ## 開發
 ```
 npm run dev
@@ -33,4 +46,3 @@ npm run dev
 npm test -- --run
 ```
 涵蓋 schema 正規化與 assistant 路由（參數/速率限制/串流標頭）測試。
-

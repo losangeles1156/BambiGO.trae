@@ -1,0 +1,32 @@
+name: Security Audit
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  schedule:
+    - cron: '0 0 * * 0' # Weekly run
+
+jobs:
+  security-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./bambigo-web
+
+      - name: Run Audit
+        run: npm audit
+        working-directory: ./bambigo-web
+
+      - name: Scan for Secrets
+        run: node scripts/check-secrets.js
+        working-directory: ./bambigo-web

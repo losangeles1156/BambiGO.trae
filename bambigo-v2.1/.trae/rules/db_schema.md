@@ -365,6 +365,17 @@ for each row execute function calculate_facility_stats();
 
 ### Design Rationale
 ```
+⚠️ 重要：這是「冷數據」表，不是「快取」表！
+
+資料生命週期：
+- 生成：n8n 每季批次執行，呼叫 Overpass API，計算後寫入
+- 讀取：App 執行時直接 SELECT，零計算
+- 更新：只有下次批次執行時才會更新
+
+❌ 禁止：在 App 執行時動態計算這些數據
+❌ 禁止：在 API Route 中呼叫 Overpass
+✅ 正確：把這張表當作靜態參照表（像車站名稱一樣）
+
 為什麼獨立成表？
 - 機能輪廓是「計算產生」的，與節點本身的靜態資料分開
 - 可以獨立更新，不影響 nodes 表

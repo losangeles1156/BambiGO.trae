@@ -32,6 +32,7 @@ export type FacilitiesResponse = {
 function normalizeConn(s: string) {
   try {
     const u = new URL(s)
+    if (u.hostname !== 'localhost' && !u.searchParams.has('sslmode')) u.searchParams.set('sslmode', 'require')
     if (u.password) u.password = encodeURIComponent(decodeURIComponent(u.password))
     return u.toString()
   } catch {
@@ -137,6 +138,7 @@ export async function GET(req: Request) {
 
   try {
     await client.connect()
+    try { await client.query("select set_config('request.jwt.claims', $1, true)", [JSON.stringify({ role: 'anon' })]) } catch {}
     // Build SQL with optional filters and suitability join
     const useSuitability = !!suitTag
     const values: (string | number)[] = [nodeId]

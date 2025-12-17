@@ -86,6 +86,7 @@ export async function GET(req: Request) {
   function normalizeConn(s: string) {
     try {
       const u = new URL(s)
+      if (u.hostname !== 'localhost' && !u.searchParams.has('sslmode')) u.searchParams.set('sslmode', 'require')
       if (u.password) u.password = encodeURIComponent(decodeURIComponent(u.password))
       return u.toString()
     } catch {
@@ -96,6 +97,7 @@ export async function GET(req: Request) {
   const client = new Client({ connectionString: conn })
   try {
     await client.connect()
+    try { await client.query("select set_config('request.jwt.claims', $1, true)", [JSON.stringify({ role: 'anon' })]) } catch {}
     const sql = `
       select
         id,

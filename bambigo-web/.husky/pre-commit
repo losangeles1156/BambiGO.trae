@@ -1,0 +1,2 @@
+tsx scripts/check-secrets.ts
+npx lint-staged

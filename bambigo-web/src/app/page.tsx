@@ -4,6 +4,7 @@ import MapCanvas from '../../components/map/MapCanvas'
 import SearchBar from '../components/views/SearchBar'
 import NodeDashboard from '../components/views/NodeDashboard'
 import TaskMode from '../components/views/TaskMode'
+import FullScreenAssistant from '../components/assistant/FullScreenAssistant'
 import { detectZoneFromPoint, Zone } from '../lib/zones/detector'
 import { getAdapter } from '../lib/adapters'
  
@@ -16,6 +17,7 @@ export default function Home() {
   const [zone, setZone] = useState<Zone>('core')
   const [lastCoords, setLastCoords] = useState<[number, number] | null>(null)
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null)
+  const [showAssistant, setShowAssistant] = useState(false)
   useEffect(() => {
     const onOnline = () => setOnline(true)
     const onOffline = () => setOnline(false)
@@ -76,7 +78,7 @@ export default function Home() {
         setView('dashboard')
       }} />
       {view === 'explore' && (
-        <SearchBar onSubmit={(q) => { if (q.trim()) setView('dashboard') }} onMic={() => {}} />
+        <SearchBar onSubmit={(q) => { if (q.trim()) setView('dashboard') }} onMic={() => setShowAssistant(true)} />
       )}
       {view === 'dashboard' && (
         <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, maxHeight: '50vh', overflow: 'auto', padding: 12 }}>
@@ -129,6 +131,15 @@ export default function Home() {
           <TaskMode destination={'淺草'} />
         </div>
       )}
+      {view !== 'explore' && (
+        <button
+          style={{ position: 'fixed', bottom: 80, right: 16, background: '#2563eb', color: '#fff', width: 48, height: 48, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', zIndex: 1000 }}
+          onClick={() => setShowAssistant(true)}
+        >
+          <span style={{ fontSize: 24 }}>🤖</span>
+        </button>
+      )}
+      <FullScreenAssistant open={showAssistant} onClose={() => setShowAssistant(false)} />
     </div>
   )
 }

@@ -1,6 +1,62 @@
 # BambiGO L1 生活機能標籤系統 (Facility Tags)
-# 版本：v1.0
+# 版本：v1.1
 # 用途：定義節點周邊生活機能的標籤架構與分階段實作策略
+
+---
+
+## 🚨 Critical: Data is Pre-calculated (資料是預先計算的)
+
+> **在閱讀本文件之前，請先理解這個關鍵約束！**
+
+```
+⚠️ L1 生活機能標籤是「冷數據」，不是即時計算的！
+
+錯誤認知：
+❌ 用戶打開 App → 即時呼叫 Overpass API → 計算周邊設施 → 顯示標籤
+   (這會導致地圖載入要等 2-3 秒，用戶體驗極差！)
+
+正確認知：
+✅ 開發階段：n8n 每季跑一次批次 → 計算所有節點 → 寫入 DB
+✅ 執行階段：App 只做 SELECT → 直接顯示 → 零計算、零延遲
+```
+
+### 資料生命週期
+
+| 階段 | 時機 | 動作 | 延遲 |
+|------|------|------|------|
+| **生成** | 每季（或手動） | n8n 批次計算，寫入 DB | N/A（離線）|
+| **讀取** | 用戶使用 App | SELECT 查詢 | <50ms |
+| **更新** | 不會發生 | 直到下次批次 | N/A |
+
+### 程式碼位置對照
+
+| 邏輯類型 | 正確位置 | 錯誤位置 |
+|---------|---------|---------|
+| Overpass API 呼叫 | `scripts/calculateProfiles.ts` | ~~`app/api/nodes/route.ts`~~ |
+| 類別計數計算 | `n8n workflow` | ~~`components/NodeCard.tsx`~~ |
+| vibe_tags 生成 | `scripts/` 或 `n8n` | ~~`lib/ai/processor.ts`~~ |
+| 讀取標籤顯示 | `components/FacilityProfile.tsx` | ✅ 這裡只讀不算 |
+
+### 給 Trae 的明確指令
+
+```
+本文件中的「計算邏輯」（Overpass 查詢、類別計數、vibe_tags 生成）
+全部都是「離線批次處理」用的，不是「App 執行時」用的。
+
+當你實作 UI 組件時：
+- FacilityProfile 組件只負責「顯示」
+- 資料來自 props，props 來自 DB 查詢
+- 不要在組件內做任何計算
+
+當你實作 API Route 時：
+- 只做 Supabase SELECT
+- 不要呼叫 Overpass
+- 不要計算 counts
+
+計算邏輯只存在於：
+- scripts/calculateFacilityProfiles.ts（手動執行）
+- n8n workflow（定期執行）
+```
 
 ---
 

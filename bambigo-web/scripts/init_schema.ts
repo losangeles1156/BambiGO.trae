@@ -34,6 +34,7 @@ begin
   new.updated_at = now();
   return new;
 end;$$ language plpgsql;
+alter function set_updated_at() set search_path = pg_catalog, public;
 create trigger set_nodes_updated_at before update on public.nodes
 for each row execute function set_updated_at();
 
@@ -44,6 +45,7 @@ begin
   set geom = ST_SetSRID(ST_Point(p_lon, p_lat), 4326)
   where odpt_id = p_odpt_id;
 end;$$ language plpgsql;
+alter function set_node_geom(text, double precision, double precision) set search_path = pg_catalog, public;
 
 create or replace function set_nodes_geom_bulk(p_items jsonb)
 returns void as $$
@@ -53,6 +55,7 @@ begin
   from jsonb_to_recordset(p_items) as x(odpt_id text, lon double precision, lat double precision)
   where n.odpt_id = x.odpt_id;
 end;$$ language plpgsql;
+alter function set_nodes_geom_bulk(jsonb) set search_path = pg_catalog, public;
 
 do $$
 begin
@@ -70,6 +73,25 @@ begin
     select 1 from pg_policies where schemaname = 'public' and tablename = 'nodes' and policyname = 'nodes_update_service_role'
   ) then
     execute 'create policy nodes_update_service_role on public.nodes for update using ((current_setting(''request.jwt.claims'', true)::jsonb ->> ''role'') = ''service_role'') with check ((current_setting(''request.jwt.claims'', true)::jsonb ->> ''role'') = ''service_role'')';
+  end if;
+  -- Harden legacy/public tables if present
+  if exists (select 1 from information_schema.tables where table_schema='public' and table_name='node_intelligence') then
+    execute 'alter table public.node_intelligence enable row level security';
+    if not exists (select 1 from pg_policies where schemaname='public' and tablename='node_intelligence' and policyname='node_intelligence_select_public') then
+      execute 'create policy node_intelligence_select_public on public.node_intelligence for select using (true)';
+    end if;
+  end if;
+  if exists (select 1 from information_schema.tables where table_schema='public' and table_name='node_facility_profiles') then
+    execute 'alter table public.node_facility_profiles enable row level security';
+    if not exists (select 1 from pg_policies where schemaname='public' and tablename='node_facility_profiles' and policyname='node_facility_profiles_select_public') then
+      execute 'create policy node_facility_profiles_select_public on public.node_facility_profiles for select using (true)';
+    end if;
+  end if;
+  if exists (select 1 from information_schema.tables where table_schema='public' and table_name='spatial_ref_sys') then
+    execute 'alter table public.spatial_ref_sys enable row level security';
+    if not exists (select 1 from pg_policies where schemaname='public' and tablename='spatial_ref_sys' and policyname='spatial_ref_sys_select_public') then
+      execute 'create policy spatial_ref_sys_select_public on public.spatial_ref_sys for select using (true)';
+    end if;
   end if;
 end$$;
 `

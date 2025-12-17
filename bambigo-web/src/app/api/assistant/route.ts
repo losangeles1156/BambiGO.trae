@@ -52,6 +52,113 @@ export async function GET(req: Request) {
     )
   }
   const provider = (process.env.AI_PROVIDER || 'mock').toLowerCase()
+  
+  if (provider === 'dify') {
+    const apiKey = process.env.DIFY_API_KEY
+    const apiUrl = process.env.DIFY_API_URL
+    if (!apiKey || !apiUrl) {
+      return new NextResponse(
+        JSON.stringify({ error: { code: 'CONFIG_ERROR', message: 'Dify credentials missing' } }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
+
+    try {
+      const difyRes = await fetch(`${apiUrl}/chat-messages`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          inputs: {},
+          query: q,
+          response_mode: 'streaming',
+          user: 'bambigo-user', // 暫時使用固定用戶 ID，未來可對接真實用戶
+          auto_generate_name: false
+        }),
+      })
+
+      if (!difyRes.ok) {
+        const errText = await difyRes.text()
+        console.error('Dify API error:', difyRes.status, errText)
+        throw new Error(`Dify API error: ${difyRes.status}`)
+      }
+
+      if (!difyRes.body) throw new Error('No response body from Dify')
+
+      const encoder = new TextEncoder()
+      const decoder = new TextDecoder()
+      const reader = difyRes.body.getReader()
+
+      const stream = new ReadableStream({
+        async start(controller) {
+          const write = (data: string) => controller.enqueue(encoder.encode(`data: ${data}\n\n`))
+          
+          try {
+            while (true) {
+              const { done, value } = await reader.read()
+              if (done) {
+                write(JSON.stringify({ role: 'ai', type: 'done' }))
+                controller.close()
+                break
+              }
+              
+              const chunk = decoder.decode(value, { stream: true })
+              const lines = chunk.split('\n').filter(line => line.trim().startsWith('data: '))
+              
+              for (const line of lines) {
+                try {
+                  const jsonStr = line.replace('data: ', '').trim()
+                  const data = JSON.parse(jsonStr)
+                  
+                  // 處理 Dify 的不同事件類型
+                  if (data.event === 'message' || data.event === 'agent_message') {
+                    const content = data.answer || ''
+                    if (content) {
+                      write(JSON.stringify({ role: 'ai', type: 'text', content }))
+                    }
+                  } else if (data.event === 'workflow_finished' || data.event === 'message_end') {
+                    // 結束信號將在循環結束時發送
+                  } else if (data.event === 'error') {
+                     console.error('Dify stream error:', data)
+                  }
+                } catch (e) {
+                  // 忽略解析錯誤（可能是部分 chunk）
+                }
+              }
+            }
+          } catch (e) {
+            console.error('Stream processing error:', e)
+            controller.error(e)
+          }
+        },
+      })
+
+      return new Response(stream, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+          'X-API-Version': 'v1',
+        },
+      })
+
+    } catch (e) {
+      console.error('Dify integration error:', e)
+      return new NextResponse(
+        JSON.stringify({ 
+          error: { code: 'PROVIDER_ERROR', message: 'Failed to connect to AI provider' },
+          fallback: {
+             primary: { title: '系統忙碌中', desc: '目前無法連接 AI 助理，請稍後再試。', primary: '重試' },
+             cards: []
+          }
+        }),
+        { status: 502, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
+  }
+
   if (provider === 'mock') {
     const encoder = new TextEncoder()
     const stream = new ReadableStream({

@@ -22,7 +22,7 @@ export default function FullScreenAssistant({ open, onClose }: Props) {
   }, [])
   if (!open) return null
   return (
-    <div role="dialog" aria-modal="true" className="fixed inset-0 z-[1000] bg-white">
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-[9999] bg-white md:inset-auto md:bottom-20 md:right-4 md:h-[600px] md:w-[400px] md:rounded-xl md:shadow-2xl md:border md:border-gray-200">
       <div className="flex h-full flex-col">
         <div className="flex items-center justify-between border-b p-3">
           <div className="text-base font-semibold">城市 AI 助理</div>
@@ -99,9 +99,10 @@ export default function FullScreenAssistant({ open, onClose }: Props) {
                     try {
                       const r = await fetch(`/api/assistant?q=${encodeURIComponent(text)}`)
                       const ok = r.ok && r.headers.get('Content-Type')?.includes('application/json')
-                      if (ok) {
+                      if (r.headers.get('Content-Type')?.includes('application/json')) {
                         const j = await r.json()
                         if (j?.fallback?.cards) setFallbackCards(j.fallback.cards)
+                        else if (j?.error?.message) setError(`錯誤: ${j.error.message}`)
                         else setError('AI 服務暫不可用，請稍後重試')
                       } else {
                         setError('AI 服務暫不可用，請稍後重試')

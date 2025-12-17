@@ -79,6 +79,7 @@ begin
   end if;
   return new;
 end;$$ language plpgsql;
+alter function set_nodes_geohash() set search_path = pg_catalog, public;
 
 create trigger set_nodes_geohash_trigger before insert or update on nodes
 for each row execute function set_nodes_geohash();
@@ -233,6 +234,7 @@ begin
     execute format('create policy %I_select_public on public.%I for select using (true)', tbl, tbl);
   end if;
 end;$$ language plpgsql;
+alter function create_public_read_policy(text) set search_path = pg_catalog, public;
 
 select create_public_read_policy('cities');
 select create_public_read_policy('nodes');
@@ -247,6 +249,7 @@ begin
     execute format('create policy %I_all_service_role on public.%I using ((current_setting(''request.jwt.claims'', true)::jsonb ->> ''role'') = ''service_role'') with check ((current_setting(''request.jwt.claims'', true)::jsonb ->> ''role'') = ''service_role'')', tbl, tbl);
   end if;
 end;$$ language plpgsql;
+alter function create_service_role_write_policy(text) set search_path = pg_catalog, public;
 
 select create_service_role_write_policy('cities');
 select create_service_role_write_policy('nodes');
@@ -266,6 +269,30 @@ begin
   from jsonb_to_recordset(p_items) as x(id text, lon double precision, lat double precision)
   where n.id = x.id;
 end;$$ language plpgsql;
+alter function set_node_location_bulk(jsonb) set search_path = pg_catalog, public;
+
+-- Harden legacy/public tables if present
+do $$
+begin
+  if exists (select 1 from information_schema.tables where table_schema='public' and table_name='node_intelligence') then
+    execute 'alter table public.node_intelligence enable row level security';
+    if not exists (select 1 from pg_policies where schemaname='public' and tablename='node_intelligence' and policyname='node_intelligence_select_public') then
+      execute 'create policy node_intelligence_select_public on public.node_intelligence for select using (true)';
+    end if;
+  end if;
+  if exists (select 1 from information_schema.tables where table_schema='public' and table_name='node_facility_profiles') then
+    execute 'alter table public.node_facility_profiles enable row level security';
+    if not exists (select 1 from pg_policies where schemaname='public' and tablename='node_facility_profiles' and policyname='node_facility_profiles_select_public') then
+      execute 'create policy node_facility_profiles_select_public on public.node_facility_profiles for select using (true)';
+    end if;
+  end if;
+  if exists (select 1 from information_schema.tables where table_schema='public' and table_name='spatial_ref_sys') then
+    execute 'alter table public.spatial_ref_sys enable row level security';
+    if not exists (select 1 from pg_policies where schemaname='public' and tablename='spatial_ref_sys' and policyname='spatial_ref_sys_select_public') then
+      execute 'create policy spatial_ref_sys_select_public on public.spatial_ref_sys for select using (true)';
+    end if;
+  end if;
+end$$;
 `
 
 async function main() {

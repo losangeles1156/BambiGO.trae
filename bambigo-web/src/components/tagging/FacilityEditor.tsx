@@ -33,9 +33,11 @@ interface FacilityEditorProps {
     icon: string; 
     attributes: Record<string, any> 
   }) => void;
+  className?: string;
 }
 
-export const FacilityEditor: React.FC<FacilityEditorProps> = ({ onAdd }) => {
+export const FacilityEditor: React.FC<FacilityEditorProps> = (props) => {
+  const { onAdd, className } = props;
   const [selectedType, setSelectedType] = useState<L3Category>(L3_FACILITIES_DATA[0].id);
   const [attributes, setAttributes] = useState({
     isFree: true,
@@ -58,7 +60,7 @@ export const FacilityEditor: React.FC<FacilityEditorProps> = ({ onAdd }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 w-full max-w-sm">
+    <div className={clsx("bg-white rounded-lg border border-gray-200 shadow-sm p-4 w-full", className)}>
       <h3 className="font-semibold text-gray-700 text-sm mb-4">Add Service Facility (L3)</h3>
       
       <div className="space-y-4">
@@ -98,22 +100,22 @@ export const FacilityEditor: React.FC<FacilityEditorProps> = ({ onAdd }) => {
           />
           
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Details / Location</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Details</label>
             <input 
               type="text"
               value={attributes.details}
               onChange={(e) => setAttributes(prev => ({ ...prev, details: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              placeholder="e.g. 2nd Floor, near elevator"
+              placeholder="Optional notes..."
+              className="w-full text-sm border-gray-200 rounded-md focus:border-emerald-500 focus:ring-emerald-500"
             />
           </div>
         </div>
 
         <button
           onClick={handleAdd}
-          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 rounded-md transition-colors shadow-sm active:scale-[0.98]"
+          className="w-full mt-2 bg-emerald-600 text-white text-sm font-medium py-2 rounded-lg hover:bg-emerald-700 transition-colors shadow-sm active:scale-[0.98]"
         >
-          Add Facility Tag
+          Add Facility
         </button>
       </div>
     </div>

@@ -28,6 +28,7 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
   const [stations, setStations] = useState<{ id: string; name: string; bikes_available: number; docks_available: number }[]>([])
   const [persona, setPersona] = useState<string[]>([])
   const [nodeType, setNodeType] = useState<string>('')
+  const [transitStatus, setTransitStatus] = useState<string | undefined>(undefined)
 
   // Check Favorite Status
   useEffect(() => {
@@ -145,11 +146,11 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
         }
 
         // 3. Public Transit
-        const transitStatus = j?.live?.transit?.status
-        if (transitStatus === 'delayed' || transitStatus === 'suspended') {
+        const tStatus = j?.live?.transit?.status
+        if (tStatus === 'delayed' || tStatus === 'suspended') {
            newCards.push({
              title: '大眾運輸',
-             desc: `目前狀態：${transitStatus === 'delayed' ? '延誤' : '暫停'}`,
+             desc: `目前狀態：${tStatus === 'delayed' ? '延誤' : '暫停'}`,
              primary: '查看替代路線'
            })
         }
@@ -165,6 +166,7 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
         }
 
         if (!abort) {
+          setTransitStatus(tStatus)
           setFacilities(adaptedItems)
           setStations(sts.map(s => ({
             id: String(s.id),
@@ -173,13 +175,6 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
             docks_available: Number(s.docks_available || 0)
           })))
           setCards(newCards)
-          
-          // Optional: Persona
-          // setPersona(derivePersonaFromFacilities(adaptedItems.map(f => ({ 
-          //   type: f.subCategory, 
-          //   has_wheelchair_access: !!(f.attributes as any).has_wheelchair_access,
-          //   has_baby_care: !!(f.attributes as any).has_baby_care 
-          // })), { transit: { status: transitStatus } }))
         }
       } catch (e) {
         console.error(e)
@@ -188,6 +183,29 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
     run()
     return () => { abort = true }
   }, [nodeId])
+
+  // Derive Persona when dependencies change
+  useEffect(() => {
+    // Find L1 context
+    const l1 = L1_CATEGORIES_DATA.find(c => c.id === nodeType || c.subCategories.some(s => s.id === nodeType))
+    const l1Main = l1?.id
+    const l1Sub = nodeType
+
+    const p = derivePersonaFromFacilities(
+      facilities.map(f => ({ 
+          type: f.subCategory, 
+          has_wheelchair_access: !!(f.attributes as any).has_wheelchair_access,
+          has_baby_care: !!(f.attributes as any).has_baby_care 
+      })), 
+      { 
+        l1MainCategory: l1Main, 
+        l1SubCategory: l1Sub,
+        transit: { status: transitStatus } 
+      }
+    )
+    setPersona(p)
+  }, [facilities, nodeType, transitStatus])
+
   const send = (q: string) => {
     if (!q.trim()) return
     setMsgs((v) => [...v, { role: 'user', content: q }])
@@ -247,32 +265,32 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
   return (
     <div className="flex flex-col h-full bg-gray-50 overflow-hidden">
       {/* Header */}
-      <div className="flex-none bg-white p-4 shadow-sm z-10">
+      <div className="flex-none bg-white/95 backdrop-blur-sm p-5 shadow-sm z-10 border-b border-gray-100">
         {l1Info && (
-          <div className="mb-3 flex items-center gap-2 text-xs text-gray-500">
+          <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-gray-500 bg-gray-50 inline-flex px-2 py-0.5 rounded-full">
             <span>{l1Info.icon}</span>
             <span>{l1Info.label}</span>
           </div>
         )}
-        <div className="flex justify-between items-start mb-2">
+        <div className="flex justify-between items-start mb-3">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">{name.zh || name.en}</h1>
-            <div className="text-sm text-gray-500">{name.ja}</div>
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{name.zh || name.en}</h1>
+            <div className="text-sm text-gray-500 font-medium">{name.ja}</div>
           </div>
           <button 
             onClick={toggleFavorite}
-            className={`p-2 rounded-full transition-colors ${isFavorite ? 'bg-pink-50 text-pink-500' : 'bg-gray-100 text-gray-400'}`}
+            className={`p-2.5 rounded-full transition-all active:scale-95 ${isFavorite ? 'bg-pink-50 text-pink-500 shadow-inner' : 'bg-gray-50 text-gray-400 hover:bg-gray-100'}`}
           >
-            <Heart className={isFavorite ? "fill-current" : ""} size={20} />
+            <Heart className={isFavorite ? "fill-current" : ""} size={22} />
           </button>
         </div>
         
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
           {statuses.map((s, i) => (
             <Chip key={i} label={s.label} tone={s.tone} />
           ))}
           {persona.map((p, i) => (
-            <span key={`p-${i}`} className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
+            <span key={`p-${i}`} className="flex-none inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 border border-blue-100">
               #{p}
             </span>
           ))}

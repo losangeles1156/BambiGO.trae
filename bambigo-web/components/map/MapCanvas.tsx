@@ -3,11 +3,32 @@ import { useEffect, useRef, useState } from 'react'
 import maplibregl from 'maplibre-gl'
 import type { StyleSpecification } from 'maplibre-gl'
 import type { FeatureCollection, Feature } from 'geojson'
+import { Locate } from 'lucide-react'
 import NodeCard from './NodeCard'
 import { Colors, MapFilters } from '../../src/lib/designTokens'
 
 type NodeProps = { id: string; name?: { ja?: string; en?: string; zh?: string }; type?: string; supply_tags?: string[]; suitability_tags?: string[] }
 type ExtMap = maplibregl.Map & { _darkObserver?: MutationObserver; _darkMql?: MediaQueryList }
+
+const UENO_COORDS: [number, number] = [139.7774, 35.7141]
+const MAX_DIST_KM = 50
+
+function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371 // Radius of the earth in km
+  const dLat = deg2rad(lat2 - lat1)
+  const dLon = deg2rad(lon2 - lon1)
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  const d = R * c // Distance in km
+  return d
+}
+
+function deg2rad(deg: number) {
+  return deg * (Math.PI / 180)
+}
 
 const OSM_STYLE: StyleSpecification = {
   version: 8,
@@ -43,8 +64,8 @@ const OSM_STYLE_DARK: StyleSpecification = {
   ],
 }
 
-type Props = { height?: number | string; onNodeSelected?: (f: Feature) => void; showBus?: boolean; zone?: 'core' | 'buffer' | 'outer'; center?: [number, number]; route?: FeatureCollection | null; accessibility?: { preferElevator?: boolean } }
-export default function MapCanvas({ height, onNodeSelected, showBus = true, zone = 'core', center, route, accessibility }: Props) {
+type Props = { height?: number | string; onNodeSelected?: (f: Feature) => void; showBus?: boolean; zone?: 'core' | 'buffer' | 'outer'; center?: [number, number]; route?: FeatureCollection | null; accessibility?: { preferElevator?: boolean }; showPopup?: boolean }
+export default function MapCanvas({ height, onNodeSelected, showBus = true, zone = 'core', center, route, accessibility, showPopup = true }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [data, setData] = useState<FeatureCollection | null>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
@@ -54,6 +75,28 @@ export default function MapCanvas({ height, onNodeSelected, showBus = true, zone
   const showBusRef = useRef<boolean>(showBus)
   useEffect(() => { cbRef.current = onNodeSelected || null }, [onNodeSelected])
   useEffect(() => { showBusRef.current = showBus }, [showBus])
+
+  const handleGeolocation = () => {
+    if (!navigator.geolocation) return
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords
+        const dist = getDistanceFromLatLonInKm(latitude, longitude, UENO_COORDS[1], UENO_COORDS[0])
+        
+        if (dist > MAX_DIST_KM) {
+          // If > 50km, stay at Ueno (or fly to Ueno if not there)
+          // We don't move if we are already there to avoid jitter, but forcing it ensures consistency
+          mapRef.current?.flyTo({ center: UENO_COORDS, zoom: 13 })
+        } else {
+          // If <= 50km, fly to user
+          mapRef.current?.flyTo({ center: [longitude, latitude], zoom: 15 })
+        }
+      },
+      (err) => {
+        console.error('Geolocation error', err)
+      }
+    )
+  }
   
 
   useEffect(() => {
@@ -127,6 +170,7 @@ export default function MapCanvas({ height, onNodeSelected, showBus = true, zone
       setStyleError(null)
     })
     map.on('load', () => {
+      handleGeolocation()
       if (!map.getSource('src-station')) map.addSource('src-station', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } as FeatureCollection })
       if (!map.getLayer('layer-station'))
         map.addLayer({
@@ -341,8 +385,8 @@ export default function MapCanvas({ height, onNodeSelected, showBus = true, zone
           </button>
         </div>
       )}
-      {selected && (
-        <div style={{ position: 'absolute', bottom: 16, right: 16 }}>
+      {selected && showPopup && (
+        <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-80 z-20">
           <div style={{ position: 'absolute', top: -8, right: -8 }}>
             <button
               style={{ background: '#fff', border: '1px solid #ddd', borderRadius: 999, width: 24, height: 24 }}

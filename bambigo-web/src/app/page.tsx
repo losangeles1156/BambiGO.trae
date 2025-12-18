@@ -57,13 +57,13 @@ export default function Home() {
   return (
     <div>
       {typeof window !== 'undefined' && !online && (
-        <div style={{ position: 'fixed', top: 8, right: 8, background: '#222', color: '#fff', padding: '6px 10px', borderRadius: 6, zIndex: 1000 }}>
+        <div className="fixed top-2 right-2 bg-gray-900 text-white px-3 py-1.5 rounded-lg text-sm z-[1000] shadow-md">
           離線狀態
         </div>
       )}
       {showInstall && (
         <button
-          style={{ position: 'fixed', bottom: 16, right: 16, background: '#0b3d91', color: '#fff', padding: '8px 12px', borderRadius: 8, zIndex: 1000 }}
+          className="fixed bottom-4 right-4 bg-blue-800 text-white px-4 py-2 rounded-xl shadow-lg z-[1000] active:scale-95 transition-transform"
           onClick={() => {
             const ev = installEvt as { prompt?: () => Promise<void> }
             setInstallEvt(null)
@@ -73,7 +73,7 @@ export default function Home() {
           安裝到主畫面
         </button>
       )}
-      <MapCanvas height={mapHeight} showBus={view !== 'explore' ? true : false} zone={zone} center={mapCenter || undefined} route={route || null} accessibility={accessibility || undefined} onNodeSelected={(f) => {
+      <MapCanvas height={mapHeight} showBus={view !== 'explore' ? true : false} zone={zone} center={mapCenter || undefined} route={route || null} accessibility={accessibility || undefined} showPopup={view === 'explore'} onNodeSelected={(f) => {
         const nm = (f.properties as { name?: { ja?: string; en?: string; zh?: string } } | undefined)?.name
         const id = (f.properties as { id?: string } | undefined)?.id
         const coords = (f.geometry as { coordinates?: [number, number] } | undefined)?.coordinates
@@ -91,7 +91,7 @@ export default function Home() {
         <SearchBar onSubmit={(q) => { if (q.trim()) setView('dashboard') }} onMic={() => setShowAssistant(true)} />
       )}
       {view === 'dashboard' && (
-        <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, maxHeight: '50vh', overflow: 'auto', padding: 12 }}>
+        <div className="fixed left-0 right-0 bottom-0 max-h-[50vh] overflow-auto p-3 z-10">
           <NodeDashboard nodeId={nodeId || undefined} name={nodeName} statuses={l2} actions={actions} filterSuitability={(() => { const q = tagging.buildSuitabilityQuery(tagState.tags, 0.6); return { tag: q.tag, minConfidence: q.minConfidence } })()} onAction={(a) => { if (a.includes('去')) setView('task') }} onRouteHint={async (hint) => {
             const origin = Array.isArray(mapCenter) ? mapCenter : lastCoords
             if (!origin) return
@@ -150,16 +150,16 @@ export default function Home() {
         </div>
       )}
       {zone === 'buffer' && (
-        <div style={{ position: 'fixed', top: 8, left: 8, background: '#111827', color: '#fff', padding: '6px 10px', borderRadius: 6, zIndex: 1000 }}>
+        <div className="fixed top-2 left-2 bg-gray-900 text-white px-3 py-1.5 rounded-lg text-sm z-[1000] shadow-md">
           此區域僅提供基本導航
         </div>
       )}
       {zone === 'outer' && (
-        <div style={{ position: 'fixed', top: 8, left: 8, background: '#7f1d1d', color: '#fff', padding: '8px 12px', borderRadius: 8, zIndex: 1000 }}>
-          <div style={{ marginBottom: 6 }}>超出主要支援範圍：建議回到中心區域，或使用 Google 地圖規劃路線</div>
-          <div style={{ display: 'flex', gap: 8 }}>
+        <div className="fixed top-2 left-2 bg-red-900/90 text-white px-4 py-3 rounded-xl z-[1000] shadow-lg backdrop-blur-md max-w-[90vw]">
+          <div className="mb-2 text-sm font-medium">超出主要支援範圍：建議回到中心區域，或使用 Google 地圖規劃路線</div>
+          <div className="flex gap-2">
             <button
-              style={{ background: '#fff', color: '#111827', padding: '4px 8px', borderRadius: 6 }}
+              className="bg-white text-gray-900 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm active:scale-95 transition-transform"
               onClick={() => {
                 const fallback = { lat: 35.681236, lon: 139.767125 }
                 const lat = Array.isArray(lastCoords) ? lastCoords[1] : fallback.lat
@@ -171,7 +171,7 @@ export default function Home() {
               用 Google 地圖導航
             </button>
             <button
-              style={{ background: '#f59e0b', color: '#111827', padding: '4px 8px', borderRadius: 6 }}
+              className="bg-yellow-500 text-gray-900 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm active:scale-95 transition-transform"
               onClick={() => {
                 const core = getAdapter('tokyo_core')
                 if (core) {
@@ -191,13 +191,13 @@ export default function Home() {
         </div>
       )}
       {view === 'task' && (
-        <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, maxHeight: '85vh', overflow: 'auto', padding: 12 }}>
+        <div className="fixed left-0 right-0 bottom-0 max-h-[85vh] overflow-auto p-3 z-10">
           <TaskMode destination={'淺草'} />
         </div>
       )}
       {view !== 'explore' && (
         <button
-          style={{ position: 'fixed', bottom: 80, right: 16, background: '#2563eb', color: '#fff', width: 48, height: 48, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', zIndex: 1000 }}
+          className="fixed bottom-20 right-4 bg-blue-600 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg z-[1000] active:scale-95 transition-transform"
           onClick={() => setShowAssistant(true)}
         >
           <span style={{ fontSize: 24 }}>🤖</span>

@@ -84,20 +84,65 @@ export function makeLabel(tag: AppTag): string {
   return tag.label
 }
 
-export function derivePersonaFromFacilities(items: Array<{ type: string; has_wheelchair_access?: boolean; has_baby_care?: boolean }>, live?: { transit?: { status?: string } }): string[] {
+export function derivePersonaFromFacilities(
+  items: Array<{ type: string; has_wheelchair_access?: boolean; has_baby_care?: boolean }>,
+  extra?: { 
+    l1MainCategory?: string;
+    l1SubCategory?: string;
+    transit?: { status?: string } 
+  }
+): string[] {
   const personas: string[] = []
   const types = new Set(items.map((f) => String(f.type).toLowerCase()))
+  
   const hasWifi = Array.from(types).some((t) => t.includes('wifi'))
   const hasCharging = Array.from(types).some((t) => /charge|charging|outlet|power/i.test(t))
   const hasToilet = Array.from(types).some((t) => t.includes('toilet'))
-  // console.log('DEBUG_PERSONA:', { types: Array.from(types), hasWifi, hasCharging })
   const hasAccessibility = items.some((f) => f.has_wheelchair_access === true)
   const hasBaby = items.some((f) => f.has_baby_care === true)
-  const transit = live?.transit?.status
-  if (hasWifi && hasCharging) personas.push('數位遊牧友好')
+  const transit = extra?.transit?.status
+
+  // L1 Context Logic
+  const l1Main = extra?.l1MainCategory?.toLowerCase()
+  const l1Sub = extra?.l1SubCategory?.toLowerCase()
+
+  if (l1Main === 'nature') {
+    personas.push('自然療癒') // Nature Healer
+    if (l1Sub === 'mountain') personas.push('登山健行')
+  }
+  
+  if (l1Main === 'religion') {
+    personas.push('心靈寄託') // Spiritual
+    if (l1Sub === 'shrine') personas.push('神社巡禮')
+  }
+
+  if (l1Main === 'business') {
+    personas.push('商務核心') // Business Hub
+    if (hasWifi && hasCharging) personas.push('行動辦公室')
+  }
+  
+  if (l1Main === 'accommodation') {
+    personas.push('旅途休憩') // Staycation
+  }
+
+  if (l1Main === 'transport') {
+    personas.push('交通樞紐') // Transit Hub
+  }
+
+  if (l1Main === 'residential') {
+    personas.push('在地生活') // Local Vibe
+  }
+
+  // Facility-based Logic
+  if (hasWifi && hasCharging && l1Main !== 'business') personas.push('數位遊牧友好')
   if (hasToilet && hasAccessibility) personas.push('無障礙友善')
   if (hasBaby) personas.push('親子友善')
+  
+  // Live Status Logic
   if (transit === 'delayed' || transit === 'suspended') personas.push('轉乘壓力高')
+  
+  // Fallback
   if (!personas.length && (hasWifi || hasCharging)) personas.push('工作休憩點')
-  return personas.slice(0, 3)
+  
+  return Array.from(new Set(personas)).slice(0, 3)
 }

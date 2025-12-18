@@ -21,6 +21,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false, // Prevent zooming on map apps
   themeColor: "#0b3d91",
+  viewportFit: "cover",
 }
 
 export const metadata: Metadata = {

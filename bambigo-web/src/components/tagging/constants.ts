@@ -99,8 +99,9 @@ export const L1_CATEGORIES_DATA: {
     subCategories: [
       { id: 'park', label: 'Park' },
       { id: 'museum', label: 'Museum' },
-      { id: 'karaoke', label: 'Karaoke' },
-      { id: 'cinema', label: 'Cinema' }
+      { id: 'gym', label: 'Gym' },
+      { id: 'cinema', label: 'Cinema' },
+      { id: 'karaoke', label: 'Karaoke' }
     ]
   },
   {
@@ -109,18 +110,88 @@ export const L1_CATEGORIES_DATA: {
     icon: '🎓',
     subCategories: [
       { id: 'school', label: 'School' },
-      { id: 'library', label: 'Library' },
-      { id: 'cram_school', label: 'Cram School' }
+      { id: 'university', label: 'University' },
+      { id: 'library', label: 'Library' }
     ]
   },
   {
     id: 'finance',
     label: 'Finance (金融)',
-    icon: '🏦',
+    icon: '💰',
     subCategories: [
       { id: 'bank', label: 'Bank' },
       { id: 'atm', label: 'ATM' },
       { id: 'currency_exchange', label: 'Currency Exchange' }
+    ]
+  },
+  // Extended Categories based on real-world geo data
+  {
+    id: 'accommodation',
+    label: 'Accommodation (住宿)',
+    icon: '🏨',
+    subCategories: [
+      { id: 'hotel', label: 'Hotel' },
+      { id: 'hostel', label: 'Hostel' },
+      { id: 'apartment', label: 'Apartment' }
+    ]
+  },
+  {
+    id: 'business',
+    label: 'Business (商務)',
+    icon: '💼',
+    subCategories: [
+      { id: 'office', label: 'Office Building' },
+      { id: 'coworking', label: 'Co-working Space' },
+      { id: 'factory', label: 'Factory' }
+    ]
+  },
+  {
+    id: 'religion',
+    label: 'Religion (宗教)',
+    icon: '⛩️',
+    subCategories: [
+      { id: 'shrine', label: 'Shrine' },
+      { id: 'temple', label: 'Temple' },
+      { id: 'church', label: 'Church' }
+    ]
+  },
+  {
+    id: 'nature',
+    label: 'Nature (自然)',
+    icon: '🌳',
+    subCategories: [
+      { id: 'scenic_spot', label: 'Scenic Spot' },
+      { id: 'garden', label: 'Garden' },
+      { id: 'mountain', label: 'Mountain' }
+    ]
+  },
+  {
+    id: 'transport',
+    label: 'Transport (交通)',
+    icon: '🚉',
+    subCategories: [
+      { id: 'station', label: 'Station' },
+      { id: 'bus_stop', label: 'Bus Stop' },
+      { id: 'parking', label: 'Parking' }
+    ]
+  },
+  {
+    id: 'public',
+    label: 'Public (公共)',
+    icon: '🏛️',
+    subCategories: [
+      { id: 'police', label: 'Police' },
+      { id: 'post_office', label: 'Post Office' },
+      { id: 'government', label: 'Government' }
+    ]
+  },
+  {
+    id: 'residential',
+    label: 'Residential (住宅)',
+    icon: '🏠',
+    subCategories: [
+      { id: 'apartment_complex', label: 'Apartment Complex' },
+      { id: 'housing', label: 'Housing' }
     ]
   }
 ];

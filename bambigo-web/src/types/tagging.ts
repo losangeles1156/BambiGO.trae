@@ -8,7 +8,20 @@ export type LocalizedString = {
 }
 
 // --- L1: Life Functions ---
-export type L1Category = 'medical' | 'shopping' | 'dining' | 'leisure' | 'education' | 'finance'
+export type L1Category = 
+  | 'dining' 
+  | 'shopping' 
+  | 'medical' 
+  | 'leisure' 
+  | 'education' 
+  | 'finance'
+  | 'accommodation' // 住宿
+  | 'business'      // 商務/辦公
+  | 'religion'      // 宗教
+  | 'public'        // 公共設施
+  | 'transport'     // 交通
+  | 'nature'        // 自然景觀
+  | 'residential'   // 住宅
 
 export type L1Tag = {
   id: string

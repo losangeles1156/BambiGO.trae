@@ -34,7 +34,7 @@ export const HierarchySelector: React.FC<HierarchySelectorProps> = ({ onSelect, 
   };
 
   return (
-    <div className={clsx('bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden w-full max-w-sm', className)}>
+    <div className={clsx('bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden w-full', className)}>
       <div className="bg-gray-50 px-4 py-2 border-b border-gray-100 flex items-center justify-between">
         <h3 className="font-semibold text-gray-700 text-sm">Add Life Function (L1)</h3>
         {viewState === 'sub' && (

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { HierarchySelector } from '@/components/tagging/HierarchySelector';
 import { FacilityEditor } from '@/components/tagging/FacilityEditor';
 import { TagChip } from '@/components/tagging/TagChip';
+import { L4StrategyCard } from '@/components/tagging/L4StrategyCard';
 import { LAYER_CONFIG, TagLayer } from '@/components/tagging/constants';
 import { TaggingService } from '@/lib/api/tagging';
 import { L1Tag, L3ServiceFacility, L4ActionCard, L1Category, L3Category } from '@/types/tagging';
@@ -22,6 +23,7 @@ interface TagItem {
 interface SimpleNode {
   id: string;
   name: string; // Simplified for UI
+  location: { lat: number; lng: number };
 }
 
 export default function TaggingSystemDemo() {
@@ -29,6 +31,7 @@ export default function TaggingSystemDemo() {
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
   const [tags, setTags] = useState<TagItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [strategyLoading, setStrategyLoading] = useState(false);
   const [generatedStrategy, setGeneratedStrategy] = useState<L4ActionCard | null>(null);
 
   // 1. Fetch Nodes on Mount
@@ -40,7 +43,11 @@ export default function TaggingSystemDemo() {
         if (data.features && data.features.length > 0) {
           const mappedNodes = data.features.map((f: any) => ({
             id: f.properties.id,
-            name: f.properties.name?.en || f.properties.name?.ja || f.properties.id
+            name: f.properties.name?.en || f.properties.name?.ja || f.properties.id,
+            location: {
+              lat: f.geometry.coordinates[1],
+              lng: f.geometry.coordinates[0]
+            }
           }));
           setNodes(mappedNodes);
           setActiveNodeId(mappedNodes[0].id);
@@ -108,13 +115,19 @@ export default function TaggingSystemDemo() {
 
   const handleAddL3 = async (facility: { type: L3Category; label: string; icon: string; attributes: Record<string, any> }) => {
     if (!activeNodeId) return;
+    const node = nodes.find(n => n.id === activeNodeId);
+    if (!node) return;
+
     try {
       await TaggingService.addL3Facility({
         nodeId: activeNodeId,
         category: facility.type,
         subCategory: facility.attributes.subCategory || 'facility',
         provider: { type: 'public', name: facility.label },
-        attributes: facility.attributes
+        attributes: facility.attributes,
+        location: {
+          coordinates: [node.location.lng, node.location.lat]
+        }
       });
       loadTags(activeNodeId);
     } catch (err) {
@@ -138,6 +151,7 @@ export default function TaggingSystemDemo() {
 
   const generateL4Strategy = async () => {
     if (!activeNodeId) return;
+    setStrategyLoading(true);
     try {
       // Mock context for now, could be real later
       const strategy = await TaggingService.generateStrategy(activeNodeId, {
@@ -147,6 +161,8 @@ export default function TaggingSystemDemo() {
       setGeneratedStrategy(strategy);
     } catch (err) {
       console.error('Failed to generate strategy', err);
+    } finally {
+      setStrategyLoading(false);
     }
   };
 
@@ -237,7 +253,7 @@ export default function TaggingSystemDemo() {
                         key={tag.id}
                         label={tag.label}
                         layer={tag.layer}
-                        onDelete={() => removeTag(tag.id, tag.layer)}
+                        onRemove={() => removeTag(tag.id, tag.layer)}
                       />
                     ))}
                   </div>
@@ -246,45 +262,15 @@ export default function TaggingSystemDemo() {
             </section>
 
             {/* L4 Strategy Generator */}
-            <section className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-100 p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-indigo-900">
-                  4. Strategy Engine (L4)
-                </h2>
-                <button 
-                  onClick={generateL4Strategy}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
-                >
-                  Generate Insights
-                </button>
-              </div>
-
-              {generatedStrategy ? (
-                <div className="bg-white rounded-lg p-5 border border-indigo-100 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="text-2xl">✨</span>
-                    <h3 className="font-bold text-gray-900">{generatedStrategy.title}</h3>
-                  </div>
-                  <p className="text-gray-600 mb-4">
-                    {generatedStrategy.description}
-                  </p>
-                  <div className="flex items-center gap-2 text-xs text-indigo-600 font-medium bg-indigo-50 px-3 py-1.5 rounded-full w-fit">
-                    <span>💡 Rationale:</span>
-                    {generatedStrategy.rationale}
-                  </div>
-                  {generatedStrategy.actions && generatedStrategy.actions.length > 0 && (
-                     <div className="mt-4 pt-3 border-t border-gray-100">
-                        <button className="text-sm text-indigo-600 font-medium hover:text-indigo-800">
-                           Action: {generatedStrategy.actions[0].label} &rarr;
-                        </button>
-                     </div>
-                  )}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-indigo-300 text-sm">
-                  Click generate to analyze current tags and context...
-                </div>
-              )}
+            <section>
+              <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">
+                4. Strategy Engine (L4)
+              </h2>
+              <L4StrategyCard 
+                strategy={generatedStrategy}
+                isLoading={strategyLoading}
+                onGenerate={generateL4Strategy}
+              />
             </section>
 
           </div>

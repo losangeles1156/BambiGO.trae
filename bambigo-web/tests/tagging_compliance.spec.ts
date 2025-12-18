@@ -4,8 +4,11 @@ import { LAYER_CONFIG, L1_CATEGORIES_DATA } from '../src/components/tagging/cons
 describe('Tagging System Compliance', () => {
   
   it('L1 Categories match Spec', () => {
-    // Verify we have the 6 main categories defined in MD
-    const expectedCategories = ['dining', 'shopping', 'medical', 'leisure', 'education', 'finance'];
+    // Verify we have the main categories defined in MD + Extended real-world types
+    const expectedCategories = [
+      'dining', 'shopping', 'medical', 'leisure', 'education', 'finance',
+      'accommodation', 'business', 'religion', 'public', 'transport', 'nature', 'residential'
+    ];
     const actualCategories = L1_CATEGORIES_DATA.map(c => c.id);
     
     expect(actualCategories.sort()).toEqual(expectedCategories.sort());

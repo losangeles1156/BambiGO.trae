@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-// Initialize Supabase client for server-side
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Initialize Supabase client for server-side (CI-safe)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabase = (supabaseUrl && supabaseServiceRoleKey)
+  ? createClient(supabaseUrl, supabaseServiceRoleKey)
+  : null
 
 const rateBuckets = new Map<string, { count: number; resetAt: number }>()
 
@@ -85,6 +86,8 @@ export async function GET(req: Request) {
   }
 
   async function buildToolFallback(nodeIdParam: string | null, query: string) {
+    const isWeather = /天氣|下雨|雨備/i.test(query)
+    const isNav = /導航|路線|怎麼走/i.test(query)
     try {
       const origin = new URL(req.url).origin
       const params = new URLSearchParams()
@@ -118,13 +121,11 @@ export async function GET(req: Request) {
       if (hasWifi) cards.push({ title: '連線點', desc: '可用 Wi-Fi 熱點', primary: '查看詳情' })
       if (hasToilet) cards.push({ title: '廁所', desc: '附近可使用的公共廁所', primary: '導航' })
       if (hasCharging) cards.push({ title: '充電', desc: '可使用電源或充電座', primary: '前往' })
-      
-      const isWeather = /天氣|下雨|雨備/i.test(query)
+
       if (isWeather) {
         cards.unshift({ title: '天氣提醒', desc: '目前無即時天氣資訊，建議攜帶雨具', primary: '查看預報' })
       }
-      
-      const isNav = /導航|路線|怎麼走/i.test(query)
+
       if (isNav) {
         cards.unshift({ title: '導航指引', desc: '詳細導航功能即將推出，請參考地圖路徑', primary: '開啟地圖' })
       }
@@ -135,8 +136,18 @@ export async function GET(req: Request) {
         { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-API-Version': 'v1' } }
       )
     } catch {
+      const cards: Array<{ title: string; desc?: string; primary?: string }> = []
+      if (isWeather) {
+        cards.push({ title: '天氣提醒', desc: '目前無即時天氣資訊，建議攜帶雨具', primary: '查看預報' })
+      }
+      if (isNav) {
+        cards.push({ title: '導航指引', desc: '詳細導航功能即將推出，請參考地圖路徑', primary: '開啟地圖' })
+      }
+      if (!cards.length) {
+        cards.push({ title: '暫無資料', desc: '服務暫不可用，請稍後重試' })
+      }
       return new NextResponse(
-        JSON.stringify({ fallback: { cards: [{ title: '暫無資料', desc: '服務暫不可用，請稍後重試' }] }, echo: { q: query } }),
+        JSON.stringify({ fallback: { primary: cards[0], secondary: cards.slice(1) }, echo: { q: query } }),
         { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-API-Version': 'v1' } }
       )
     }
@@ -145,7 +156,7 @@ export async function GET(req: Request) {
   // Fetch Node Context if nodeId is present
   let systemContext = ''
   let trapAlertsGlobal: string[] = []
-  if (nodeId) {
+  if (nodeId && supabase) {
     try {
       const { data } = await supabase
         .from('nodes')

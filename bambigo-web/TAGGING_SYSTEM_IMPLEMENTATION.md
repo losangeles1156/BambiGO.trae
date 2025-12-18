@@ -48,14 +48,19 @@ const query = buildSuitabilityQuery(tags, 0.6);
 ```
 
 ## 4. Test Report
-**Test Suite:** `tests/tagging_logic.spec.ts`
-**Status:** ✅ Passed (13/13 tests)
+**Test Suite:** 
+- `tests/tagging_logic.spec.ts` (13 tests)
+- `tests/persona_derivation.spec.ts` (8 tests)
+- `tests/hybrid_flow.spec.ts` (4 tests)
+
+**Status:** ✅ Passed (All tests)
 
 ### Coverage Highlights:
 - **CRUD Operations**: Verified creation, update, and deletion of tags.
 - **Filtering Logic**: Verified correct filtering of facility items based on tags.
 - **Query Building**: Verified correct translation of tags to API params.
-- **Persona Generation**: Verified logic for deriving "Digital Nomad" and "Accessibility" personas.
+- **Persona Generation**: Verified logic for deriving "Digital Nomad", "Accessibility", "Nature Healer", "Spiritual", "Business Hub", "Staycation", and "Local Vibe" personas.
+- **Hybrid AI Flow**: Verified routing between Rule Layer (Transit), Tool Layer (Weather/Nav/Toilet), and LLM Layer.
 
 ## 5. UI Agent Collaboration & Design Tokens
 - **Color System**: Strictly follows Tailwind CSS colors defined in specs.

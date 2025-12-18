@@ -104,7 +104,8 @@ export default function BottomSheet({ mode = 'collapsed', onModeChange, collapse
     <div aria-label="Bottom Sheet" role="region" style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 900 }}>
       <div
         ref={containerRef}
-        style={{ willChange: 'transform', transform: 'translateY(85%)', transition: 'transform 180ms ease-out', background: '#fff', borderTopLeftRadius: 16, borderTopRightRadius: 16, boxShadow: '0 -8px 24px rgba(0,0,0,0.12)' }}
+        className="bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.12)] rounded-t-[2rem]"
+        style={{ willChange: 'transform', transform: 'translateY(85%)', transition: 'transform 180ms ease-out' }}
       >
         <div
           aria-label="Drag Handle"
@@ -113,19 +114,19 @@ export default function BottomSheet({ mode = 'collapsed', onModeChange, collapse
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerCancel}
-          style={{ padding: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          className="pt-3 pb-2 flex items-center justify-center cursor-grab active:cursor-grabbing touch-none"
         >
-          <div style={{ width: 40, height: 4, borderRadius: 999, background: '#cbd5e1' }} />
+          <div className="w-12 h-1.5 rounded-full bg-gray-300" />
         </div>
-        <div style={{ padding: 12 }}>
+        <div className="px-4 pb-4">
           {current === 'collapsed' && collapsedContent}
           {current === 'half' && halfContent}
           {current === 'full' && fullContent}
         </div>
-        <div style={{ padding: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-          <button aria-label="State collapsed" onClick={() => setMode('collapsed')} style={{ width: 8, height: 8, borderRadius: 999, background: current === 'collapsed' ? '#0b3d91' : '#cbd5e1' }} />
-          <button aria-label="State half" onClick={() => setMode('half')} style={{ width: 8, height: 8, borderRadius: 999, background: current === 'half' ? '#0b3d91' : '#cbd5e1' }} />
-          <button aria-label="State full" onClick={() => setMode('full')} style={{ width: 8, height: 8, borderRadius: 999, background: current === 'full' ? '#0b3d91' : '#cbd5e1' }} />
+        <div className="pb-6 flex items-center justify-center gap-2">
+          <button aria-label="State collapsed" onClick={() => setMode('collapsed')} className={`w-2 h-2 rounded-full transition-colors ${current === 'collapsed' ? 'bg-blue-600' : 'bg-gray-300'}`} />
+          <button aria-label="State half" onClick={() => setMode('half')} className={`w-2 h-2 rounded-full transition-colors ${current === 'half' ? 'bg-blue-600' : 'bg-gray-300'}`} />
+          <button aria-label="State full" onClick={() => setMode('full')} className={`w-2 h-2 rounded-full transition-colors ${current === 'full' ? 'bg-blue-600' : 'bg-gray-300'}`} />
         </div>
       </div>
     </div>

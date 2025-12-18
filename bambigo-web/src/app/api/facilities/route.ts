@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { Client } from 'pg'
+import { withMonitor } from '../../../lib/monitor'
+import { L3ServiceFacility, L3Category } from '../../../types/tagging'
 
 // Rate limit buckets (per-IP)
 const rateBuckets = new Map<string, { count: number; resetAt: number }>()
@@ -23,6 +25,8 @@ export type FacilityItem = {
   attributes?: unknown
   booking_url?: string | null
   suitability_tags?: { tag: string; confidence: number }[]
+  // L3 Compliance
+  l3?: L3ServiceFacility
 }
 
 export type FacilitiesResponse = {
@@ -40,7 +44,9 @@ function normalizeConn(s: string) {
   }
 }
 
-export async function GET(req: Request) {
+export const GET = withMonitor(handler, 'FacilitiesAPI')
+
+async function handler(req: Request) {
   // Simple, configurable rate limiting
   const rateCfg = process.env.FACILITIES_RATE_LIMIT
   if (rateCfg && !/^\s*(off|false|0)\s*$/i.test(rateCfg)) {
@@ -80,14 +86,28 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url)
   const nodeId = url.searchParams.get('node_id')
+  const bboxParam = url.searchParams.get('bbox')
   const typeParam = url.searchParams.get('type')
   const suitTag = url.searchParams.get('suitability')
   const minConfidenceParam = url.searchParams.get('min_confidence')
   const limitParam = url.searchParams.get('limit')
 
-  if (!nodeId) {
+  let bbox: { minLon: number; minLat: number; maxLon: number; maxLat: number } | null = null
+  if (bboxParam) {
+    const parts = bboxParam.split(',').map((s) => parseFloat(s))
+    const ok = parts.length === 4 && parts.every((n) => Number.isFinite(n))
+    if (!ok) {
+      return new NextResponse(
+        JSON.stringify({ error: { code: 'INVALID_PARAMETER', message: 'bbox must be 4 comma-separated numbers', details: { bbox: bboxParam } } }),
+        { status: 400, headers: { 'Content-Type': 'application/json', 'X-API-Version': 'v4.1-strict' } }
+      )
+    }
+    bbox = { minLon: parts[0], minLat: parts[1], maxLon: parts[2], maxLat: parts[3] }
+  }
+
+  if (!nodeId && !bbox) {
     return new NextResponse(
-      JSON.stringify({ error: { code: 'MISSING_PARAMETER', message: 'node_id is required' } }),
+      JSON.stringify({ error: { code: 'MISSING_PARAMETER', message: 'node_id or bbox is required' } }),
       { status: 400, headers: { 'Content-Type': 'application/json', 'X-API-Version': 'v4.1-strict' } }
     )
   }
@@ -141,8 +161,23 @@ export async function GET(req: Request) {
     try { await client.query("select set_config('request.jwt.claims', $1, true)", [JSON.stringify({ role: 'anon' })]) } catch {}
     // Build SQL with optional filters and suitability join
     const useSuitability = !!suitTag
-    const values: (string | number)[] = [nodeId]
-    let where = 'f.node_id = $1'
+    const values: (string | number)[] = []
+    let where = ''
+    let joinNodes = false
+
+    if (bbox) {
+      joinNodes = true
+      values.push(bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat)
+      where = `ST_Within(n.location::geometry, ST_MakeEnvelope($1, $2, $3, $4, 4326))`
+      if (nodeId) {
+        values.push(nodeId)
+        where += ` and f.node_id = $${values.length}`
+      }
+    } else {
+      values.push(nodeId!)
+      where = `f.node_id = $1`
+    }
+
     if (typeParam) {
       values.push(typeParam)
       where += ` and f.type = $${values.length}`
@@ -179,6 +214,7 @@ export async function GET(req: Request) {
           json_agg(json_build_object('tag', s.tag, 'confidence', s.confidence)) filter (where s.tag is not null)
         else '[]'::json end as suitability
       from public.facilities f
+      ${joinNodes ? 'join public.nodes n on f.node_id = n.id' : ''}
       ${useSuitability ? 'left join public.facility_suitability s on s.facility_id = f.id' : 'left join public.facility_suitability s on false'}
       where ${where}
       group by f.id
@@ -206,36 +242,81 @@ export async function GET(req: Request) {
       suitability: unknown
     }>(sql, values)
 
-    const items: FacilityItem[] = r.rows.map((row) => ({
-      id: row.id,
-      node_id: row.node_id,
-      city_id: row.city_id,
-      type: row.type,
-      name: row.name as { ja?: string; en?: string; zh?: string },
-      distance_meters: row.distance_meters,
-      direction: row.direction,
-      floor: row.floor,
-      has_wheelchair_access: row.has_wheelchair_access,
-      has_baby_care: row.has_baby_care,
-      is_free: row.is_free,
-      is_24h: row.is_24h,
-      current_status: row.current_status,
-      status_updated_at: row.status_updated_at,
-      attributes: row.attributes,
-      booking_url: row.booking_url,
-      suitability_tags: Array.isArray(row.suitability)
-        ? (row.suitability as { tag?: string; confidence?: number }[])
-            .filter((x) => typeof x?.tag === 'string' && typeof x?.confidence === 'number')
-            .map((x) => ({ tag: x.tag as string, confidence: x.confidence as number }))
-        : [],
-    }))
+    const items: FacilityItem[] = r.rows.map((row) => {
+      // Map to L3
+      const typeMap: Record<string, L3Category> = {
+        'toilet': 'toilet',
+        'restroom': 'toilet',
+        'charging': 'charging',
+        'wifi': 'wifi',
+        'locker': 'locker',
+        'coin_locker': 'locker',
+        'elevator': 'accessibility',
+        'escalator': 'accessibility',
+        'ramp': 'accessibility',
+        'bench': 'rest_area',
+        'smoking_area': 'rest_area'
+      }
+      const normalizedType = row.type?.toLowerCase() || 'other'
+      const category: L3Category = typeMap[normalizedType] || 'other'
+
+      const l3: L3ServiceFacility = {
+        id: row.id,
+        nodeId: row.node_id || '',
+        category,
+        subCategory: normalizedType,
+        location: {
+          floor: row.floor || undefined,
+          direction: row.direction || undefined,
+        },
+        provider: {
+          type: 'public', // Default
+        },
+        attributes: {
+          ...(row.attributes as object || {}),
+          is_free: row.is_free,
+          is_24h: row.is_24h,
+          has_wheelchair_access: row.has_wheelchair_access,
+          has_baby_care: row.has_baby_care,
+          booking_url: row.booking_url
+        },
+        openingHours: row.is_24h ? '24 Hours' : undefined,
+        updatedAt: row.status_updated_at || undefined,
+        source: 'official'
+      }
+
+      return {
+        id: row.id,
+        node_id: row.node_id,
+        city_id: row.city_id,
+        type: row.type,
+        name: row.name as { ja?: string; en?: string; zh?: string },
+        distance_meters: row.distance_meters,
+        direction: row.direction,
+        floor: row.floor,
+        has_wheelchair_access: row.has_wheelchair_access,
+        has_baby_care: row.has_baby_care,
+        is_free: row.is_free,
+        is_24h: row.is_24h,
+        current_status: row.current_status,
+        status_updated_at: row.status_updated_at,
+        attributes: row.attributes,
+        booking_url: row.booking_url,
+        suitability_tags: Array.isArray(row.suitability)
+          ? (row.suitability as { tag?: string; confidence?: number }[])
+              .filter((x) => typeof x?.tag === 'string' && typeof x?.confidence === 'number')
+              .map((x) => ({ tag: x.tag as string, confidence: x.confidence as number }))
+          : [],
+        l3
+      }
+    })
 
     const payload: FacilitiesResponse = { items }
     return new NextResponse(JSON.stringify(payload), {
       headers: {
         'Content-Type': 'application/json',
         'Cache-Control': 'public, max-age=15, stale-while-revalidate=120',
-        'X-API-Version': 'v4.1-strict',
+        'X-API-Version': 'v4.2-beta',
       },
     })
   } catch {

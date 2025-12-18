@@ -43,8 +43,8 @@ const OSM_STYLE_DARK: StyleSpecification = {
   ],
 }
 
-type Props = { height?: number | string; onNodeSelected?: (f: Feature) => void; showBus?: boolean; zone?: 'core' | 'buffer' | 'outer'; center?: [number, number] }
-export default function MapCanvas({ height, onNodeSelected, showBus = true, zone = 'core', center }: Props) {
+type Props = { height?: number | string; onNodeSelected?: (f: Feature) => void; showBus?: boolean; zone?: 'core' | 'buffer' | 'outer'; center?: [number, number]; route?: FeatureCollection | null; accessibility?: { preferElevator?: boolean } }
+export default function MapCanvas({ height, onNodeSelected, showBus = true, zone = 'core', center, route, accessibility }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [data, setData] = useState<FeatureCollection | null>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
@@ -158,6 +158,31 @@ export default function MapCanvas({ height, onNodeSelected, showBus = true, zone
           // MapLibre layout typing is partial; cast minimal shape
           layout: { visibility: showBusRef.current ? 'visible' : 'none' } as { visibility: 'visible' | 'none' },
         })
+      if (!map.getSource('src-route')) map.addSource('src-route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } as FeatureCollection })
+      if (!map.getLayer('layer-route'))
+        map.addLayer({
+          id: 'layer-route',
+          type: 'line',
+          source: 'src-route',
+          paint: {
+            'line-color': '#6b7280',
+            'line-width': 4,
+            'line-opacity': 0.9,
+          },
+        })
+      if (!map.getSource('src-route-points')) map.addSource('src-route-points', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } as FeatureCollection })
+      if (!map.getLayer('layer-route-points'))
+        map.addLayer({
+          id: 'layer-route-points',
+          type: 'circle',
+          source: 'src-route-points',
+          paint: {
+            'circle-color': '#f59e0b',
+            'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 5, 14, 6, 18, 7],
+            'circle-stroke-color': '#ffffff',
+            'circle-stroke-width': 2,
+          },
+        })
       map.on('click', 'layer-station', (e) => {
         const f = (e as unknown as { features?: Feature[] }).features?.[0]
         if (f) {
@@ -244,6 +269,7 @@ export default function MapCanvas({ height, onNodeSelected, showBus = true, zone
     const map = mapRef.current
     if (!map) return
     try {
+      const preferElevator = !!accessibility?.preferElevator
       const isBuffer = zone === 'buffer'
       const isOuter = zone === 'outer'
       const stationColor = isBuffer || isOuter ? '#9CA3AF' : Colors.map.stationFill
@@ -254,8 +280,10 @@ export default function MapCanvas({ height, onNodeSelected, showBus = true, zone
       map.setPaintProperty('layer-bus', 'circle-color', busColor)
       map.setPaintProperty('layer-station', 'circle-radius', stationRadius as unknown)
       map.setPaintProperty('layer-bus', 'circle-radius', busRadius as unknown)
+      const routeColor = (preferElevator ? '#2563eb' : '#6b7280')
+      if (map.getLayer('layer-route')) map.setPaintProperty('layer-route', 'line-color', routeColor)
     } catch {}
-  }, [zone])
+  }, [zone, accessibility])
 
   useEffect(() => {
     const map = mapRef.current
@@ -271,6 +299,22 @@ export default function MapCanvas({ height, onNodeSelected, showBus = true, zone
       })
     } catch {}
   }, [center])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    const srcRoute = map.getSource('src-route') as maplibregl.GeoJSONSource | undefined
+    const srcPoints = map.getSource('src-route-points') as maplibregl.GeoJSONSource | undefined
+    try {
+      const fc = route || { type: 'FeatureCollection', features: [] }
+      srcRoute?.setData(fc)
+      const onlyPoints: FeatureCollection = {
+        type: 'FeatureCollection',
+        features: (fc.features || []).filter((f) => f.geometry?.type === 'Point'),
+      }
+      srcPoints?.setData(onlyPoints)
+    } catch {}
+  }, [route])
 
   // MapLibre 不需要 Token；省略 Token 檢查
 

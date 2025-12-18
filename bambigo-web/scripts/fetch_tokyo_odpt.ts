@@ -11,6 +11,10 @@ const stationOperators = [
   'odpt.Operator:Toei',
 ]
 const busOperators = ['odpt.Operator:Toei']
+const barrierFreeOperators = [
+  'odpt.Operator:TokyoMetro',
+  'odpt.Operator:Toei',
+]
 
 function inBbox(lon: number, lat: number) {
   return lon >= bbox.minLon && lon <= bbox.maxLon && lat >= bbox.minLat && lat <= bbox.maxLat
@@ -115,6 +119,24 @@ async function fetchBusStops(token: string) {
   return all
 }
 
+async function fetchBarrierFree(token: string) {
+  const all: unknown[] = []
+  for (const op of barrierFreeOperators) {
+    const url1 = `https://api.odpt.org/api/v4/odpt:BarrierFreeFacility?acl:consumerKey=${encodeURIComponent(token)}&odpt:operator=${encodeURIComponent(op)}`
+    try {
+      const data = await fetchJson(url1)
+      all.push(...data)
+      continue
+    } catch {}
+    const url2 = `https://api.odpt.org/api/v4/odpt:StationFacility?acl:consumerKey=${encodeURIComponent(token)}&odpt:operator=${encodeURIComponent(op)}`
+    try {
+      const data2 = await fetchJson(url2)
+      all.push(...data2)
+    } catch {}
+  }
+  return all
+}
+
 type NormalizedRow = {
   id: string
   name: Names
@@ -124,6 +146,20 @@ type NormalizedRow = {
   lon: number
   lat: number
   metadata: Record<string, unknown>
+}
+
+type FacilityRow = {
+  node_id: string
+  city_id?: string
+  type: string
+  name?: { ja?: string; en?: string; zh?: string }
+  has_wheelchair_access: boolean
+  has_baby_care: boolean
+  is_free: boolean
+  is_24h: boolean
+  current_status: string
+  attributes?: Record<string, unknown>
+  source_dataset: 'odpt'
 }
 
 function normalize(item: unknown, kind: 'station' | 'bus_stop'): NormalizedRow | null {
@@ -150,6 +186,34 @@ function normalize(item: unknown, kind: 'station' | 'bus_stop'): NormalizedRow |
     lon: coords.lon,
     lat: coords.lat,
     metadata
+  }
+}
+
+function normalizeBarrierFree(item: unknown): FacilityRow | null {
+  const stationId = pick<string>(item, ['odpt:station'])
+  if (!stationId) return null
+  const rawType = (pick<string>(item, ['odpt:facilityType', 'odpt:classification']) || '').toLowerCase()
+  const type = rawType.includes('elevator') ? 'elevator'
+    : rawType.includes('escalator') ? 'escalator'
+    : rawType.includes('toilet') || rawType.includes('restroom') ? 'toilet'
+    : rawType.includes('wheelchair') ? 'wheelchair_support'
+    : rawType || 'unknown'
+  const name = extractNames(item, stationId)
+  const hasWheel = type === 'elevator' || type === 'wheelchair_support' || /accessible|barrierfree|wheelchair/i.test(rawType)
+  const hasBaby = /baby|nursing|care/i.test(rawType)
+  return {
+    node_id: String(stationId),
+    type,
+    name,
+    has_wheelchair_access: !!hasWheel,
+    has_baby_care: !!hasBaby,
+    is_free: true,
+    is_24h: false,
+    current_status: 'unknown',
+    attributes: {
+      raw: item,
+    },
+    source_dataset: 'odpt',
   }
 }
 
@@ -190,6 +254,31 @@ async function upsertBatchSupabase(supabase: SupabaseClient, rows: NormalizedRow
   
   const updated = rows.length - addedExpected
   return { added: addedExpected, updated }
+}
+
+async function replaceFacilitiesSupabase(supabase: SupabaseClient, nodeIds: string[], facilities: FacilityRow[]) {
+  if (!nodeIds.length) return { inserted: 0 }
+  await supabase
+    .from('facilities')
+    .delete()
+    .in('node_id', nodeIds)
+    .eq('source_dataset', 'odpt')
+  const toInsert = facilities.map((f) => ({
+    node_id: f.node_id,
+    city_id: f.city_id,
+    type: f.type,
+    name: f.name,
+    has_wheelchair_access: f.has_wheelchair_access,
+    has_baby_care: f.has_baby_care,
+    is_free: f.is_free,
+    is_24h: f.is_24h,
+    current_status: f.current_status,
+    attributes: f.attributes,
+    source_dataset: f.source_dataset,
+  }))
+  const ins = await supabase.from('facilities').insert(toInsert)
+  if (ins.error) throw ins.error
+  return { inserted: toInsert.length }
 }
 
 // City polygons/bounds for粗略歸屬（台東區/千代田區/中央區）
@@ -251,15 +340,22 @@ async function main() {
   if (!supabaseUrl || !supabaseKey) {
     const stationsRaw = await fetchStations(token)
     const busRaw = await fetchBusStops(token)
+    const barrierRaw = await fetchBarrierFree(token)
     const stations = stationsRaw.map((x) => normalize(x, 'station')).filter(Boolean) as NormalizedRow[]
     const busstops = busRaw.map((x) => normalize(x, 'bus_stop')).filter(Boolean) as NormalizedRow[]
+    const nodeIds = new Set<string>([...stations, ...busstops].map((r) => r.id))
+    const bf = barrierRaw
+      .map((x) => normalizeBarrierFree(x))
+      .filter((x): x is FacilityRow => !!x && nodeIds.has(x.node_id))
     console.log(
       JSON.stringify({
         stations_fetched: stationsRaw.length,
         busstops_fetched: busRaw.length,
+        barrierfree_fetched: barrierRaw.length,
         within_bbox: stations.length + busstops.length,
         upserted_added: 0,
         upserted_updated: 0,
+        facilities_mapped: bf.length,
         total_odpt_nodes: null,
         note: 'Supabase env missing; skipped upsert',
       })
@@ -270,6 +366,7 @@ async function main() {
   try {
     const stationsRaw = await fetchStations(token)
     const busRaw = await fetchBusStops(token)
+    const barrierRaw = await fetchBarrierFree(token)
     const stations = stationsRaw
       .map((x) => normalize(x, 'station'))
       .filter(Boolean) as NormalizedRow[]
@@ -277,7 +374,11 @@ async function main() {
       .map((x) => normalize(x, 'bus_stop'))
       .filter(Boolean) as NormalizedRow[]
     const all = [...stations, ...busstops]
-    
+    const nodeIds = new Set<string>(all.map((r) => r.id))
+    const bf = barrierRaw
+      .map((x) => normalizeBarrierFree(x))
+      .filter((x): x is FacilityRow => !!x && nodeIds.has(x.node_id))
+
     let added = 0
     let updated = 0
     const size = 300
@@ -288,6 +389,9 @@ async function main() {
       const r = await upsertBatchSupabase(supabase, batch)
       added += r.added
       updated += r.updated
+    }
+    if (bf.length) {
+      await replaceFacilitiesSupabase(supabase, Array.from(nodeIds), bf)
     }
     
     const totalSel = await supabase
@@ -306,6 +410,8 @@ async function main() {
         within_bbox: all.length,
         upserted_added: added,
         upserted_updated: updated,
+        barrierfree_fetched: barrierRaw.length,
+        facilities_inserted: bf.length,
         total_odpt_nodes: total,
         city_assigned_total: cityAssigned,
         city_breakdown: {

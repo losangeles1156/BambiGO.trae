@@ -287,10 +287,15 @@ begin
     end if;
   end if;
   if exists (select 1 from information_schema.tables where table_schema='public' and table_name='spatial_ref_sys') then
-    execute 'alter table public.spatial_ref_sys enable row level security';
-    if not exists (select 1 from pg_policies where schemaname='public' and tablename='spatial_ref_sys' and policyname='spatial_ref_sys_select_public') then
-      execute 'create policy spatial_ref_sys_select_public on public.spatial_ref_sys for select using (true)';
-    end if;
+    begin
+      execute 'alter table public.spatial_ref_sys enable row level security';
+      if not exists (select 1 from pg_policies where schemaname='public' and tablename='spatial_ref_sys' and policyname='spatial_ref_sys_select_public') then
+        execute 'create policy spatial_ref_sys_select_public on public.spatial_ref_sys for select using (true)';
+      end if;
+    exception when others then
+      -- insufficient privileges for spatial_ref_sys; skip hardening for this table
+      null;
+    end;
   end if;
 end$$;
 `

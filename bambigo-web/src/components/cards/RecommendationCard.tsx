@@ -1,4 +1,4 @@
-import React from 'react';
+import Image from 'next/image';
 import { Star, MapPin, Clock, Heart, Share2, ExternalLink } from 'lucide-react';
 
 interface RecommendationCardProps {
@@ -22,7 +22,6 @@ interface RecommendationCardProps {
 }
 
 export const RecommendationCard: React.FC<RecommendationCardProps> = ({
-  id,
   title,
   description,
   imageUrl,
@@ -37,7 +36,6 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
   onPrimaryAction,
   onSecondaryAction,
   onFavorite,
-  onShare,
   variant = 'vertical'
 }) => {
   const renderStars = (rating: number) => {
@@ -58,27 +56,29 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
   const cardContent = (
     <>
       {/* Image */}
-      {imageUrl && (
-        <div className="relative">
-          <img
+      <div className={`relative overflow-hidden ${
+        variant === 'horizontal' ? 'w-32 h-auto shrink-0' : 'h-32 w-full'
+      }`}>
+        {imageUrl && (
+          <Image
             src={imageUrl}
             alt={title}
-            className={`w-full object-cover ${
-              variant === 'horizontal' ? 'h-24 rounded-l-lg' : 'h-32 rounded-t-lg'
+            className="object-cover transition-transform duration-500 group-hover:scale-110"
+            fill
+            unoptimized
+          />
+        )}
+        <button
+          onClick={onFavorite}
+          className="absolute right-2 top-2 rounded-full bg-white/90 p-1.5 shadow-sm transition-colors hover:bg-white hover:text-red-500 z-10"
+        >
+          <Heart
+            className={`w-4 h-4 ${
+              isFavorite ? 'text-red-500 fill-current' : 'text-gray-400'
             }`}
           />
-          <button
-            onClick={onFavorite}
-            className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md hover:shadow-lg transition-shadow"
-          >
-            <Heart
-              className={`w-4 h-4 ${
-                isFavorite ? 'text-red-500 fill-current' : 'text-gray-400'
-              }`}
-            />
-          </button>
-        </div>
-      )}
+        </button>
+      </div>
 
       {/* Content */}
       <div className="p-4 flex-1">

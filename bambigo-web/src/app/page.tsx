@@ -1,8 +1,13 @@
 'use client'
 import { useEffect, useState } from 'react'
 import MapCanvas from '../../components/map/MapCanvas'
+import type { FeatureCollection } from 'geojson'
 import SearchBar from '../components/views/SearchBar'
 import NodeDashboard from '../components/views/NodeDashboard'
+import BottomSheet from '../components/sheets/BottomSheet'
+import TagManager from '../components/tagging/TagManager'
+import TagFilterBar from '../components/tagging/TagFilterBar'
+import * as tagging from '../lib/tagging'
 import TaskMode from '../components/views/TaskMode'
 import FullScreenAssistant from '../components/assistant/FullScreenAssistant'
 import { detectZoneFromPoint, Zone } from '../lib/zones/detector'
@@ -17,6 +22,11 @@ export default function Home() {
   const [zone, setZone] = useState<Zone>('core')
   const [lastCoords, setLastCoords] = useState<[number, number] | null>(null)
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null)
+  const [route, setRoute] = useState<FeatureCollection | null>(null)
+  const [accessibility, setAccessibility] = useState<{ preferElevator?: boolean } | null>(null)
+  const [tagState, setTagState] = useState<tagging.TagState>({ tags: [] })
+  const [sheetMode, setSheetMode] = useState<'collapsed' | 'half' | 'full'>('collapsed')
+  const prefersElevator = (hint: string) => /電梯|無障礙|wheelchair|elevators?|エレベータ(ー)?|バリアフリー|車椅子/i.test(hint)
   const [showAssistant, setShowAssistant] = useState(false)
   useEffect(() => {
     const onOnline = () => setOnline(true)
@@ -63,7 +73,7 @@ export default function Home() {
           安裝到主畫面
         </button>
       )}
-      <MapCanvas height={mapHeight} showBus={view !== 'explore' ? true : false} zone={zone} center={mapCenter || undefined} onNodeSelected={(f) => {
+      <MapCanvas height={mapHeight} showBus={view !== 'explore' ? true : false} zone={zone} center={mapCenter || undefined} route={route || null} accessibility={accessibility || undefined} onNodeSelected={(f) => {
         const nm = (f.properties as { name?: { ja?: string; en?: string; zh?: string } } | undefined)?.name
         const id = (f.properties as { id?: string } | undefined)?.id
         const coords = (f.geometry as { coordinates?: [number, number] } | undefined)?.coordinates
@@ -82,7 +92,61 @@ export default function Home() {
       )}
       {view === 'dashboard' && (
         <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, maxHeight: '50vh', overflow: 'auto', padding: 12 }}>
-          <NodeDashboard nodeId={nodeId || undefined} name={nodeName} statuses={l2} actions={actions} onAction={(a) => { if (a.includes('去')) setView('task') }} />
+          <NodeDashboard nodeId={nodeId || undefined} name={nodeName} statuses={l2} actions={actions} filterSuitability={(() => { const q = tagging.buildSuitabilityQuery(tagState.tags, 0.6); return { tag: q.tag, minConfidence: q.minConfidence } })()} onAction={(a) => { if (a.includes('去')) setView('task') }} onRouteHint={async (hint) => {
+            const origin = Array.isArray(mapCenter) ? mapCenter : lastCoords
+            if (!origin) return
+            const [lon, lat] = origin
+            let dst: [number, number] | null = null
+            let mid: [number, number] | null = null
+            try {
+              if (nodeId) {
+                const url = `/api/facilities?node_id=${encodeURIComponent(nodeId)}&type=${encodeURIComponent('elevator')}&limit=10`
+                const r = await fetch(url)
+                if (r.ok) {
+                  const j = await r.json()
+                  const items = Array.isArray(j?.items) ? j.items as { distance_meters?: number; direction?: string }[] : []
+                  const best = items[0]
+                  if (best && typeof best?.distance_meters === 'number' && best.distance_meters > 0) {
+                    const dist = best.distance_meters
+                    const dir = String(best.direction || '').toLowerCase()
+                    const az = dir.includes('north') || dir.includes('北') ? 0
+                      : dir.includes('east') || dir.includes('東') ? 90
+                      : dir.includes('south') || dir.includes('南') ? 180
+                      : dir.includes('west') || dir.includes('西') ? 270
+                      : 45
+                    const rad = (Math.PI / 180) * az
+                    const dLat = (dist / 111320) * Math.cos(rad)
+                    const dLon = (dist / (111320 * Math.cos((Math.PI / 180) * lat))) * Math.sin(rad)
+                    mid = [lon + dLon * 0.5, lat + dLat * 0.5]
+                    dst = [lon + dLon, lat + dLat]
+                  }
+                }
+              }
+            } catch {}
+            if (!dst || !mid) {
+              const dx = 0.002
+              const dy = 0.0015
+              mid = [lon + dx * 0.5, lat + dy * 0.5]
+              dst = [lon + dx, lat + dy]
+            }
+            const fc: FeatureCollection = {
+              type: 'FeatureCollection',
+              features: [
+                { type: 'Feature', geometry: { type: 'LineString', coordinates: [origin, mid, dst] }, properties: { kind: 'route', via: 'elevator', hint } },
+                { type: 'Feature', geometry: { type: 'Point', coordinates: mid }, properties: { kind: 'elevator' } },
+                { type: 'Feature', geometry: { type: 'Point', coordinates: dst }, properties: { kind: 'exit' } },
+              ],
+            }
+            setRoute(fc)
+            setAccessibility({ preferElevator: prefersElevator(hint) || true })
+          }} />
+          <div className="mt-2">
+            <TagFilterBar state={tagState} onRemove={(id) => setTagState((s) => tagging.deleteTag(s, id))} />
+          </div>
+          <div className="mt-2">
+            <button className="rounded bg-gray-900 px-3 py-2 text-xs text-white" onClick={() => setSheetMode(sheetMode === 'collapsed' ? 'half' : sheetMode === 'half' ? 'full' : 'collapsed')}>標籤管理</button>
+          </div>
+          <BottomSheet mode={sheetMode} onModeChange={(m) => setSheetMode(m)} collapsedContent={<div className="text-xs text-gray-600">上滑以管理標籤</div>} halfContent={<TagManager value={tagState} onChange={setTagState} />} fullContent={<TagManager value={tagState} onChange={setTagState} />} />
         </div>
       )}
       {zone === 'buffer' && (
@@ -137,6 +201,14 @@ export default function Home() {
           onClick={() => setShowAssistant(true)}
         >
           <span style={{ fontSize: 24 }}>🤖</span>
+        </button>
+      )}
+      {view === 'dashboard' && (
+        <button
+          style={{ position: 'fixed', bottom: 140, right: 16, background: '#111827', color: '#fff', width: 48, height: 48, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', zIndex: 1000 }}
+          onClick={() => { setRoute(null); setAccessibility(null) }}
+        >
+          <span style={{ fontSize: 18 }}>✕</span>
         </button>
       )}
       <FullScreenAssistant open={showAssistant} onClose={() => setShowAssistant(false)} />

@@ -1,24 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDownIcon, MagnifyingGlassIcon, UserIcon } from '@heroicons/react/24/outline';
-import { SparklesIcon } from '@heroicons/react/24/solid';
+import { Menu, Search, User, Sparkles } from 'lucide-react';
+import Link from 'next/link';
 
 interface HeaderProps {
-  currentLocation: string;
-  onLocationChange: (location: string) => void;
-  onSearchClick: () => void;
-  onProfileClick: () => void;
+  onMenuClick?: () => void;
 }
 
-export default function Header({ 
-  currentLocation = "捷運台北101/世貿站", 
-  onLocationChange, 
-  onSearchClick, 
-  onProfileClick 
-}: HeaderProps) {
+export default function Header({ onMenuClick }: HeaderProps) {
+  const [elderlyMode] = useState(false); // Used in JSX logic
   const [language, setLanguage] = useState<'zh' | 'en' | 'ja'>('zh');
-  const [elderlyMode, setElderlyMode] = useState(false);
 
   const languageLabels = {
     zh: '繁',
@@ -41,25 +33,25 @@ export default function Header({
           {/* 左側：位置選擇器 */}
           <div className="flex items-center space-x-4">
             <button 
-              onClick={() => onLocationChange(currentLocation)}
               className="ui-header__location"
             >
               <span className="text-gray-900 font-medium text-sm">你在</span>
-              <span className="text-primary-600 font-semibold text-sm">{currentLocation}</span>
-              <ChevronDownIcon className="w-4 h-4 text-gray-400" />
+              <span className="text-primary-600 font-semibold text-sm">捷運台北101/世貿站</span>
+              <Menu className="w-4 h-4 text-gray-400" onClick={onMenuClick} />
             </button>
 
             {/* 長者模式標籤 */}
             <div className="hidden sm:flex items-center">
-              <span className="text-xs text-gray-500 transform -rotate-90 origin-center whitespace-nowrap">
-                長者模式
+              <span className={`text-xs ${elderlyMode ? 'text-blue-600 font-bold' : 'text-gray-500'} transform -rotate-90 origin-center whitespace-nowrap`}>
+                {elderlyMode ? '長者模式開啟' : '長者模式'}
               </span>
             </div>
           </div>
 
           {/* 中間：狀態標籤 */}
           <div className="hidden md:flex items-center space-x-2">
-            <div className="px-2 py-1 bg-status-yellow-light rounded-full">
+            <div className="px-2 py-1 bg-status-yellow-light rounded-full flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-yellow-600" />
               <span className="text-xs text-gray-800">天氣：雨 24°C</span>
             </div>
             <div className="px-2 py-1 bg-status-yellow-light rounded-full">
@@ -87,19 +79,15 @@ export default function Header({
 
             {/* 搜尋按鈕 */}
             <button
-              onClick={onSearchClick}
               className="ui-header__btn"
             >
-              <MagnifyingGlassIcon className="w-5 h-5 text-gray-600" />
+              <Search className="w-5 h-5 text-gray-600" />
             </button>
 
             {/* 個人檔案 */}
-            <button
-              onClick={onProfileClick}
-              className="ui-header__btn"
-            >
-              <UserIcon className="w-5 h-5 text-gray-600" />
-            </button>
+            <Link href="/profile" className="ui-header__btn">
+              <User className="w-5 h-5 text-gray-600" />
+            </Link>
           </div>
         </div>
       </div>

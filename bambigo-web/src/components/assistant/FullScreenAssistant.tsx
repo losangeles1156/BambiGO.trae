@@ -1,6 +1,13 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import FallbackCard from '../ui/FallbackCard'
+import { z } from 'zod'
+
+const StreamSchema = z.union([
+  z.object({ type: z.literal('message'), content: z.string() }),
+  z.object({ type: z.literal('done') }),
+  z.object({ type: z.literal('error'), message: z.string().optional() })
+])
 
 type Props = { open: boolean; onClose: () => void }
 export default function FullScreenAssistant({ open, onClose }: Props) {
@@ -63,42 +70,58 @@ export default function FullScreenAssistant({ open, onClose }: Props) {
                   esRef.current?.close()
                   esRef.current = new EventSource(`/api/assistant?q=${encodeURIComponent(text)}`)
                   esRef.current.onmessage = (ev) => {
-                    try {
-                      const obj = JSON.parse(ev.data)
-                      if (obj?.type === 'done') {
-                        setLoading(false)
-                        esRef.current?.close()
-                        esRef.current = null
-                        return
-                      }
-                      const content = String(obj?.content ?? '')
-                      if (!content) return
-                      bufRef.current += content
-                      if (rafRef.current == null) {
-                        rafRef.current = requestAnimationFrame(() => {
-                          rafRef.current = null
-                          const chunk = bufRef.current
-                          bufRef.current = ''
-                          setMsgs((v) => {
-                            const last = v[v.length - 1]
-                            if (last && last.role === 'ai') {
-                              const copy = v.slice()
-                              copy[copy.length - 1] = { role: 'ai', content: copy[copy.length - 1].content + chunk }
-                              return copy
-                            }
-                            return [...v, { role: 'ai', content: chunk }]
-                          })
-                        })
-                      }
-                    } catch {}
-                  }
+                            try {
+                              const json = JSON.parse(ev.data)
+                              const parsed = StreamSchema.safeParse(json)
+                              
+                              if (!parsed.success) {
+                                console.warn('Stream validation failed:', parsed.error)
+                                return
+                              }
+                              
+                              const obj = parsed.data
+                              
+                              if (obj.type === 'done') {
+                                setLoading(false)
+                                esRef.current?.close()
+                                esRef.current = null
+                                return
+                              }
+                              
+                              if (obj.type === 'error') {
+                                setError(obj.message || 'Unknown error')
+                                setLoading(false)
+                                esRef.current?.close()
+                                return
+                              }
+                              
+                              if (obj.type === 'message' && obj.content) {
+                                bufRef.current += obj.content
+                                if (rafRef.current == null) {
+                                  rafRef.current = requestAnimationFrame(() => {
+                                    rafRef.current = null
+                                    const chunk = bufRef.current
+                                    bufRef.current = ''
+                                    setMsgs((v) => {
+                                      const last = v[v.length - 1]
+                                      if (last && last.role === 'ai') {
+                                        const copy = v.slice()
+                                        copy[copy.length - 1] = { role: 'ai', content: copy[copy.length - 1].content + chunk }
+                                        return copy
+                                      }
+                                      return [...v, { role: 'ai', content: chunk }]
+                                    })
+                                  })
+                                }
+                              }
+                            } catch {}
+                          }
                   esRef.current.onerror = async () => {
                     setLoading(false)
                     esRef.current?.close()
                     esRef.current = null
                     try {
                       const r = await fetch(`/api/assistant?q=${encodeURIComponent(text)}`)
-                      const ok = r.ok && r.headers.get('Content-Type')?.includes('application/json')
                       if (r.headers.get('Content-Type')?.includes('application/json')) {
                         const j = await r.json()
                         if (j?.fallback?.cards) setFallbackCards(j.fallback.cards)

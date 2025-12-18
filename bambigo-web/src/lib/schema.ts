@@ -23,7 +23,7 @@ export type FeatureCollectionLike = {
 
 export function normalizeFeatureCollection(input: unknown): FeatureCollectionLike {
   const isObj = !!input && typeof input === 'object'
-  const type = isObj ? (input as { type?: unknown }).type : undefined
+  // const type = isObj ? (input as { type?: unknown }).type : undefined // Unused
   const feats = isObj ? (input as { features?: unknown }).features : undefined
   const arr = Array.isArray(feats) ? (feats as unknown[]) : []
   const safeFeatures = arr.map((f) => {
@@ -60,4 +60,19 @@ export function isValidBBoxString(s: string | null): boolean {
   const parts = s.split(',').map((x) => parseFloat(x))
   return parts.length === 4 && parts.every((n) => Number.isFinite(n))
 }
+
+export type Recommendation = {
+  id: string;
+  // type: 'spot' | 'restaurant' | 'hotel';
+  title: string;
+  description: string;
+  imageUrl?: string;
+  rating: number;
+  reviewCount: number;
+  distance: string;
+  duration: string;
+  tags: string[];
+  isFavorite?: boolean;
+};
+
 

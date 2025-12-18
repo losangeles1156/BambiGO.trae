@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: BambiGO Aggregated API - Nodes + Live + Facilities
-  version: 1.0.0
+  version: 1.1.0
   description: Aggregated endpoint that composes `/api/nodes`, `/api/live`, and `/api/facilities` into one payload.
 servers:
   - url: /
@@ -25,7 +25,7 @@ paths:
           schema:
             type: string
             pattern: '^[-0-9\.]+,[-0-9\.]+,[-0-9\.]+,[-0-9\.]+$'
-          description: Bounding box in `minLon,minLat,maxLon,maxLat` used to select nodes and live mobility stations.
+          description: Bounding box in `minLon,minLat,maxLon,maxLat` used to select nodes, live mobility stations, and facilities (via spatial join).
         - name: type
           in: query
           required: false

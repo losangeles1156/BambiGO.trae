@@ -2,9 +2,9 @@
 import { useRef } from 'react'
 
 type Card = { title: string; desc?: string; primary?: string }
-type Props = { cards: Card[] }
+type Props = { cards: Card[]; onPrimaryClick?: (card: Card) => void }
 
-export default function ActionCarousel({ cards }: Props) {
+export default function ActionCarousel({ cards, onPrimaryClick }: Props) {
   const ref = useRef<HTMLDivElement | null>(null)
   const startRef = useRef<{ x: number; scroll: number } | null>(null)
   const draggingRef = useRef<boolean>(false)
@@ -84,7 +84,7 @@ export default function ActionCarousel({ cards }: Props) {
           <div className={`font-semibold ${i === 0 ? 'text-sm text-blue-900' : 'text-sm'}`}>{c.title}</div>
           {c.desc && <div className={`${i === 0 ? 'mt-2 text-xs text-blue-800' : 'mt-2 text-xs text-gray-600'}`}>{c.desc}</div>}
           {c.primary && (
-            <button className={`${i === 0 ? 'mt-3 w-full rounded bg-blue-600 px-3 py-2 text-sm text-white' : 'mt-3 w-full rounded bg-gray-800 px-3 py-2 text-sm text-white'}`}>{c.primary}</button>
+            <button onClick={() => onPrimaryClick?.(c)} className={`${i === 0 ? 'mt-3 w-full rounded bg-blue-600 px-3 py-2 text-sm text-white' : 'mt-3 w-full rounded bg-gray-800 px-3 py-2 text-sm text-white'}`}>{c.primary}</button>
           )}
         </div>
       ))}

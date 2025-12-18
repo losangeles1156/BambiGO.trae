@@ -1,5 +1,5 @@
 const CACHE_NAME = 'bambigo-pwa-v2'
-self.addEventListener('install', (event) => {
+self.addEventListener('install', () => {
   self.skipWaiting()
 })
 self.addEventListener('activate', (event) => {
@@ -40,4 +40,8 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(cacheFirst(req))
     return
   }
+})
+
+self.addEventListener('push', () => {
+  // event is unused for now
 })

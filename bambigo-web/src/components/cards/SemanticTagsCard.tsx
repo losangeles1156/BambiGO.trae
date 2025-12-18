@@ -42,7 +42,6 @@ const levelConfig = {
 
 export const SemanticTagsCard: React.FC<SemanticTagsCardProps> = ({
   level,
-  title,
   tags,
   description,
   onTagClick

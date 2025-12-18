@@ -87,6 +87,7 @@ export async function GET(req: Request) {
   const nodeId = url.searchParams.get('node_id')
   const bboxParam = url.searchParams.get('bbox')
   const limitParam = url.searchParams.get('limit')
+  const simTransit = url.searchParams.get('sim_transit') // Simulation param: 'delayed', 'suspended', 'normal'
 
   let bbox: [number, number, number, number] | null = null
   if (bboxParam) {
@@ -141,7 +142,26 @@ export async function GET(req: Request) {
   try {
     await client.connect()
 
-    // Query shared mobility stations either by bbox or by node_id proximity (via node location)
+    // 1. Determine Transit Status
+    // Priority: sim_transit param > node metadata > default 'normal' (instead of 'unknown')
+    let transitStatus: 'normal' | 'delayed' | 'suspended' | 'unknown' = 'normal'
+    
+    if (simTransit && ['normal', 'delayed', 'suspended'].includes(simTransit)) {
+       transitStatus = simTransit as 'normal' | 'delayed' | 'suspended'
+     } else if (nodeId) {
+        // Check node metadata for transit_status override
+        try {
+          const nodeRes = await client.query('select metadata from nodes where id = $1', [nodeId])
+          if (nodeRes.rows.length > 0) {
+             const meta = nodeRes.rows[0].metadata as { transit_status?: 'normal' | 'delayed' | 'suspended' | 'unknown' }
+             if (meta?.transit_status) {
+                 transitStatus = meta.transit_status
+             }
+          }
+        } catch {}
+     }
+
+    // 2. Query shared mobility stations
     let sql = ''
     const values: (string | number)[] = []
 
@@ -236,7 +256,7 @@ export async function GET(req: Request) {
     const payload: LiveResponse = {
       node_id: nodeId,
       bbox,
-      transit: { status: 'unknown', delay_minutes: 0 }, // Transit live data TBD (ODPT cache)
+      transit: { status: transitStatus, delay_minutes: 0 },
       mobility: { stations },
       updated_at: new Date().toISOString(),
     }

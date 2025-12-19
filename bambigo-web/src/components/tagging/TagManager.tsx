@@ -1,7 +1,8 @@
 'use client'
 import React, { useMemo, useState } from 'react'
-import { L1_CATEGORIES_DATA, L3_FACILITIES_DATA } from './constants'
-import { TagChip } from './TagChip'
+import { L3_FACILITIES_DATA } from './constants'
+import TagChip from '../ui/TagChip'
+import { HierarchySelector } from './HierarchySelector'
 import type { AppTag, TagState } from '../../lib/tagging'
 import * as tagging from '../../lib/tagging'
 
@@ -33,7 +34,6 @@ export default function TagManager({ value, onChange }: Props) {
 
   const remove = (id: string) => apply(tagging.deleteTag(state, id))
 
-  const l1Grid = useMemo(() => L1_CATEGORIES_DATA, [])
   const l3Grid = useMemo(() => L3_FACILITIES_DATA, [])
 
   return (
@@ -43,39 +43,26 @@ export default function TagManager({ value, onChange }: Props) {
           <TagChip key={t.id} label={tagging.makeLabel(t)} layer={t.layer} onRemove={() => remove(t.id)} />
         ))}
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <div className="text-sm font-semibold mb-2">L1 類別</div>
-          <div role="tree" aria-label="L1 Tree" className="grid grid-cols-2 gap-2">
-            {l1Grid.map((c) => (
-              <button key={c.id} role="treeitem" aria-expanded={path?.main === c.id} onClick={() => setPath({ level: 'L1', main: c.id })} className="rounded border border-gray-300 px-3 py-2 text-sm">
-                <span className="mr-1">{c.icon}</span>{c.label}
-              </button>
-            ))}
-          </div>
-          {!!path?.main && (
-            <div className="mt-2 grid grid-cols-2 gap-2" aria-label="L1 Sub Categories">
-              {l1Grid.find((x) => x.id === path.main)?.subCategories.map((s) => (
-                <button key={s.id} aria-selected={path?.sub === s.id} className="rounded border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50" onClick={() => setPath({ level: 'L1', main: path.main!, sub: s.id })}>
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          )}
-          {!!path?.main && !!path?.sub && (
-            <div className="mt-2">
-              <button className="rounded bg-blue-600 px-3 py-2 text-sm text-white" onClick={() => addL1(path.main!, path.sub!)}>
-                新增標籤：{path.main} › {path.sub}
-              </button>
-            </div>
-          )}
+          <div className="text-sm font-semibold mb-2 text-gray-700">L1 類別 (Structure)</div>
+          <HierarchySelector 
+            onSelect={(t) => addL1(t.main, t.sub)} 
+            className="h-[300px]"
+          />
         </div>
         <div>
-          <div className="text-sm font-semibold mb-2">L3 服務設施</div>
-          <div className="grid grid-cols-2 gap-2" role="list">
+          <div className="text-sm font-semibold mb-2 text-gray-700">L3 服務設施 (Utility)</div>
+          <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-1" role="list">
             {l3Grid.map((f) => (
-              <button key={f.id} role="listitem" className="rounded border border-gray-300 px-3 py-2 text-sm" onClick={() => addL3(tagging.mapSuitabilityToCategory(f.id), f.id)}>
-                <span className="mr-1">{f.icon}</span>{f.label}
+              <button 
+                key={f.id} 
+                role="listitem" 
+                className="flex items-center gap-2 rounded-lg border border-emerald-100 bg-emerald-50/50 px-3 py-2 text-sm text-emerald-800 hover:bg-emerald-100 transition-colors text-left" 
+                onClick={() => addL3(tagging.mapSuitabilityToCategory(f.id), f.id)}
+              >
+                <span className="text-lg">{f.icon}</span>
+                <span className="font-medium">{f.label}</span>
               </button>
             ))}
           </div>

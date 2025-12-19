@@ -4,7 +4,10 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { L1Tag, L3ServiceFacility, L1Category, L3Category } from '@/types/tagging';
 
 // Define categories to distinguish L1 vs L3
-const L1_CATEGORIES = new Set(['medical', 'shopping', 'dining', 'leisure', 'education', 'finance']);
+const L1_CATEGORIES = new Set([
+  'dining', 'shopping', 'medical', 'leisure', 'education', 'finance',
+  'accommodation', 'business', 'religion', 'nature', 'transport', 'public', 'residential'
+]);
 
 export async function GET(
   request: NextRequest,

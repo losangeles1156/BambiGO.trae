@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { HierarchicalPopover } from '@/components/tagging/HierarchySelector';
-import { TagChip } from '@/components/tagging/TagChip';
+import TagChip from '@/components/ui/TagChip';
 import { L3_FACILITIES_DATA, LAYER_CONFIG } from '@/components/tagging/constants';
 import type { L1Category, L3Category } from '@/types/tagging';
 import { clsx } from 'clsx';

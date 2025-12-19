@@ -30,4 +30,30 @@ describe('StrategyEngine', () => {
     const card = res.find((c) => c.title === 'Family Easy Access')
     expect(card).toBeTruthy()
   })
+
+  it('shows Night Safety Tips when night and no accessibility', () => {
+    const facilities = [ { type: 'misc' } ]
+    const now = new Date(Date.UTC(2025, 0, 1, 15, 0, 0)) // 00:00 JST
+    const res = StrategyEngine.generate(facilities as any, { now })
+    const card = res.find((c) => c.title === 'Night Safety Tips')
+    expect(card).toBeTruthy()
+  })
+
+  it('shows Beat the Heat when temperature high and water available', () => {
+    const facilities = [ { type: 'service', attributes: { subCategory: 'drinking_fountain' } } ]
+    const res = StrategyEngine.generate(facilities as any, { temperatureC: 32 })
+    const card = res.find((c) => c.title === 'Beat the Heat')
+    expect(card).toBeTruthy()
+  })
+
+  it('gates Time to Eat by opening hours if provided', () => {
+    const facilities = [ { type: 'dining', attributes: { subCategory: 'restaurant', openingHours: '11:00-14:00' } } ]
+    const nowLunch = new Date(Date.UTC(2025, 0, 1, 3, 30, 0)) // 12:30 JST
+    const resLunch = StrategyEngine.generate(facilities as any, { now: nowLunch })
+    expect(resLunch.find((c) => c.title === 'Time to Eat')).toBeTruthy()
+
+    const nowLate = new Date(Date.UTC(2025, 0, 1, 6, 0, 0)) // 15:00 JST
+    const resLate = StrategyEngine.generate(facilities as any, { now: nowLate })
+    expect(resLate.find((c) => c.title === 'Time to Eat')).toBeFalsy()
+  })
 })

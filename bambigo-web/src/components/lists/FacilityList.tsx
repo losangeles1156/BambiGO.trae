@@ -1,8 +1,12 @@
 'use client'
 import { L3ServiceFacility } from '../../types/tagging'
-import { LucideIcon, Wifi, Zap, Accessibility, Bath, Armchair, Box, HelpCircle } from 'lucide-react'
+import { LucideIcon, Wifi, Zap, Accessibility, Bath, Armchair, Box, HelpCircle, Edit2, Trash2 } from 'lucide-react'
 
-type Props = { items: L3ServiceFacility[] }
+type Props = { 
+  items: L3ServiceFacility[]
+  onEdit?: (item: L3ServiceFacility) => void
+  onDelete?: (id: string) => void
+}
 
 const ICON_MAP: Record<string, LucideIcon> = {
   'wifi': Wifi,
@@ -32,8 +36,8 @@ export default function FacilityList({ items }: Props) {
           ].filter(Boolean).join(' • ')
 
           return (
-            <li key={it.id} className="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
-              <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0 text-blue-600">
+            <li key={it.id} className="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors group">
+              <div className="w-8 h-8 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center flex-shrink-0 text-emerald-600 group-hover:bg-emerald-100 transition-colors">
                 <Icon size={16} />
               </div>
               <div className="flex-1 min-w-0">
@@ -43,7 +47,7 @@ export default function FacilityList({ items }: Props) {
                 {desc && <div className="text-xs text-gray-500 mt-0.5">{desc}</div>}
               </div>
               {it.openingHours === '24 Hours' && (
-                 <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-medium">24H</span>
+                 <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-medium border border-emerald-200">24H</span>
               )}
             </li>
           )

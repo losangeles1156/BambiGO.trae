@@ -44,6 +44,25 @@ function normalizeConn(s: string) {
   }
 }
 
+const defaultBbox = { minLon: 139.73, minLat: 35.65, maxLon: 139.82, maxLat: 35.74 }
+
+const mockFacilities: Record<string, FacilityItem[]> = {
+  'mock-ueno': [
+    {
+      id: 'f-ueno-1', node_id: 'mock-ueno', city_id: null, type: 'toilet', name: { en: 'East Exit Toilet', zh: '東口洗手間' },
+      has_wheelchair_access: true, has_baby_care: true, is_free: true, is_24h: true, current_status: 'available',
+      attributes: { cleanliness: 'high' }
+    }
+  ],
+  'mock-tokyo': [
+    {
+      id: 'f-tokyo-1', node_id: 'mock-tokyo', city_id: null, type: 'shop', name: { en: 'Souvenir Shop', zh: '伴手禮店' },
+      has_wheelchair_access: true, has_baby_care: false, is_free: false, is_24h: false, current_status: 'open',
+      attributes: { category: 'food' }
+    }
+  ]
+}
+
 export const GET = withMonitor(handler, 'FacilitiesAPI')
 
 async function handler(req: Request) {
@@ -110,6 +129,13 @@ async function handler(req: Request) {
       JSON.stringify({ error: { code: 'MISSING_PARAMETER', message: 'node_id or bbox is required' } }),
       { status: 400, headers: { 'Content-Type': 'application/json', 'X-API-Version': 'v4.1-strict' } }
     )
+  }
+
+  if (nodeId && (nodeId === 'mock-ueno' || nodeId === 'mock-tokyo')) {
+    const items = mockFacilities[nodeId] || []
+    return new NextResponse(JSON.stringify({ items }), {
+      headers: { 'Content-Type': 'application/json', 'X-API-Version': 'v4.1-strict' }
+    })
   }
 
   let minConfidence = 0

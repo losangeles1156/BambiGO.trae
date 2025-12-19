@@ -1,6 +1,6 @@
 'use client'
 import React from 'react'
-import { TagChip } from './TagChip'
+import TagChip from '../ui/TagChip'
 import type { TagState } from '../../lib/tagging'
 import * as tagging from '../../lib/tagging'
 

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { HierarchySelector, HierarchicalPopover } from '@/components/tagging/HierarchySelector';
 import { FacilityEditor } from '@/components/tagging/FacilityEditor';
-import { TagChip } from '@/components/tagging/TagChip';
+import TagChip from '@/components/ui/TagChip';
 import { L4StrategyCard } from '@/components/tagging/L4StrategyCard';
 import { LAYER_CONFIG, TagLayer } from '@/components/tagging/constants';
 import { TaggingService } from '@/lib/api/tagging';

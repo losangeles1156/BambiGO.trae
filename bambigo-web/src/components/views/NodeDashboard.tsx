@@ -1,9 +1,10 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
-import { Heart } from 'lucide-react'
+import { Heart, Edit2 } from 'lucide-react'
 import ActionCarousel from '../cards/ActionCarousel'
 import Chip from '../ui/Chip'
 import FacilityList from '../lists/FacilityList'
+import NodeFacilityManager from './NodeFacilityManager'
 import { useAuth } from '../auth/AuthContext'
 import { derivePersonaFromFacilities } from '../../lib/tagging'
 import { supabase } from '../../lib/supabase'
@@ -11,6 +12,7 @@ import { L1_CATEGORIES_DATA } from '../tagging/constants'
 import { L3ServiceFacility } from '../../types/tagging'
 import { adaptFacilityItem } from '../../lib/adapters/facilities'
 import { FacilityItem } from '../../app/api/facilities/route'
+import TagChip from '../ui/TagChip'
 
 type Name = { ja?: string; en?: string; zh?: string }
 type Status = { label: string; tone?: 'yellow' | 'blue' | 'red' | 'green' }
@@ -29,6 +31,7 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
   const [persona, setPersona] = useState<string[]>([])
   const [nodeType, setNodeType] = useState<string>('')
   const [transitStatus, setTransitStatus] = useState<string | undefined>(undefined)
+  const [isEditingFacilities, setIsEditingFacilities] = useState(false)
 
   // Check Favorite Status
   useEffect(() => {
@@ -48,6 +51,10 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
     checkFavorite()
     async function fetchNodeType() {
       if (!nodeId) return
+      if (nodeId.startsWith('mock-')) {
+        if (!ignore) setNodeType('station')
+        return
+      }
       const { data } = await supabase.from('nodes').select('type').eq('id', nodeId).single()
       if (data?.type && !ignore) setNodeType(data.type)
     }
@@ -285,19 +292,37 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
         </div>
         
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
-          {statuses.map((s, i) => (
-            <Chip key={i} label={s.label} tone={s.tone} />
-          ))}
+          {statuses.map((s, i) => {
+            // Map legacy tones to new Layers
+            // Yellow/Red (Alerts) -> L4 (Action)
+            // Blue/Green/Gray -> L2 (Atmosphere)
+            const isAlert = s.tone === 'yellow' || s.tone === 'red'
+            return (
+              <TagChip 
+                key={i} 
+                label={s.label} 
+                layer={isAlert ? 'L4' : 'L2'} 
+              />
+            )
+          })}
           {persona.map((p, i) => (
-            <span key={`p-${i}`} className="flex-none inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 border border-blue-100">
-              #{p}
-            </span>
+            <TagChip 
+              key={`p-${i}`} 
+              label={`#${p}`} 
+              layer="L1" 
+            />
           ))}
         </div>
       </div>
 
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
+
+        {/* L1 Tag Manager - TODO: Implement NodeL1Manager
+        <section>
+          <NodeL1Manager nodeId={nodeId || ''} />
+        </section>
+        */}
         
         {/* Action Cards (L4) */}
         <section>
@@ -322,9 +347,28 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
         <section>
           <div className="flex justify-between items-center mb-3">
             <h2 className="text-sm font-semibold text-gray-700">周邊設施</h2>
-            <span className="text-xs text-gray-400">{facilities.length} 處</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-400">{facilities.length} 處</span>
+              <button 
+                onClick={() => setIsEditingFacilities(!isEditingFacilities)}
+                className={`p-1 rounded transition-colors ${isEditingFacilities ? 'text-blue-600 bg-blue-50' : 'text-gray-400 hover:text-blue-600'}`}
+                title={isEditingFacilities ? "Done Editing" : "Manage Facilities"}
+              >
+                <Edit2 size={14} />
+              </button>
+            </div>
           </div>
-          <FacilityList items={facilities} />
+          {isEditingFacilities ? (
+            <div className="h-[400px]">
+              <NodeFacilityManager 
+                nodeId={nodeId || ''} 
+                initialFacilities={facilities} 
+                onUpdate={(newFacilities: L3ServiceFacility[]) => setFacilities(newFacilities)}
+              />
+            </div>
+          ) : (
+            <FacilityList items={facilities} />
+          )}
         </section>
         
         {/* Shared Mobility Status */}

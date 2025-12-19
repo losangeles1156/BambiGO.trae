@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { HierarchySelector, HierarchicalPopover } from '@/components/tagging/HierarchySelector';
+import { HierarchicalPopover } from '@/components/tagging/HierarchySelector';
 import { FacilityEditor } from '@/components/tagging/FacilityEditor';
 import TagChip from '@/components/ui/TagChip';
 import { L4StrategyCard } from '@/components/tagging/L4StrategyCard';
-import { LAYER_CONFIG, TagLayer } from '@/components/tagging/constants';
+import { TagLayer } from '@/components/tagging/constants';
 import { TaggingService } from '@/lib/api/tagging';
-import { L1Tag, L3ServiceFacility, L4ActionCard, L1Category, L3Category } from '@/types/tagging';
+import { L4ActionCard, L1Category, L3Category } from '@/types/tagging';
 import { MapPinIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { clsx } from 'clsx';
 
@@ -41,7 +41,8 @@ export default function TaggingSystemDemo() {
         const res = await fetch('/api/nodes?limit=5');
         const data = await res.json();
         if (data.features && data.features.length > 0) {
-          const mappedNodes = data.features.map((f: any) => ({
+          type Feature = { properties: { id: string; name?: { en?: string; ja?: string } }; geometry: { coordinates: [number, number] } }
+          const mappedNodes = (data.features as Feature[]).map((f) => ({
             id: f.properties.id,
             name: f.properties.name?.en || f.properties.name?.ja || f.properties.id,
             location: {
@@ -108,12 +109,12 @@ export default function TaggingSystemDemo() {
         name: { en: selection.label }
       });
       loadTags(activeNodeId);
-    } catch (err) {
+    } catch {
       alert('Failed to add tag');
     }
   };
 
-  const handleAddL3 = async (facility: { type: L3Category; label: string; icon: string; attributes: Record<string, any>; verified: boolean }) => {
+  const handleAddL3 = async (facility: { type: L3Category; label: string; icon: string; attributes: Record<string, unknown>; verified: boolean }) => {
     if (!activeNodeId) return;
     const node = nodes.find(n => n.id === activeNodeId);
     if (!node) return;
@@ -122,7 +123,7 @@ export default function TaggingSystemDemo() {
       await TaggingService.addL3Facility({
         nodeId: activeNodeId,
         category: facility.type,
-        subCategory: facility.attributes.subCategory || 'facility',
+        subCategory: String((facility.attributes as { subCategory?: string }).subCategory || 'facility'),
         provider: { type: 'public', name: facility.label },
         attributes: {
           ...facility.attributes,
@@ -133,7 +134,7 @@ export default function TaggingSystemDemo() {
         }
       });
       loadTags(activeNodeId);
-    } catch (err) {
+    } catch {
       alert('Failed to add facility');
     }
   };
@@ -147,7 +148,7 @@ export default function TaggingSystemDemo() {
         await TaggingService.removeL3Facility(activeNodeId, tagId);
       }
       loadTags(activeNodeId);
-    } catch (err) {
+    } catch {
       alert('Failed to remove tag');
     }
   };

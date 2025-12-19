@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { CheckCircle2, Save, X, Coffee, Wifi, Zap, Box, Accessibility, Armchair, HelpCircle } from 'lucide-react'
 import TagChip from '../ui/TagChip'
 import { L3_FACILITIES_DATA } from './constants'
@@ -42,12 +42,21 @@ const ATTRIBUTE_SCHEMAS: Record<L3Category, { key: string; label: string; type: 
     { key: 'seats', label: 'Seat Count', type: 'text' },
     { key: 'indoor', label: 'Indoor', type: 'boolean' }
   ],
+  shelter: [
+    { key: 'capacity', label: 'Capacity', type: 'text' },
+    { key: 'type', label: 'Type', type: 'select', options: ['Emergency', 'Temporary', 'Permanent'] }
+  ],
+  medical_aid: [
+    { key: 'aed', label: 'AED Available', type: 'boolean' },
+    { key: 'first_aid_kit', label: 'First Aid Kit', type: 'boolean' }
+  ],
   other: [
     { key: 'note', label: 'Note', type: 'text' }
   ]
 }
 
-const ICON_MAP: Record<string, any> = {
+import type { LucideIcon } from 'lucide-react'
+const ICON_MAP: Record<string, LucideIcon> = {
   wifi: Wifi,
   charging: Zap,
   toilet: Coffee, // Placeholder if Bath not available or use Coffee for amenity
@@ -59,7 +68,7 @@ const ICON_MAP: Record<string, any> = {
 
 export default function FacilityAttributeEditor({ facility, onSave, onCancel, className }: Props) {
   const [data, setData] = useState<Partial<L3ServiceFacility>>(facility)
-  const [attributes, setAttributes] = useState<Record<string, any>>(facility.attributes || {})
+  const [attributes, setAttributes] = useState<Record<string, string | number | boolean | undefined>>(facility.attributes as Record<string, string | number | boolean | undefined> || {})
   const [isVerified, setIsVerified] = useState(false) // In a real app, this might come from data
 
   const [location, setLocation] = useState<{ floor?: string; direction?: string }>(facility.location || {})
@@ -71,7 +80,7 @@ export default function FacilityAttributeEditor({ facility, onSave, onCancel, cl
   const Icon = ICON_MAP[category] || HelpCircle
   const catLabel = L3_FACILITIES_DATA.find(f => f.id === category)?.label || category
 
-  const handleAttrChange = (key: string, value: any) => {
+  const handleAttrChange = (key: string, value: string | boolean) => {
     setAttributes(prev => ({ ...prev, [key]: value }))
   }
 
@@ -182,7 +191,7 @@ export default function FacilityAttributeEditor({ facility, onSave, onCancel, cl
                   </button>
                 ) : field.type === 'select' ? (
                   <select
-                    value={attributes[field.key] || ''}
+                    value={String(attributes[field.key] ?? '')}
                     onChange={(e) => handleAttrChange(field.key, e.target.value)}
                     className="block w-full rounded-md border-gray-300 py-1.5 text-gray-900 shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm sm:leading-6 border px-2"
                   >
@@ -194,7 +203,7 @@ export default function FacilityAttributeEditor({ facility, onSave, onCancel, cl
                 ) : (
                   <input 
                     type="text" 
-                    value={attributes[field.key] || ''}
+                    value={String(attributes[field.key] ?? '')}
                     onChange={(e) => handleAttrChange(field.key, e.target.value)}
                     className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-emerald-600 sm:text-sm sm:leading-6 px-2"
                   />

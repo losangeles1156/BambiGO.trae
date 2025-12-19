@@ -27,16 +27,18 @@ export async function POST(
     .eq('id', nodeId)
     .maybeSingle();
 
+  type FacilityRow = { type?: string; subCategory?: string; attributes?: Record<string, unknown> }
   const personaLabels = derivePersonaFromFacilities(
-    (facilities || []).map((f: any) => ({
-      type: String(f.type || f.subCategory || f.attributes?.subCategory || ''),
-      has_wheelchair_access: !!(f.attributes?.has_wheelchair_access),
-      has_baby_care: !!(f.attributes?.has_baby_care)
+    (facilities || []).map((f: FacilityRow) => ({
+      type: String(f.type || f.subCategory || (f.attributes && (f.attributes as Record<string, unknown>).subCategory) || ''),
+      has_wheelchair_access: !!(f.attributes && (f.attributes as Record<string, unknown>).has_wheelchair_access),
+      has_baby_care: !!(f.attributes && (f.attributes as Record<string, unknown>).has_baby_care)
     })),
     undefined
   );
 
-  const personaArchetype = (nodeRow?.metadata as any)?.persona_archetype as string | undefined;
+  const meta = nodeRow?.metadata as Record<string, unknown> | null | undefined
+  const personaArchetype = typeof meta?.persona_archetype === 'string' ? (meta.persona_archetype as string) : undefined
 
   const strategies = StrategyEngine.generate(facilities || [], {
     ...context,

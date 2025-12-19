@@ -39,7 +39,8 @@ async function checkDify() {
     })
 
     if (response.ok) {
-      const data = await response.json() as any
+      type DifyResp = { answer?: string }
+      const data = await response.json() as DifyResp
       console.log('✅ Connection Successful!')
       console.log('Response:', data.answer ? data.answer.substring(0, 50) + '...' : 'No answer text')
     } else {

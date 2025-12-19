@@ -1,0 +1,126 @@
+'use client'
+import { useState } from 'react'
+import { useLanguage } from '../../contexts/LanguageContext'
+import { useSOP } from '../../contexts/SOPContext'
+import { WeatherAlert } from '../../lib/weather/jma_rss'
+
+export type Alert = WeatherAlert
+
+export function AlertBanner({ alerts }: { alerts: Alert[] }) {
+  const { t } = useLanguage()
+  const { activateSOP } = useSOP()
+  const [expanded, setExpanded] = useState(false)
+  
+  if (!alerts || alerts.length === 0) return null
+
+  // Prioritize High Severity
+  const highPriority = alerts.filter(a => a.severity === 'high')
+  const others = alerts.filter(a => a.severity !== 'high')
+  
+  const displayAlert = highPriority.length > 0 ? highPriority[0] : others[0]
+  const count = alerts.length
+
+  const bgColor = displayAlert.severity === 'high' ? 'bg-red-600' : 'bg-yellow-500'
+  const textColor = displayAlert.severity === 'high' ? 'text-white' : 'text-gray-900'
+
+  const handleTagClick = (alert: Alert, tag: string) => {
+    activateSOP(alert, tag)
+  }
+
+  return (
+    <div className={`fixed top-0 left-0 right-0 z-[2000] shadow-lg transition-all duration-300 ${expanded ? 'h-auto' : 'h-12'}`}>
+      {/* Main Bar */}
+      <div 
+        className={`${bgColor} ${textColor} px-4 h-12 flex items-center justify-between cursor-pointer`}
+        onClick={() => setExpanded(!expanded)}
+      >
+        <div className="flex items-center gap-2 overflow-hidden">
+          <span className="text-xl animate-pulse">
+            {displayAlert.type === 'earthquake' ? '🌋' : displayAlert.severity === 'high' ? '⚠️' : '☂️'}
+          </span>
+          <div className="flex flex-col justify-center">
+            <span className="font-bold truncate text-sm md:text-base">
+              {displayAlert.title}
+            </span>
+            {displayAlert.tags?.l4 && (
+              <span className="text-[10px] font-black uppercase tracking-widest bg-black/20 px-1 rounded inline-block w-fit">
+                {t(`alert.l4.${displayAlert.tags.l4}`) === `alert.l4.${displayAlert.tags.l4}` ? displayAlert.tags.l4 : t(`alert.l4.${displayAlert.tags.l4}`)}
+              </span>
+            )}
+          </div>
+          {count > 1 && (
+            <span className="text-xs opacity-80 whitespace-nowrap bg-black/20 px-2 py-0.5 rounded-full">
+              +{count - 1} {t('alert.moreSuffix')}
+            </span>
+          )}
+        </div>
+        <div className="text-xs opacity-80">
+          {expanded ? t('alert.collapse') : t('alert.expand')}
+        </div>
+      </div>
+
+      {/* Expanded Details */}
+      {expanded && (
+        <div className="bg-white text-gray-900 max-h-[60vh] overflow-y-auto border-b border-gray-200">
+          {alerts.map((alert) => (
+            <div key={alert.id} className="p-4 border-b border-gray-100 last:border-0 hover:bg-gray-50">
+              <div className="flex items-start gap-3">
+                <div className={`mt-1 min-w-[4px] h-10 rounded-full ${alert.severity === 'high' ? 'bg-red-500' : 'bg-yellow-400'}`} />
+                <div className="flex-1">
+                  <div className="flex justify-between items-start">
+                    <h4 className="font-bold text-sm mb-1">{alert.title}</h4>
+                    {alert.tags?.l4 && (
+                      <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">
+                        {t(`alert.l4.${alert.tags.l4}`) === `alert.l4.${alert.tags.l4}` ? alert.tags.l4 : t(`alert.l4.${alert.tags.l4}`)}
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Tags Display */}
+                  {(alert.tags?.l1?.length || alert.tags?.l3?.length) ? (
+                    <div className="flex flex-wrap gap-1 my-2">
+                      {alert.tags.l1?.map(t => (
+                        <span key={t} className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">📍 {t}</span>
+                      ))}
+                      {alert.tags.l3?.map(t => (
+                        <button 
+                          key={t} 
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleTagClick(alert, t)
+                          }}
+                          className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded hover:bg-blue-100 cursor-pointer transition-colors flex items-center gap-1"
+                        >
+                          🏠 {t}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  <p className="text-xs text-gray-600 leading-relaxed line-clamp-3">
+                    {alert.summary}
+                  </p>
+                  <div className="mt-2 flex justify-between items-center">
+                    <span className="text-[10px] text-gray-400 uppercase tracking-wider">{t(`alert.type.${alert.type}`)}</span>
+
+                    {alert.link && (
+                      <a 
+                        href={alert.link} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="text-xs text-blue-600 hover:underline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        來源 JMA &rarr;
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}

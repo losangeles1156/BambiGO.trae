@@ -19,12 +19,15 @@ type Name = { ja?: string; en?: string; zh?: string }
 type Status = { label: string; tone?: 'yellow' | 'blue' | 'red' | 'green' }
 type Props = { nodeId?: string; name: Name; statuses: Status[]; actions: string[]; onAction: (a: string) => void; onRouteHint?: (hint: string) => void; filterSuitability?: { tag?: string; minConfidence?: number } }
 
+import { useLanguage } from '../../contexts/LanguageContext'
+
 export default function NodeDashboard({ nodeId, name, statuses, actions, onAction, onRouteHint, filterSuitability }: Props) {
-  const { user } = useAuth()
+  const { t } = useLanguage()
+  const { user, session } = useAuth()
   const [isFavorite, setIsFavorite] = useState(false)
   const [text, setText] = useState('')
   const [msgs, setMsgs] = useState<{ role: 'user' | 'ai'; content: string }[]>([])
-  const esRef = useRef<EventSource | null>(null)
+  const abortRef = useRef<AbortController | null>(null)
   const [loading, setLoading] = useState(false)
   const [cards, setCards] = useState<L4ActionCard[]>([])
   const [facilities, setFacilities] = useState<L3ServiceFacility[]>([])
@@ -33,40 +36,155 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
   const [transitStatus, setTransitStatus] = useState<string | undefined>(undefined)
   const [isEditingFacilities, setIsEditingFacilities] = useState(false)
 
-  // Check Favorite Status
+  // Derive Persona when dependencies change (needs to be declared before usage below)
+  const persona = useMemo(() => {
+    const l1 = L1_CATEGORIES_DATA.find(c => c.id === nodeType || c.subCategories.some(s => s.id === nodeType))
+    const l1Main = l1?.id
+    const l1Sub = nodeType
+    return derivePersonaFromFacilities(
+      facilities.map(f => {
+          const attrs = f.attributes as Record<string, unknown>
+          return { 
+            type: f.subCategory, 
+            has_wheelchair_access: !!attrs.has_wheelchair_access,
+            has_baby_care: !!attrs.has_baby_care 
+          }
+      }), 
+      {  
+        l1MainCategory: l1Main, 
+        l1SubCategory: l1Sub,
+        transit: { status: transitStatus } 
+      }
+    )
+  }, [facilities, nodeType, transitStatus])
+
+  // Cleanup SSE on unmount to prevent resource leaks
   useEffect(() => {
+    return () => {
+      abortRef.current?.abort()
+    }
+  }, [])
+
+  useEffect(() => {
+    const controller = new AbortController()
     let ignore = false
-    async function checkFavorite() {
-      if (!user || !nodeId) {
-        if (!ignore) setIsFavorite(false)
-        return
-      }
-      const { count } = await supabase
-        .from('saved_locations')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('node_id', nodeId)
-      if (!ignore) setIsFavorite((count || 0) > 0)
-    }
-    checkFavorite()
-    async function fetchNodeType() {
+
+    async function fetchData() {
       if (!nodeId) return
-      if (nodeId.startsWith('mock-')) {
-        if (!ignore) setNodeType('station')
-        return
+      setLoading(true)
+
+      try {
+        // 1. Fetch Node Type
+        if (!nodeId.startsWith('mock-')) {
+          const { data } = await supabase.from('nodes').select('type').eq('id', nodeId).single()
+          if (!ignore && data?.type) setNodeType(data.type)
+        } else {
+          if (!ignore) setNodeType('station')
+        }
+
+        // 2. Fetch Live Facilities & Mobility
+        const params = new URLSearchParams({ node_id: nodeId, limit_facilities: '20', limit_mobility: '50' })
+        if (filterSuitability?.tag) params.set('suitability', filterSuitability.tag)
+        if (typeof filterSuitability?.minConfidence === 'number') params.set('min_confidence', String(filterSuitability.minConfidence))
+        
+        const r = await fetch(`/api/nodes/live/facilities?${params.toString()}`, { signal: controller.signal })
+        if (!r.ok) throw new Error('Live data fetch failed')
+        
+        const j = await r.json()
+        const rawItems = Array.isArray(j?.facilities?.items) ? (j.facilities?.items as FacilityItem[]) : []
+        const adaptedItems = rawItems.map(adaptFacilityItem)
+        const sts = Array.isArray(j?.live?.mobility?.stations) ? (j.live?.mobility?.stations as any[]) : []
+        const tStatus = j?.live?.transit?.status
+        const delay = j?.live?.transit?.delay_minutes
+
+        // 3. Fetch AI Strategy
+        let strategyCards: L4ActionCard[] = []
+        try {
+          const sRes = await fetch(`/api/nodes/${nodeId}/strategy`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              time: new Date().toISOString(),
+              personaLabels: Array.isArray(persona) ? persona : [],
+              transitStatus: tStatus
+            }),
+            signal: controller.signal
+          })
+          if (sRes.ok) {
+            const sData = await sRes.json()
+            if (Array.isArray(sData)) strategyCards = sData
+          }
+        } catch (e) {
+          console.error('Strategy fetch aborted or failed')
+        }
+
+        if (!ignore) {
+          const newCards: L4ActionCard[] = []
+          
+          // Shared Mobility Card
+          const availableBikes = sts.reduce((sum, s) => sum + (Number(s.bikes_available) || 0), 0)
+          if (availableBikes > 0) {
+            newCards.push({
+              type: 'primary',
+              title: t('dashboard.bikeTitle'),
+              description: t('dashboard.bikeDesc').replace('{n}', String(sts.length)).replace('{count}', String(availableBikes)),
+              rationale: 'Mobility',
+              tags: ['transport', 'bike'],
+              actions: [{ label: t('dashboard.bikeAction'), uri: 'app:bike' }]
+            })
+          }
+
+          // Transit Card
+          if (tStatus === 'delayed' || tStatus === 'suspended') {
+            newCards.push({
+              type: 'alert',
+              title: t('dashboard.transitTitle'),
+              description: `${t('common.monitoring').split('：')[0]}：${tStatus === 'delayed' ? t('dashboard.transitDelayed') : t('dashboard.transitSuspended')}${typeof delay === 'number' && delay > 0 ? `（${t('dashboard.transitDelayMinutes').replace('{n}', String(delay))}）` : ''}`,
+              rationale: 'Alert',
+              tags: ['transport', 'warning'],
+              actions: [{ label: t('dashboard.transitAlternative'), uri: 'app:transit' }]
+            })
+          }
+
+          setTransitStatus(tStatus)
+          setFacilities(adaptedItems)
+          setStations(sts)
+          setCards([...newCards, ...strategyCards])
+          setLoading(false)
+        }
+      } catch (e) {
+        if ((e as Error).name === 'AbortError') return
+        console.error('Fetch error:', e)
+        if (!ignore) setLoading(false)
       }
-      const { data } = await supabase.from('nodes').select('type').eq('id', nodeId).single()
-      if (data?.type && !ignore) setNodeType(data.type)
     }
-    fetchNodeType()
-    return () => { ignore = true }
+
+    fetchData()
+    return () => {
+      ignore = true
+      controller.abort()
+    }
+  }, [nodeId, filterSuitability?.tag, filterSuitability?.minConfidence, persona])
+
+  // Check Favorite Status separately
+  useEffect(() => {
+    if (!user || !nodeId) {
+      setIsFavorite(false)
+      return
+    }
+    supabase
+      .from('saved_locations')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('node_id', nodeId)
+      .then(({ count }) => setIsFavorite((count || 0) > 0))
   }, [user, nodeId])
 
   const getL1Breadcrumb = () => {
     if (!nodeType) return null
     const l1 = L1_CATEGORIES_DATA.find(c => c.id === nodeType || c.subCategories.some(s => s.id === nodeType))
     if (l1) return { label: l1.label, icon: l1.icon }
-    if (nodeType === 'station') return { label: 'Transport (交通)', icon: '🚉' }
+    if (nodeType === 'station') return { label: `${t('dashboard.transport')} (${t('header.langLabel') === '日' ? '交通' : 'Transport'})`, icon: '🚉' }
     return { label: nodeType, icon: '📍' }
   }
   const l1Info = getL1Breadcrumb()
@@ -74,7 +192,7 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
   const toggleFavorite = async () => {
     if (!user) {
       // TODO: Show login modal or toast
-      alert('請先登入以收藏地點')
+      alert(t('dashboard.loginRequired'))
       return
     }
     if (!nodeId) return
@@ -100,211 +218,94 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
     }
   }
 
-  useEffect(() => {
-    let abort = false
-    async function run() {
-      if (!nodeId) return
-      try {
-        const params = new URLSearchParams({ node_id: nodeId || '', limit_facilities: '20', limit_mobility: '50' })
-        if (filterSuitability?.tag) params.set('suitability', filterSuitability.tag)
-        if (typeof filterSuitability?.minConfidence === 'number') params.set('min_confidence', String(filterSuitability.minConfidence))
-        const r = await fetch(`/api/nodes/live/facilities?${params.toString()}`)
-        if (!r.ok) return
-        type LiveStationRaw = { id: string; name?: string; bikes_available?: number; docks_available?: number }
-        
-        type AggResponse = { 
-          live?: { 
-            mobility?: { stations?: LiveStationRaw[] }; 
-            transit?: { status?: string } 
-          }; 
-          facilities?: { items?: FacilityItem[] }; 
-          updated_at?: string 
-        }
-        const j: AggResponse = await r.json()
-        
-        // Use Adapter Pattern to convert legacy API data to L3 strict types
-        const rawItems = Array.isArray(j?.facilities?.items) ? (j.facilities?.items as FacilityItem[]) : []
-        const adaptedItems = rawItems.map(adaptFacilityItem)
 
-        const sts = Array.isArray(j?.live?.mobility?.stations) ? (j.live?.mobility?.stations as LiveStationRaw[]) : []
-        
-        // Fetch AI Strategy
-        let strategyCards: L4ActionCard[] = []
-        try {
-           const sRes = await fetch(`/api/nodes/${nodeId}/strategy`, {
-             method: 'POST',
-             headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify({ 
-               time: new Date().toISOString() 
-             })
-           })
-           if (sRes.ok) {
-             const sData = await sRes.json()
-             if (Array.isArray(sData)) {
-               strategyCards = sData
-             }
-           }
-        } catch (e) {
-           console.error('Failed to fetch strategy', e)
-        }
 
-        // Generate Action Cards
-        const newCards: L4ActionCard[] = []
-        
-        // 1. Shared Mobility
-        const availableBikes = sts.reduce((sum, s) => sum + (Number(s.bikes_available) || 0), 0)
-        if (availableBikes > 0) {
-          newCards.push({
-            type: 'primary',
-            title: '共享單車',
-            description: `附近 ${sts.length} 個站點，共 ${availableBikes} 台車可用`,
-            rationale: 'Mobility',
-            tags: ['transport', 'bike'],
-            actions: [{ label: '預約', uri: 'app:bike' }]
-          })
-        }
-        
-        // 2. Facilities Highlights
-        const hasToilet = adaptedItems.some(f => f.category === 'toilet')
-        if (hasToilet) {
-          newCards.push({
-            type: 'secondary',
-            title: '洗手間',
-            description: '附近有公共洗手間',
-            rationale: 'Convenience',
-            tags: ['toilet'],
-            actions: [{ label: '導航', uri: 'app:nav' }]
-          })
-        }
 
-        // 3. Public Transit
-        const tStatus = j?.live?.transit?.status
-        if (tStatus === 'delayed' || tStatus === 'suspended') {
-           newCards.push({
-             type: 'alert',
-             title: '大眾運輸',
-             description: `目前狀態：${tStatus === 'delayed' ? '延誤' : '暫停'}`,
-             rationale: 'Alert',
-             tags: ['transport', 'warning'],
-             actions: [{ label: '查看替代路線', uri: 'app:transit' }]
-           })
-        }
-
-        // 4. Taxi
-        const hasTaxi = adaptedItems.some(f => f.subCategory === 'taxi_stand')
-        if (hasTaxi) {
-          newCards.push({
-            type: 'secondary',
-            title: '計程車',
-            description: '附近有計程車招呼站',
-            rationale: 'Mobility',
-            tags: ['taxi'],
-            actions: [{ label: '叫車', uri: 'app:taxi' }]
-          })
-        }
-
-        if (!abort) {
-          setTransitStatus(tStatus)
-          setFacilities(adaptedItems)
-          setStations(sts.map(s => ({
-            id: String(s.id),
-            name: String(s.name || ''),
-            bikes_available: Number(s.bikes_available || 0),
-            docks_available: Number(s.docks_available || 0)
-          })))
-          setCards(newCards)
-        }
-      } catch (e) {
-        console.error(e)
-      }
-    }
-    run()
-    return () => { abort = true }
-  }, [nodeId, filterSuitability?.tag, filterSuitability?.minConfidence])
-
-  // Derive Persona when dependencies change
-  const persona = useMemo(() => {
-    // Find L1 context
-    const l1 = L1_CATEGORIES_DATA.find(c => c.id === nodeType || c.subCategories.some(s => s.id === nodeType))
-    const l1Main = l1?.id
-    const l1Sub = nodeType
-
-    return derivePersonaFromFacilities(
-      facilities.map(f => {
-          const attrs = f.attributes as Record<string, unknown>
-          return { 
-            type: f.subCategory, 
-            has_wheelchair_access: !!attrs.has_wheelchair_access,
-            has_baby_care: !!attrs.has_baby_care 
-          }
-      }), 
-      {  
-        l1MainCategory: l1Main, 
-        l1SubCategory: l1Sub,
-        transit: { status: transitStatus } 
-      }
-    )
-  }, [facilities, nodeType, transitStatus])
-
-  const send = (q: string) => {
+  const send = async (q: string) => {
     if (!q.trim()) return
     setMsgs((v) => [...v, { role: 'user', content: q }])
     setLoading(true)
-    esRef.current?.close()
-    // Pass nodeId to allow server to fetch specific persona/context
-    const url = `/api/assistant?q=${encodeURIComponent(q)}&node_id=${encodeURIComponent(nodeId || '')}`
-    esRef.current = new EventSource(url)
-    esRef.current.onmessage = (ev) => {
-      try {
-        const obj = JSON.parse(ev.data)
-        if (obj?.type === 'alerts') {
-          const arr = Array.isArray(obj?.content) ? (obj.content as string[]) : []
-          if (arr.length) {
-            const alertCards: L4ActionCard[] = arr.map((msg) => ({
-              type: 'alert',
-              title: '即時提醒',
-              description: msg,
-              rationale: 'Real-time Alert',
-              tags: ['alert'],
-              actions: [{ label: '了解', uri: 'app:dismiss' }]
-            }))
-            setCards((prev) => [...alertCards, ...prev])
+    abortRef.current?.abort()
+    abortRef.current = new AbortController()
+
+    const tokenParam = session?.access_token ? `&token=${encodeURIComponent(session.access_token)}` : ''
+    const url = `/api/assistant?q=${encodeURIComponent(q)}&node_id=${encodeURIComponent(nodeId || '')}${tokenParam}`
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+
+    try {
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
+      const response = await fetch(url, {
+        headers,
+        signal: abortRef.current.signal
+      })
+
+      if (!response.ok || !response.body) throw new Error('Network error')
+
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        const chunk = decoder.decode(value, { stream: true })
+        buffer += chunk
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const obj = JSON.parse(line.slice(6))
+              if (obj?.type === 'alerts') {
+                const arr = Array.isArray(obj?.content) ? (obj.content as string[]) : []
+                if (arr.length) {
+                  const alertCards: L4ActionCard[] = arr.map((msg) => ({
+                    type: 'alert',
+                    title: t('dashboard.realTimeAlert'),
+                    description: msg,
+                    rationale: 'Real-time Alert',
+                    tags: ['alert'],
+                    actions: [{ label: t('dashboard.understand'), uri: 'app:dismiss' }]
+                  }))
+                  setCards((prev) => [...alertCards, ...prev])
+                }
+                continue
+              }
+              if (obj?.type === 'done') {
+                setLoading(false)
+                return
+              }
+              const content = String(obj?.content ?? '')
+              if (!content) continue
+              setMsgs((v) => {
+                const last = v[v.length - 1]
+                if (last && last.role === 'ai') {
+                  const copy = v.slice()
+                  copy[copy.length - 1] = { role: 'ai', content: copy[copy.length - 1].content + content }
+                  return copy
+                }
+                return [...v, { role: 'ai', content }]
+              })
+            } catch {}
           }
-          return
         }
-        if (obj?.type === 'done') {
-          setLoading(false)
-          esRef.current?.close()
-          esRef.current = null
-          return
-        }
-        const content = String(obj?.content ?? '')
-        if (!content) return
-        setMsgs((v) => {
-          const last = v[v.length - 1]
-          if (last && last.role === 'ai') {
-            const copy = v.slice()
-            copy[copy.length - 1] = { role: 'ai', content: copy[copy.length - 1].content + content }
-            return copy
-          }
-          return [...v, { role: 'ai', content }]
-        })
-      } catch {}
-    }
-    esRef.current.onerror = async () => {
+      }
+    } catch (e) {
+      if ((e as Error).name === 'AbortError') return
       setLoading(false)
-      esRef.current?.close()
-      esRef.current = null
+      // Fallback
       try {
-        const url = `/api/assistant?q=${encodeURIComponent(q)}&node_id=${encodeURIComponent(nodeId || '')}`
-        const r = await fetch(url)
+        const r = await fetch(url, { headers })
         if (r.ok && r.headers.get('Content-Type')?.includes('application/json')) {
           const j = await r.json()
           const primary = j?.fallback?.primary
           const secondary = Array.isArray(j?.fallback?.secondary) ? j.fallback.secondary : []
           const legacy = Array.isArray(j?.fallback?.cards) ? j.fallback.cards : []
           
-          // Helper to ensure card is L4ActionCard
           const toL4 = (c: unknown): L4ActionCard => {
             const item = (c ?? {}) as Record<string, unknown>
             const rawType = String(item.type || 'secondary')
@@ -314,7 +315,7 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
               ? (item.actions as unknown[]).map((a) => {
                   const obj = (a ?? {}) as Record<string, unknown>
                   return {
-                    label: String(obj.label || '查看'),
+                    label: String(obj.label || t('dashboard.view')),
                     uri: String(obj.uri || 'app:open')
                   }
                 })
@@ -333,6 +334,8 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
           setCards(merged)
         }
       } catch {}
+    } finally {
+      setLoading(false)
     }
   }
   return (
@@ -390,15 +393,35 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
           <NodeL1Manager nodeId={nodeId || ''} />
         </section>
         
+        {/* Quick Actions (L0 - from props) */}
+        {actions.length > 0 && (
+          <section>
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-sm font-semibold text-gray-700">{t('dashboard.quickActions')}</h2>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {actions.map((a, i) => (
+                <button
+                  key={i}
+                  onClick={() => onAction(a)}
+                  className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 shadow-sm active:scale-95 transition-all hover:border-blue-400 hover:text-blue-600"
+                >
+                  {a}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+        
         {/* Action Cards (L4) */}
         <section>
           <div className="flex justify-between items-center mb-3">
-            <h2 className="text-sm font-semibold text-gray-700">建議行動</h2>
+            <h2 className="text-sm font-semibold text-gray-700">{t('dashboard.suggestedActions')}</h2>
           </div>
           <ActionCarousel 
             cards={cards} 
             onPrimaryClick={(c) => { 
-              if (c.title === '即時提醒' && c.description) { 
+              if (c.title === t('dashboard.realTimeAlert') && c.description) { 
                 onRouteHint?.(c.description)
                 send(c.description)
                 return 
@@ -412,13 +435,13 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
         {/* Facilities List (L3) */}
         <section>
           <div className="flex justify-between items-center mb-3">
-            <h2 className="text-sm font-semibold text-gray-700">周邊設施</h2>
+            <h2 className="text-sm font-semibold text-gray-700">{t('dashboard.nearbyFacilities')}</h2>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-400">{facilities.length} 處</span>
+              <span className="text-xs text-gray-400">{facilities.length} {t('common.places')}</span>
               <button 
                 onClick={() => setIsEditingFacilities(!isEditingFacilities)}
                 className={`p-1 rounded transition-colors ${isEditingFacilities ? 'text-blue-600 bg-blue-50' : 'text-gray-400 hover:text-blue-600'}`}
-                title={isEditingFacilities ? "Done Editing" : "Manage Facilities"}
+                title={isEditingFacilities ? t('dashboard.doneEditing') : t('dashboard.manageFacilities')}
               >
                 <Edit2 size={14} />
               </button>
@@ -481,7 +504,7 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
                 className="flex-1 rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" 
                 value={text} 
                 onChange={(e) => setText(e.target.value)} 
-                placeholder="輸入問題..." 
+                placeholder={t('common.inputPlaceholder')}
                 onKeyDown={(e) => e.key === 'Enter' && !e.nativeEvent.isComposing && (send(text), setText(''))}
               />
               <button 
@@ -489,7 +512,7 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
                 onClick={() => { send(text); setText('') }}
                 disabled={loading}
               >
-                {loading ? '...' : '送出'}
+                {loading ? '...' : t('common.send')}
               </button>
             </div>
           </div>

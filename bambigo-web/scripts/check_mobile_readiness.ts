@@ -2,7 +2,6 @@ import fs from 'fs'
 import path from 'path'
 
 const TARGET_DIRS = ['src/components', 'src/app']
-const MOBILE_KEYWORDS = ['touch-action', 'min-width', 'max-width', 'overflow', 'flex-col', 'grid-cols-1']
 const VIEWPORT_META = '<meta name="viewport"'
 
 function scanFile(filePath: string): string[] {

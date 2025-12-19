@@ -110,12 +110,18 @@ async function handler(req: Request) {
   if (xf) forwardedHeaders['x-forwarded-for'] = xf
   if (xr) forwardedHeaders['x-real-ip'] = xr
 
-  const nodesRes = await NodesGET(new Request(nodesUrl.toString(), { headers: forwardedHeaders }))
-  const liveRes = await LiveGET(new Request(liveUrl.toString(), { headers: forwardedHeaders }))
-  let facilitiesRes: Response | null = null
-  if (nodeId || bboxParam) {
-    facilitiesRes = await FacilitiesGET(new Request(facilitiesUrl.toString(), { headers: forwardedHeaders }))
-  }
+  const nodesReq = new Request(nodesUrl.toString(), { headers: forwardedHeaders })
+  const liveReq = new Request(liveUrl.toString(), { headers: forwardedHeaders })
+  
+  const promises: [Promise<Response>, Promise<Response>, Promise<Response | null>] = [
+    NodesGET(nodesReq),
+    LiveGET(liveReq),
+    (nodeId || bboxParam) 
+      ? FacilitiesGET(new Request(facilitiesUrl.toString(), { headers: forwardedHeaders }))
+      : Promise.resolve(null)
+  ]
+
+  const [nodesRes, liveRes, facilitiesRes] = await Promise.all(promises)
 
   // Bubble up rate-limit errors if any of the underlying endpoints signals 429
   if (nodesRes.status === 429 || liveRes.status === 429 || (facilitiesRes && facilitiesRes.status === 429)) {
@@ -133,7 +139,7 @@ async function handler(req: Request) {
   }
 
   // Otherwise aggregate JSON payloads
-  const [nodesJsonText, liveJsonText] = await Promise.all([
+  const [nodesJsonRes, liveJsonRes] = await Promise.all([
     nodesRes.text(),
     liveRes.text(),
   ])
@@ -142,9 +148,16 @@ async function handler(req: Request) {
   let nodesJson: unknown
   let liveJson: unknown
   let facilitiesJson: unknown
-  try { nodesJson = JSON.parse(nodesJsonText) } catch { nodesJson = { type: 'FeatureCollection', features: [] } }
+  
   try { 
-    liveJson = JSON.parse(liveJsonText) 
+    nodesJson = JSON.parse(nodesJsonRes) 
+  } catch (e) { 
+    console.error('[AggregatorAPI][PARSE_ERROR] Nodes JSON parse failed:', e)
+    nodesJson = { type: 'FeatureCollection', features: [] } 
+  }
+
+  try { 
+    liveJson = JSON.parse(liveJsonRes) 
     // Ensure liveJson has the expected structure even if the underlying API returns partial data
     if (liveJson && typeof liveJson === 'object') {
       const lj = liveJson as { transit?: unknown }
@@ -152,14 +165,21 @@ async function handler(req: Request) {
         lj.transit = { status: 'normal', events: [] }
       }
     }
-  } catch { 
+  } catch (e) { 
+    console.error('[AggregatorAPI][PARSE_ERROR] Live JSON parse failed:', e)
     liveJson = { 
       mobility: { stations: [] }, 
       transit: { status: 'normal', events: [] }, 
       updated_at: new Date().toISOString() 
     } 
   }
-  try { facilitiesJson = JSON.parse(facilitiesJsonText) } catch { facilitiesJson = { items: [] } }
+
+  try { 
+    facilitiesJson = JSON.parse(facilitiesJsonText) 
+  } catch (e) { 
+    console.error('[AggregatorAPI][PARSE_ERROR] Facilities JSON parse failed:', e)
+    facilitiesJson = { items: [] } 
+  }
 
   const payload: AggregatedResponse = {
     nodes: nodesJson,

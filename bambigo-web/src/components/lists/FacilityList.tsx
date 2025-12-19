@@ -28,25 +28,26 @@ export default function FacilityList({ items, onEdit, onDelete }: Props) {
       <ul className="space-y-3">
         {items.map((it) => {
           const Icon = ICON_MAP[it.category] || HelpCircle
-          const attrs = (it.attributes || {}) as Record<string, any>
-          const name = attrs.name?.zh || attrs.name?.en || it.subCategory
+          const attrs = (it.attributes || {}) as Record<string, unknown>
+          const nameObj = attrs.name as { zh?: string; en?: string } | undefined
+          const name = (nameObj?.zh || nameObj?.en || it.subCategory)
           
           // Generate rich description based on category
           const details = []
           if (it.location?.floor) details.push(`${it.location.floor}`)
           if (it.location?.direction) details.push(it.location.direction)
           
-          if (it.category === 'wifi' && attrs.ssid) details.push(`SSID: ${attrs.ssid}`)
+          if (it.category === 'wifi' && typeof attrs.ssid === 'string') details.push(`SSID: ${attrs.ssid}`)
           if (it.category === 'toilet') {
-             if (attrs.has_accessible) details.push('♿')
-             if (attrs.has_baby_care) details.push('👶')
-             if (attrs.door_width) details.push(`🚪${attrs.door_width}cm`)
+             if (attrs.has_accessible === true) details.push('♿')
+             if (attrs.has_baby_care === true) details.push('👶')
+             if (typeof attrs.door_width === 'number') details.push(`🚪${attrs.door_width}cm`)
           }
           if (it.category === 'charging') {
-             if (attrs.socket_type) details.push(attrs.socket_type)
-             if (attrs.fast_charge) details.push('⚡Fast')
+             if (typeof attrs.socket_type === 'string') details.push(attrs.socket_type)
+             if (attrs.fast_charge === true) details.push('⚡Fast')
           }
-          if (it.category === 'accessibility' && attrs.elevator_width) details.push(`↔️${attrs.elevator_width}cm`)
+          if (it.category === 'accessibility' && typeof attrs.elevator_width === 'number') details.push(`↔️${attrs.elevator_width}cm`)
 
           const desc = details.join(' • ')
 
@@ -89,4 +90,3 @@ export default function FacilityList({ items, onEdit, onDelete }: Props) {
     </div>
   )
 }
-

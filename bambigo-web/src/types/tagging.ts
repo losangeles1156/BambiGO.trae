@@ -65,7 +65,7 @@ export type L2LiveStatus = {
 }
 
 // --- L3: Service Facilities ---
-export type L3Category = 'toilet' | 'charging' | 'wifi' | 'locker' | 'accessibility' | 'rest_area' | 'other'
+export type L3Category = 'toilet' | 'charging' | 'wifi' | 'locker' | 'accessibility' | 'rest_area' | 'shelter' | 'medical_aid' | 'other'
 
 export type L3ProviderType = 'public' | 'station' | 'shop'
 

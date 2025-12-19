@@ -9,6 +9,7 @@ const supabase = (supabaseUrl && supabaseServiceRoleKey)
   : null
 
 const rateBuckets = new Map<string, { count: number; resetAt: number }>()
+const conversationStore = new Map<string, string>()
 
 function getIP(req: Request): string {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim()
@@ -46,7 +47,9 @@ function checkRate(req: Request): { ok: true } | { ok: false; retry: number } {
 import { DifyClient } from '@/lib/integrations/dify'
 import { N8nClient } from '@/lib/integrations/n8n'
 
-export async function GET(req: Request) {
+import { withMonitor } from '@/lib/monitor'
+
+export const GET = withMonitor(async (req: Request) => {
   const rate = checkRate(req)
   if (!rate.ok) {
     return new NextResponse(
@@ -57,6 +60,24 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const q = (searchParams.get('q') || '').trim()
   const nodeId = (searchParams.get('node_id') || '').trim()
+  
+  // Auth: Bearer token takes precedence (header or query), fallback to user_id param (legacy/insecure), then IP
+  let userId = (searchParams.get('user_id') || '').trim()
+  
+  let token = ''
+  const authHeader = req.headers.get('Authorization')
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.replace('Bearer ', '')
+  } else {
+    token = (searchParams.get('token') || '').trim()
+  }
+
+  if (token && supabase) {
+    const { data: { user } } = await supabase.auth.getUser(token)
+    if (user) {
+      userId = user.id
+    }
+  }
 
   if (!q) {
     return new NextResponse(
@@ -277,7 +298,7 @@ export async function GET(req: Request) {
     }
   }
 
-  const provider = (process.env.AI_PROVIDER || 'mock').toLowerCase()
+  const provider = (process.env.AI_PROVIDER || '').toLowerCase()
   const mode = routeMode(q)
 
   if (mode === 'tool') {
@@ -295,6 +316,9 @@ export async function GET(req: Request) {
   
   if (provider === 'n8n') {
     const webhookUrl = process.env.N8N_WEBHOOK_URL
+    const apiKey = process.env.N8N_API_KEY
+    const workflowId = process.env.N8N_WORKFLOW_ID
+
     if (!webhookUrl) {
       return new NextResponse(
         JSON.stringify({ error: { code: 'CONFIG_ERROR', message: 'n8n webhook URL missing' } }),
@@ -303,7 +327,7 @@ export async function GET(req: Request) {
     }
 
     try {
-      const client = new N8nClient({ webhookUrl })
+      const client = new N8nClient({ webhookUrl, apiKey, workflowId })
       const data = await client.trigger({
         query: q,
         nodeId,
@@ -337,7 +361,7 @@ export async function GET(req: Request) {
 
   if (provider === 'dify') {
     const apiKey = process.env.DIFY_API_KEY
-    const apiUrl = process.env.DIFY_API_URL
+    const apiUrl = process.env.DIFY_BASE_URL || process.env.DIFY_API_URL
     if (!apiKey || !apiUrl) {
       return new NextResponse(
         JSON.stringify({ error: { code: 'CONFIG_ERROR', message: 'Dify credentials missing' } }),
@@ -347,18 +371,39 @@ export async function GET(req: Request) {
 
     try {
       const client = new DifyClient({ apiKey, apiUrl })
-      const streamBody = await client.chatMessageStream({
+      const ip = getIP(req)
+      const key = userId || ip
+      const payload = {
         inputs: {
           context: systemContext
         },
         query: q,
         response_mode: 'streaming',
         user: 'bambigo-user',
-        auto_generate_name: false
-      })
+        auto_generate_name: false,
+        conversation_id: conversationStore.get(key) || undefined
+      } as const
 
+      // Auto-retry on initial stream failure
+      const maxRetries = Math.max(0, parseInt(process.env.DIFY_MAX_RETRIES || '3', 10))
+      let attempt = 0
+      let streamBody: unknown = null
+      while (attempt <= maxRetries) {
+        try {
+          streamBody = await client.chatMessageStream(payload)
+          break
+        } catch (e) {
+          attempt += 1
+          if (attempt > maxRetries) throw e
+          await new Promise((r) => setTimeout(r, 300 * attempt))
+        }
+      }
+
+      if (!streamBody) {
+        throw new Error('AI stream unavailable')
+      }
       const decoder = new TextDecoder()
-      const reader = streamBody.getReader()
+      const reader = (streamBody as ReadableStream<Uint8Array>).getReader()
 
       const stream = new ReadableStream({
         async start(controller) {
@@ -388,11 +433,14 @@ export async function GET(req: Request) {
                   if (data.event === 'message' || data.event === 'agent_message') {
                     const content = data.answer || ''
                     if (content) {
-                      write(JSON.stringify({ role: 'ai', type: 'text', content }))
+                      write(JSON.stringify({ role: 'ai', type: 'message', content }))
                     }
-                  } else if (data.event === 'workflow_finished' || data.event === 'message_end') {
-                    // 結束信號將在循環結束時發送
-                  } else if (data.event === 'error') {
+                  const cid = (data.conversation_id as string | undefined)
+                    if (cid) conversationStore.set(key, cid)
+                } else if (data.event === 'workflow_finished' || data.event === 'message_end') {
+                    const cid = (data.conversation_id as string | undefined)
+                    if (cid) conversationStore.set(key, cid)
+                } else if (data.event === 'error') {
                      console.error('Dify stream error:', data)
                   }
                 } catch {
@@ -426,57 +474,9 @@ export async function GET(req: Request) {
     }
   }
 
-  if (provider === 'mock') {
-    const encoder = new TextEncoder()
-    const stream = new ReadableStream({
-      start(controller) {
-        const write = (data: string) => controller.enqueue(encoder.encode(`data: ${data}\n\n`))
-        if (trapAlertsGlobal.length) {
-          write(JSON.stringify({ role: 'ai', type: 'alerts', content: trapAlertsGlobal }))
-        }
-        const tokens = [
-          '正在分析路線…',
-          '建議避開人潮較多的入口，',
-          '改往松智路方向。',
-          '可選擇共享單車作為替代方案。',
-        ]
-        let i = 0
-        const timer = setInterval(() => {
-          if (i < tokens.length) {
-            write(JSON.stringify({ role: 'ai', type: 'text', content: tokens[i] }))
-            i += 1
-          } else {
-            write(JSON.stringify({ role: 'ai', type: 'done' }))
-            clearInterval(timer)
-            controller.close()
-          }
-        }, 300)
-      },
-    })
-    return new Response(stream, {
-      status: 200,
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache, no-transform',
-        'Connection': 'keep-alive',
-        'X-API-Version': 'v1',
-      },
-    })
-  }
+  // Fallback if no valid provider configured
   return new NextResponse(
-    JSON.stringify({
-      error: { code: 'NOT_CONFIGURED', message: 'AI provider not configured', details: { provider } },
-      fallback: {
-        primary: { title: '避開人潮：改往松智路入口', desc: '信義廣場目前人潮擁擠，可改往較少人潮的入口。', primary: '執行' },
-        secondary: [
-          { title: '替代方案：共享單車', desc: '距離 120m，可直達目的地，約 15 分鐘。' },
-        ],
-        cards: [
-          { title: '避開人潮：改往松智路入口', desc: '信義廣場目前人潮擁擠，可改往較少人潮的入口。', primary: '執行' },
-          { title: '替代方案：共享單車', desc: '距離 120m，可直達目的地，約 15 分鐘。' },
-        ],
-      },
-    }),
-    { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-API-Version': 'v1' } }
+    JSON.stringify({ error: { code: 'NOT_IMPLEMENTED', message: `No AI provider configured (${provider})` } }),
+    { status: 501, headers: { 'Content-Type': 'application/json' } }
   )
-}
+})

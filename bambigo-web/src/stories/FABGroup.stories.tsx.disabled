@@ -1,0 +1,100 @@
+import type { Meta, StoryObj } from '@storybook/react'
+import { FABGroup } from '../components/features/controls/FABGroup'
+import { Bot, Navigation, X, Share2, Wifi, AlertTriangle } from 'lucide-react'
+
+const meta: Meta<typeof FABGroup> = {
+  title: 'Features/Controls/FABGroup',
+  component: FABGroup,
+  tags: ['autodocs'],
+  parameters: {
+    layout: 'fullscreen',
+  },
+  decorators: [
+    (Story) => (
+      <div className="relative w-full h-[500px] bg-gray-100 border border-gray-300 overflow-hidden">
+        <Story />
+      </div>
+    ),
+  ],
+}
+
+export default meta
+type Story = StoryObj<typeof FABGroup>
+
+export const Default: Story = {
+  args: {
+    mainActions: [
+      {
+        id: 'ai',
+        icon: <Bot />,
+        label: 'AI Assistant',
+        onClick: () => console.log('AI Clicked'),
+        variant: 'primary'
+      }
+    ]
+  }
+}
+
+export const WithNavigation: Story = {
+  args: {
+    mainActions: [
+      {
+        id: 'close',
+        icon: <X />,
+        label: 'Close',
+        onClick: () => {},
+        variant: 'secondary'
+      },
+      {
+        id: 'ai',
+        icon: <Bot />,
+        label: 'AI',
+        onClick: () => {},
+        variant: 'primary'
+      },
+      {
+        id: 'nav',
+        icon: <Navigation />,
+        label: 'Navigate',
+        onClick: () => {},
+        variant: 'primary'
+      }
+    ]
+  }
+}
+
+export const WithSecondaryActions: Story = {
+  args: {
+    mainActions: [
+      {
+        id: 'ai',
+        icon: <Bot />,
+        label: 'AI',
+        onClick: () => console.log('AI'),
+        onLongPress: () => alert('Long Press AI'),
+        variant: 'primary'
+      }
+    ],
+    secondaryActions: [
+      {
+        id: 'wifi',
+        icon: <Wifi size={20} />,
+        label: 'Offline Mode',
+        onClick: () => console.log('Wifi'),
+      },
+      {
+        id: 'share',
+        icon: <Share2 size={20} />,
+        label: 'Share',
+        onClick: () => console.log('Share'),
+      },
+      {
+        id: 'emergency',
+        icon: <AlertTriangle size={20} className="text-red-500" />,
+        label: 'SOS',
+        onClick: () => console.log('SOS'),
+        variant: 'danger'
+      }
+    ]
+  }
+}

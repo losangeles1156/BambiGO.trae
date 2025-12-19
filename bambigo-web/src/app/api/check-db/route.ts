@@ -15,7 +15,8 @@ export async function GET() {
       sampleNode,
       errors: { nodes: nodesError, facilities: facilitiesError }
     });
-  } catch (e: any) {
-    return NextResponse.json({ success: false, error: e.message }, { status: 500 });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return NextResponse.json({ success: false, error: msg }, { status: 500 });
   }
 }

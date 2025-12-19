@@ -98,6 +98,7 @@ export const HierarchySelector: React.FC<HierarchySelectorProps> = ({ onSelect, 
                 onKeyDown={(e) => handleKeyNav(e, i)}
                 tabIndex={i === focusIndex ? 0 : -1}
                 role="treeitem"
+                aria-selected={i === focusIndex}
                 aria-expanded={selectedMain?.id === cat.id ? true : false}
                 className="flex flex-col items-center justify-center gap-2 px-2 py-4 rounded-lg border border-blue-100 bg-blue-50/50 hover:bg-blue-100 hover:border-blue-200 text-blue-700 transition-all active:scale-[0.98]"
               >

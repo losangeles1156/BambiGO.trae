@@ -1,7 +1,7 @@
 'use client'
 
 import { L4ActionCard } from '../../types/tagging'
-import { Heart, Moon, Sun, Utensils, Wifi, Umbrella, Map as MapIcon, Shield, Zap, Baby, ArrowRight, Info } from 'lucide-react'
+import { Moon, Sun, Utensils, Wifi, Umbrella, Map as MapIcon, Baby, ArrowRight, Info } from 'lucide-react'
 
 type Props = { 
   cards: L4ActionCard[]; 

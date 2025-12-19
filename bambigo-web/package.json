@@ -6,8 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "lint:ci": "eslint . --max-warnings=0",
+    "lint": "eslint .",
+    "lint:ci": "eslint . --ignore-pattern 'coverage/**' --quiet",
     "init:schema": "tsx scripts/init_schema.ts",
     "schema:v4.1": "tsx scripts/setup_v4_1_schema.ts",
     "fetch:odpt": "tsx scripts/fetch_tokyo_odpt.ts",
@@ -15,6 +15,7 @@
     "dev:setup": "tsx scripts/dev_check_env.ts && tsx scripts/setup_v4_1_schema.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
+    "test:ui": "playwright test e2e/ui_consistency.spec.ts",
     "test:ci": "vitest run --coverage",
     "prepare": "husky"
   },

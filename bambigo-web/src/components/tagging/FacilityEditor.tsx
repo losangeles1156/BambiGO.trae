@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { L3_FACILITIES_DATA } from './constants';
 import { clsx } from 'clsx';
 import type { L3Category } from '@/types/tagging';
@@ -45,6 +45,14 @@ const FACILITY_SCHEMAS: Record<L3Category, FieldDef[]> = {
     { key: 'indoor', label: 'Indoor', type: 'boolean' },
     { key: 'seats', label: 'Approx. Seats', type: 'number' }
   ],
+  shelter: [
+    { key: 'capacity', label: 'Capacity', type: 'number' },
+    { key: 'supplies', label: 'Emergency Supplies', type: 'boolean' }
+  ],
+  medical_aid: [
+    { key: 'aed', label: 'AED Available', type: 'boolean' },
+    { key: 'staff', label: 'Medical Staff', type: 'boolean' }
+  ],
   other: [
     { key: 'description', label: 'Description', type: 'text' }
   ]
@@ -77,7 +85,7 @@ interface FacilityEditorProps {
     type: L3Category; 
     label: string; 
     icon: string; 
-    attributes: Record<string, any>;
+    attributes: Record<string, unknown>;
     verified: boolean;
   }) => void;
   className?: string;
@@ -86,13 +94,10 @@ interface FacilityEditorProps {
 export const FacilityEditor: React.FC<FacilityEditorProps> = (props) => {
   const { onAdd, className } = props;
   const [selectedType, setSelectedType] = useState<L3Category>(L3_FACILITIES_DATA[0].id);
-  const [attributes, setAttributes] = useState<Record<string, any>>({});
+  const [attributes, setAttributes] = useState<Record<string, string | number | boolean | undefined>>({});
   const [verified, setVerified] = useState(false);
 
-  // Reset attributes when type changes
-  useEffect(() => {
-    setAttributes({});
-  }, [selectedType]);
+  
 
   const handleAdd = () => {
     const facilityDef = L3_FACILITIES_DATA.find(f => f.id === selectedType);
@@ -132,7 +137,7 @@ export const FacilityEditor: React.FC<FacilityEditorProps> = (props) => {
               type="text"
               className="w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm px-3 py-2 border"
               placeholder={field.placeholder}
-              value={value || ''}
+              value={String(value ?? '')}
               onChange={(e) => setAttributes(prev => ({ ...prev, [field.key]: e.target.value }))}
             />
           </div>
@@ -144,7 +149,7 @@ export const FacilityEditor: React.FC<FacilityEditorProps> = (props) => {
             <input
               type="number"
               className="w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm px-3 py-2 border"
-              value={value || ''}
+              value={typeof value === 'number' ? value : (typeof value === 'string' ? Number(value) : '')}
               onChange={(e) => setAttributes(prev => ({ ...prev, [field.key]: Number(e.target.value) }))}
             />
           </div>
@@ -155,7 +160,7 @@ export const FacilityEditor: React.FC<FacilityEditorProps> = (props) => {
             <label className="block text-xs font-medium text-gray-500 mb-1">{field.label}</label>
             <select
               className="w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm px-3 py-2 border bg-white"
-              value={value || ''}
+              value={String(value ?? '')}
               onChange={(e) => setAttributes(prev => ({ ...prev, [field.key]: e.target.value }))}
             >
               <option value="">Select...</option>

@@ -13,7 +13,7 @@ type Props = {
 
 export default function TagManager({ value, onChange }: Props) {
   const [state, setState] = useState<TagState>(value || { tags: [] })
-  const [path, setPath] = useState<{ level: 'L1' | 'L3'; main?: string; sub?: string } | null>(null)
+  
 
   const apply = (next: TagState) => {
     setState(next)

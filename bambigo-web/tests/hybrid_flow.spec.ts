@@ -6,24 +6,36 @@ describe('Hybrid AI Architecture Flow', () => {
   beforeEach(() => {
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://mock.supabase.co')
     vi.stubEnv('SUPABASE_SERVICE_ROLE_KEY', 'mock-key')
-    vi.stubEnv('AI_PROVIDER', 'mock')
+    vi.stubEnv('AI_PROVIDER', 'dify')
+    vi.stubEnv('DIFY_API_KEY', 'test-key')
+    vi.stubEnv('DIFY_API_URL', 'https://api.dify.ai/v1')
     
     // Mock global fetch to prevent timeout on localhost calls
-    global.fetch = vi.fn().mockImplementation((url) => {
-       if (String(url).includes('facilities')) {
-          return Promise.resolve({
-             json: () => Promise.resolve({
-               facilities: { items: [{ id: 'f1', type: 'toilet', l3: { category: 'toilet' } }] },
-               live: { mobility: { stations: [] } }
-             }),
-             ok: true
-          })
+    global.fetch = vi.fn(async (url: RequestInfo | URL) => {
+       const urlStr = String(url)
+       if (urlStr.includes('facilities')) {
+          const body = {
+            facilities: { items: [{ id: 'f1', type: 'toilet', l3: { category: 'toilet' } }] },
+            live: { mobility: { stations: [] } }
+          }
+          return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } })
        }
-       return Promise.resolve({
-          json: () => Promise.resolve({}),
-          ok: true
-       })
-    }) as any
+       
+       // Mock Dify Streaming Response
+       if (urlStr.includes('/chat-messages')) {
+         const encoder = new TextEncoder()
+         const stream = new ReadableStream({
+           start(controller) {
+             controller.enqueue(encoder.encode('data: {"event": "message", "answer": "Dify Response"}\n\n'))
+             controller.enqueue(encoder.encode('data: {"event": "message_end"}\n\n'))
+             controller.close()
+           }
+         })
+         return new Response(stream, { status: 200, headers: { 'content-type': 'text/event-stream' } })
+       }
+
+       return new Response(JSON.stringify({}), { status: 200, headers: { 'content-type': 'application/json' } })
+    })
   })
 
   // Helper to fetch and parse
@@ -62,7 +74,7 @@ describe('Hybrid AI Architecture Flow', () => {
     
     // Check for weather card
     const cards = json.fallback.cards || [json.fallback.primary, ...json.fallback.secondary].filter(Boolean)
-    const weatherCard = cards.find((c: any) => c.title === '天氣提醒')
+    const weatherCard = cards.find((c: { title?: string }) => c.title === '天氣提醒')
     expect(weatherCard).toBeDefined()
     expect(weatherCard.desc).toContain('建議攜帶雨具')
   })

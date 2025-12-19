@@ -2,6 +2,8 @@ import { L4ActionCard } from '../../types/tagging'
 
 export type N8nConfig = {
   webhookUrl: string
+  apiKey?: string
+  workflowId?: string
 }
 
 export type N8nWebhookPayload = {
@@ -11,6 +13,7 @@ export type N8nWebhookPayload = {
   trapAlerts?: string[]
   userId?: string
   timestamp?: number
+  workflowId?: string
   metadata?: Record<string, unknown>
 }
 
@@ -33,17 +36,30 @@ export class N8nClient {
    * Triggers an n8n webhook and returns the typed response.
    */
   async trigger(payload: N8nWebhookPayload): Promise<N8nWebhookResponse> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'X-BambiGO-Source': 'web-client',
+      'X-BambiGO-Node-ID': payload.nodeId || '',
+    }
+
+    if (this.config.apiKey) {
+      headers['Authorization'] = `Bearer ${this.config.apiKey}`
+      headers['X-N8N-API-KEY'] = this.config.apiKey
+    }
+
+    const body = {
+      ...payload,
+      timestamp: Date.now(),
+    }
+    
+    if (this.config.workflowId) {
+      body.workflowId = this.config.workflowId
+    }
+
     const response = await fetch(this.config.webhookUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-BambiGO-Source': 'web-client',
-        'X-BambiGO-Node-ID': payload.nodeId || '',
-      },
-      body: JSON.stringify({
-        ...payload,
-        timestamp: Date.now()
-      }),
+      headers,
+      body: JSON.stringify(body),
     })
 
     if (!response.ok) {

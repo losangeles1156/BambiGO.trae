@@ -56,11 +56,17 @@ function parseWKBPoint(hex: string): [number, number] | null {
       offset += 4 // Skip SRID
     }
     
+    // Boundary check for getFloat64
+    if (offset + 16 > buffer.length) {
+      console.error('[NodesAPI][WKB_ERROR] Buffer too short for coordinates', { length: buffer.length, required: offset + 16 })
+      return null
+    }
+
     const x = view.getFloat64(offset, littleEndian)
     const y = view.getFloat64(offset + 8, littleEndian)
     return [x, y]
   } catch (e) {
-    console.error('WKB Parse error:', e)
+    console.error('[NodesAPI][WKB_PARSE_FATAL] Unexpected error:', e)
     return null
   }
 }
@@ -158,7 +164,7 @@ export async function GET(req: Request) {
         if (error) throw error
         // RPC returns an array of GeoJSON Features already
         if (Array.isArray(data)) {
-          features = data as any
+          features = data as Array<{ type: 'Feature'; geometry: { type: 'Point'; coordinates: [number, number] }; properties: Record<string, unknown> }>
         }
       } catch (e) {
         console.warn('RPC get_nodes_in_bbox unavailable, falling back:', e)
@@ -171,7 +177,8 @@ export async function GET(req: Request) {
       query = query.limit(limit)
       const { data, error } = await query
       if (error) throw error
-      features = (data || []).reduce((acc: { type: 'Feature'; geometry: { type: 'Point'; coordinates: [number, number] }; properties: Record<string, unknown> }[], node: any) => {
+      type NodeRow = { id: string; name: Record<string, unknown>; type: string; location?: string; metadata?: Record<string, unknown>; external_links?: Record<string, unknown> }
+      features = (data || []).reduce((acc: { type: 'Feature'; geometry: { type: 'Point'; coordinates: [number, number] }; properties: Record<string, unknown> }[], node: NodeRow) => {
         if (!node.location) return acc
         const coords = parseWKBPoint(node.location)
         if (!coords) return acc

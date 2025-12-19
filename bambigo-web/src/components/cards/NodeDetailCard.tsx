@@ -1,6 +1,6 @@
 'use client'
 import { getLocalizedName } from '../../../lib/utils/i18n'
-import TagChip, { TagLayer } from '../ui/TagChip'
+import TagChip from '../ui/TagChip'
 import { Building2, Activity, Coffee, Sparkles, MapPin } from 'lucide-react'
 
 type Name = { ja?: string; en?: string; zh?: string }

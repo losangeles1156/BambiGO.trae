@@ -43,15 +43,24 @@ function parseWKBPoint(hex: string): [number, number] | null {
     const type = view.getUint32(1, littleEndian)
     let offset = 5
     if ((type & 0x20000000) !== 0) offset += 4
+
+    if (offset + 16 > buffer.length) {
+      console.error('[FacilitiesAPI][WKB_ERROR] Buffer too short for coordinates', { length: buffer.length, required: offset + 16 })
+      return null
+    }
+
     const x = view.getFloat64(offset, littleEndian)
     const y = view.getFloat64(offset + 8, littleEndian)
     return [x, y]
-  } catch {
+  } catch (e) {
+    console.error('[FacilitiesAPI][WKB_PARSE_FATAL] Unexpected error:', e)
     return null
   }
 }
 
 const defaultBbox = { minLon: 139.73, minLat: 35.65, maxLon: 139.82, maxLat: 35.74 }
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _unused = defaultBbox
 
 const mockFacilities: Record<string, FacilityItem[]> = {
   'mock-ueno': [
@@ -186,7 +195,7 @@ async function handler(req: Request) {
             p_limit: 5000,
           })
           if (error) throw error
-          nodeIds = (data || []).map((n: any) => String(n.id))
+          nodeIds = (data || []).map((n: { id: string | number }) => String(n.id))
         } catch {}
       }
       if (nodeIds.length === 0) {
@@ -196,7 +205,7 @@ async function handler(req: Request) {
           .limit(10000)
         if (!error && Array.isArray(data)) {
           nodeIds = data
-            .map((n: any) => {
+            .map((n: { id: string | number; location?: string }) => {
               const coords = n.location ? parseWKBPoint(n.location) : null
               if (!coords) return null
               const [lon, lat] = coords
@@ -228,23 +237,23 @@ async function handler(req: Request) {
     const { data: facRows, error: facErr } = await facQuery
     if (facErr) throw facErr
 
-    let suitability: Record<string, { tag: string; confidence: number }[]> = {}
+    const suitability: Record<string, { tag: string; confidence: number }[]> = {}
     if (suitTag) {
-      const ids = (facRows || []).map((r: any) => String(r.id)).filter((x: string) => x.length > 0)
+      const ids = (facRows || []).map((r: { id: string | number }) => String(r.id)).filter((x: string) => x.length > 0)
       const { data: suitRows, error: suitErr } = await supabase
         .from('facility_suitability')
         .select('facility_id, tag, confidence')
         .in('facility_id', ids)
       if (!suitErr && Array.isArray(suitRows)) {
-        for (const r of suitRows as any[]) {
+        for (const r of suitRows as Array<{ facility_id: string | number; tag: string; confidence: number }>) {
           if (minConfidence > 0 && Number(r.confidence) < minConfidence) continue
-          const arr = (suitability[r.facility_id] ||= [])
+          const arr = (suitability[String(r.facility_id)] ||= [])
           arr.push({ tag: String(r.tag), confidence: Number(r.confidence) })
         }
       }
     }
 
-    const items: FacilityItem[] = (facRows || []).map((row: any) => {
+    const items: FacilityItem[] = (facRows || []).map((row: Record<string, unknown>) => {
       // Map to L3
       const typeMap: Record<string, L3Category> = {
         'toilet': 'toilet',
@@ -264,46 +273,46 @@ async function handler(req: Request) {
 
       const l3: L3ServiceFacility = {
         id: String(row.id),
-        nodeId: row.node_id || '',
+        nodeId: (row.node_id as string) || '',
         category,
         subCategory: normalizedType,
         location: {
-          floor: row.floor || undefined,
-          direction: row.direction || undefined,
+          floor: typeof row.floor === 'string' ? row.floor : undefined,
+          direction: typeof row.direction === 'string' ? row.direction : undefined,
         },
         provider: {
           type: 'public', // Default
         },
         attributes: {
-          ...(row.attributes as object || {}),
-          is_free: row.is_free,
-          is_24h: row.is_24h,
-          has_wheelchair_access: row.has_wheelchair_access,
-          has_baby_care: row.has_baby_care,
-          booking_url: row.booking_url
+          ...(row.attributes as Record<string, unknown> || {}),
+          is_free: row.is_free as boolean,
+          is_24h: row.is_24h as boolean,
+          has_wheelchair_access: row.has_wheelchair_access as boolean,
+          has_baby_care: row.has_baby_care as boolean,
+          booking_url: row.booking_url as string | null
         },
-        openingHours: row.is_24h ? '24 Hours' : undefined,
-        updatedAt: row.status_updated_at || undefined,
+        openingHours: (row.is_24h as boolean) ? '24 Hours' : undefined,
+        updatedAt: (row.status_updated_at as string) || undefined,
         source: 'official'
       }
 
       return {
         id: String(row.id),
-        node_id: row.node_id,
-        city_id: row.city_id,
+        node_id: row.node_id as string | null,
+        city_id: row.city_id as string | null,
         type: String(row.type || ''),
-        name: (row.name || null) as { ja?: string; en?: string; zh?: string },
-        distance_meters: row.distance_meters,
-        direction: row.direction,
-        floor: row.floor,
-        has_wheelchair_access: row.has_wheelchair_access,
-        has_baby_care: row.has_baby_care,
-        is_free: row.is_free,
-        is_24h: row.is_24h,
-        current_status: row.current_status,
-        status_updated_at: row.status_updated_at,
-        attributes: row.attributes,
-        booking_url: row.booking_url,
+        name: (row.name as { ja?: string; en?: string; zh?: string } | undefined) || undefined,
+        distance_meters: row.distance_meters as number | null,
+        direction: typeof row.direction === 'string' ? (row.direction as string) : undefined,
+        floor: typeof row.floor === 'string' ? (row.floor as string) : undefined,
+        has_wheelchair_access: row.has_wheelchair_access as boolean,
+        has_baby_care: row.has_baby_care as boolean,
+        is_free: row.is_free as boolean,
+        is_24h: row.is_24h as boolean,
+        current_status: String(row.current_status || ''),
+        status_updated_at: row.status_updated_at as string | null,
+        attributes: row.attributes as unknown,
+        booking_url: row.booking_url as string | null,
         suitability_tags: suitability[String(row.id)] || [],
         l3
       }

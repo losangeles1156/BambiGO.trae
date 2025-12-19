@@ -14,18 +14,16 @@ type Props = {
 
 export default function NodeL1Manager({ nodeId, className }: Props) {
   const [tags, setTags] = useState<L1Tag[]>([])
-  const [loading, setLoading] = useState(false)
   const [mode, setMode] = useState<'view' | 'edit' | 'add'>('view')
 
   const loadTags = useCallback(async () => {
-    setLoading(true)
+    
     try {
       const data = await TaggingService.getL1Tags(nodeId)
       setTags(data)
     } catch (err) {
       console.error('Failed to load L1 tags', err)
     } finally {
-      setLoading(false)
     }
   }, [nodeId])
 

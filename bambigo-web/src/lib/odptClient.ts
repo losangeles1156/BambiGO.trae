@@ -105,7 +105,10 @@ export class OdptClient {
             delay = Math.min(5000, delay * 2)
             continue
           }
-          throw new Error(`ODPT HTTP ${res.status}`)
+          // Non-retryable HTTP error
+          const err = new Error(`ODPT HTTP ${res.status}`)
+          ;(err as any).status = res.status
+          throw err
         }
         let data: unknown
         if (ctype.includes('application/json')) {
@@ -126,6 +129,11 @@ export class OdptClient {
         await this.sleep(this.throttleMs)
         return data
       } catch (e: unknown) {
+        // If it's a non-retryable ODPT HTTP error, throw it immediately
+        if (e instanceof Error && (e as any).status && !([429, 503].includes((e as any).status))) {
+          throw e
+        }
+
         if (attempt < this.maxRetries) {
           attempt++
           await this.sleep(delay + Math.floor(Math.random() * 150))
@@ -172,7 +180,20 @@ export class OdptClient {
     }
     return out
   }
+
+  async trainsByOperator(operators: string[]) {
+    const out: unknown[] = []
+    for (const op of operators) {
+      const data = await this.request('odpt:Train', { 'odpt:operator': op })
+      if (Array.isArray(data)) out.push(...data)
+    }
+    return out
+  }
+
+  async trainInformationAll() {
+    const data = await this.request('odpt:TrainInformation')
+    return Array.isArray(data) ? data : []
+  }
 }
 
 export default OdptClient
-

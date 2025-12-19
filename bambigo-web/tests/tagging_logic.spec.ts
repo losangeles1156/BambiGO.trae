@@ -113,7 +113,7 @@ describe('Tagging Logic', () => {
 
   describe('Persona Derivation', () => {
     it('should derive digital nomad persona', () => {
-      const items = [{ type: 'cafe', suitability_tags: [{ tag: 'wifi', confidence: 1 }] }]
+      const _items = [{ type: 'cafe', suitability_tags: [{ tag: 'wifi', confidence: 1 }] }]
       // Mocking type check inside derivePersonaFromFacilities which uses type string
       const p = derivePersonaFromFacilities([{ type: 'wifi_spot' }, { type: 'charging_station' }])
       expect(p).toContain('數位遊牧友好')

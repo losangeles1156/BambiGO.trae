@@ -1,4 +1,3 @@
-import { createClient } from '@supabase/supabase-js'
 import * as dotenv from 'dotenv'
 import path from 'path'
 import fs from 'fs'
@@ -37,8 +36,6 @@ interface NodePersona {
   system_prompt: string
 }
 
-// Configuration
-const TARGET_WARDS = ['Chiyoda', 'Chuo', 'Taito']
 
 // Fallback list for stations without geo coordinates (mainly JR)
 const TARGET_STATION_NAMES = new Set([
@@ -72,16 +69,19 @@ async function fetchStations(type: 'subway' | 'jr' | 'private'): Promise<ODPTSta
   )
   // Normalize shallowly to ODPTStation shape expected downstream
   const bbox = { minLon: 139.73, minLat: 35.65, maxLon: 139.82, maxLat: 35.74 }
-  const mapped: ODPTStation[] = (raw as any[])
-    .map((r) => ({
-      'owl:sameAs': r['owl:sameAs'] || r['@id'] || '',
-      'odpt:stationTitle': r['odpt:stationTitle'] || { en: r['dc:title'] || 'Unknown', ja: r['dc:title'] || '不明' },
-      'odpt:operator': (r['odpt:operator'] || '').replace('odpt.Operator:', ''),
-      'odpt:railway': r['odpt:railway'] || '',
-      'geo:lat': Number(r['geo:lat'] || r['geo:latitude'] || r['latitude'] || 0),
-      'geo:long': Number(r['geo:long'] || r['geo:longitude'] || r['longitude'] || 0),
-      'odpt:connectingRailway': r['odpt:connectingRailway'] || r['connectingRailway'] || []
-    }))
+  const mapped: ODPTStation[] = (raw as unknown[])
+    .map((r) => {
+      const o = r as Record<string, unknown>
+      return {
+        'owl:sameAs': (o['owl:sameAs'] as string) || (o['@id'] as string) || '',
+        'odpt:stationTitle': (o['odpt:stationTitle'] as { en: string; ja: string }) || { en: (o['dc:title'] as string) || 'Unknown', ja: (o['dc:title'] as string) || '不明' },
+        'odpt:operator': String(o['odpt:operator'] || '').replace('odpt.Operator:', ''),
+        'odpt:railway': (o['odpt:railway'] as string) || '',
+        'geo:lat': Number(o['geo:lat'] || o['geo:latitude'] || o['latitude'] || 0),
+        'geo:long': Number(o['geo:long'] || o['geo:longitude'] || o['longitude'] || 0),
+        'odpt:connectingRailway': (o['odpt:connectingRailway'] as string[]) || (o['connectingRailway'] as string[]) || []
+      }
+    })
     .filter((s) => {
       // Check Geo BBox
       if (s['geo:lat'] !== 0 && s['geo:long'] !== 0) {

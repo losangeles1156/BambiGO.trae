@@ -28,7 +28,19 @@ export async function GET(
   const l1Tags: L1Tag[] = [];
   const l3Facilities: L3ServiceFacility[] = [];
 
-  facilities.forEach((row: any) => {
+  type Row = {
+    id: string
+    node_id: string
+    type: string
+    attributes?: Record<string, unknown>
+    name?: Record<string, unknown>
+    distance_meters?: number
+    direction?: string
+    floor?: string
+    source_dataset?: string
+    updated_at?: string
+  }
+  facilities.forEach((row: Row) => {
     // Determine if L1 or L3 based on type/category
     // Note: The DB column is 'type'
     
@@ -38,9 +50,9 @@ export async function GET(
         id: row.id,
         nodeId: row.node_id,
         mainCategory: row.type as L1Category,
-        subCategory: row.attributes?.subCategory || 'unknown',
-        detailCategory: row.attributes?.detailCategory,
-        brand: row.attributes?.brand,
+        subCategory: String((row.attributes as { subCategory?: unknown } | undefined)?.subCategory || 'unknown'),
+        detailCategory: (row.attributes as { detailCategory?: string } | undefined)?.detailCategory,
+        brand: (row.attributes as { brand?: string } | undefined)?.brand,
         name: row.name || {}, // Assuming JSONB name
         distanceMeters: row.distance_meters,
         direction: row.direction
@@ -52,15 +64,22 @@ export async function GET(
         id: row.id,
         nodeId: row.node_id,
         category: row.type as L3Category,
-        subCategory: row.attributes?.subCategory || 'unknown',
+        subCategory: String((row.attributes as { subCategory?: unknown } | undefined)?.subCategory || 'unknown'),
         location: {
           floor: row.floor,
           direction: row.direction,
           // coordinates: ... (if available in row)
         },
-        provider: row.attributes?.provider || { type: 'public' },
+        provider: (() => {
+          const p = (row.attributes as { provider?: { type?: string; name?: string; requiresPurchase?: boolean } } | undefined)?.provider
+          const type: 'public' | 'station' | 'shop' = p?.type === 'station' ? 'station' : p?.type === 'shop' ? 'shop' : 'public'
+          return { type, name: p?.name, requiresPurchase: p?.requiresPurchase }
+        })(),
         attributes: row.attributes || {},
-        openingHours: row.attributes?.openingHours,
+        openingHours: ((): string | undefined => {
+          const oh = (row.attributes as { openingHours?: unknown } | undefined)?.openingHours
+          return typeof oh === 'string' && oh.trim() ? oh : undefined
+        })(),
         source: row.source_dataset === 'osm' ? 'osm' : 'manual', // Simple mapping
         updatedAt: row.updated_at
       });
@@ -83,7 +102,7 @@ export async function POST(
     return NextResponse.json({ error: 'Missing layer or data' }, { status: 400 });
   }
 
-  let dbRow: any = {};
+  let dbRow: Record<string, unknown> = {};
 
   if (layer === 'L1') {
     const tag = data as Omit<L1Tag, 'id' | 'nodeId'>;
@@ -152,7 +171,7 @@ export async function PUT(
     return NextResponse.json({ error: 'Missing layer or data' }, { status: 400 });
   }
 
-  let dbRow: any = {};
+  let dbRow: Record<string, unknown> = {};
 
   if (layer === 'L1') {
     const tag = data as L1Tag;

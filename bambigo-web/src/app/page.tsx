@@ -1,6 +1,11 @@
 'use client'
-import { useEffect, useState } from 'react'
-import MapCanvas from '../../components/map/MapCanvas'
+
+import { useEffect, useState, useMemo, useCallback } from 'react'
+import Header, { BreadcrumbItem } from '../components/layout/Header'
+import MapCanvas from '../components/map/MapCanvas'
+import MobileViewport from '../components/layout/MobileViewport'
+import { FABGroup } from '../components/features/controls/FABGroup'
+import { AlertBanner, Alert } from '../components/ui/AlertBanner'
 import type { FeatureCollection } from 'geojson'
 import SearchBar from '../components/views/SearchBar'
 import NodeDashboard from '../components/views/NodeDashboard'
@@ -13,8 +18,20 @@ import FullScreenAssistant from '../components/assistant/FullScreenAssistant'
 import { detectZoneFromPoint, Zone } from '../lib/zones/detector'
 import { getAdapter } from '../lib/adapters'
 import { supabase } from '../lib/supabase'
- 
+import { useLanguage } from '../contexts/LanguageContext'
+import { useAIControl } from '../hooks/useAIControl'
+import { AICommand } from '@/lib/ai/control/types'
+import NavigationMenu from '../components/layout/NavigationMenu'
+import { NavigationStep } from '@/types/navigation'
+import { Bot, Navigation, Share2, X, AlertTriangle, Layers, Wifi } from 'lucide-react'
+import { useSOP } from '../contexts/SOPContext'
+import { findNearestFacility, fetchWalkingRoute, DisasterZone } from '../lib/sop/engine'
+import { L3ServiceFacility } from '../types/tagging'
+
 export default function Home() {
+  const { t, locale } = useLanguage()
+  const { mode, targetCategory } = useSOP()
+
   const [online, setOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true)
   const [installEvt, setInstallEvt] = useState<unknown>(null)
   const [view, setView] = useState<'explore' | 'dashboard' | 'task'>('explore')
@@ -27,9 +44,208 @@ export default function Home() {
   const [accessibility, setAccessibility] = useState<{ preferElevator?: boolean } | null>(null)
   const [tagState, setTagState] = useState<tagging.TagState>({ tags: [] })
   const [sheetMode, setSheetMode] = useState<'collapsed' | 'half' | 'full'>('collapsed')
-  const prefersElevator = (hint: string) => /電梯|無障礙|wheelchair|elevators?|エレベータ(ー)?|バリアフリー|車椅子/i.test(hint)
   const [showAssistant, setShowAssistant] = useState(false)
   const [mapFilter, setMapFilter] = useState<{ tag?: string; status?: string } | undefined>(undefined)
+  const [weatherAlerts, setWeatherAlerts] = useState<Alert[]>([])
+  const [envStatuses, setEnvStatuses] = useState<{ label: string; tone?: 'yellow' | 'blue' | 'red' | 'green' }[]>([])
+  const [disasterZones, setDisasterZones] = useState<DisasterZone[]>([])
+  const [mapStyleIndex, setMapStyleIndex] = useState(0)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [navigationSteps, setNavigationSteps] = useState<NavigationStep[]>([])
+
+  // Mock nodes for demonstration
+  const mockNodes = useMemo((): FeatureCollection => ({
+    type: 'FeatureCollection',
+    features: [
+      {
+        type: 'Feature',
+        id: 'tokyo-station',
+        geometry: { type: 'Point', coordinates: [139.7671, 35.6812] },
+        properties: { 
+          id: 'tokyo-station',
+          name: { ja: '東京駅', en: 'Tokyo Station', zh: '東京站' },
+          category: 'station'
+        }
+      },
+      {
+        type: 'Feature',
+        id: 'ueno-station',
+        geometry: { type: 'Point', coordinates: [139.7774, 35.7141] },
+        properties: { 
+          id: 'ueno-station',
+          name: { ja: '上野駅', en: 'Ueno Station', zh: '上野站' },
+          category: 'station'
+        }
+      },
+      {
+        type: 'Feature',
+        id: 'shinjuku-station',
+        geometry: { type: 'Point', coordinates: [139.7003, 35.6895] },
+        properties: { 
+          id: 'shinjuku-station',
+          name: { ja: '新宿駅', en: 'Shinjuku Station', zh: '新宿站' },
+          category: 'station'
+        }
+      }
+    ]
+  }), [])
+
+  const handleReportHazard = () => {
+    if (!mapCenter) return
+    
+    // Create a mock 100m x 100m hazard zone around map center
+    const [lon, lat] = mapCenter
+    const offset = 0.001 // Approx 100m
+    const newZone: DisasterZone = {
+      id: `hazard-${Date.now()}`,
+      type: 'closure',
+      severity: 'high',
+      geometry: {
+        type: 'Polygon',
+        coordinates: [[
+          [lon - offset, lat - offset],
+          [lon + offset, lat - offset],
+          [lon + offset, lat + offset],
+          [lon - offset, lat + offset],
+          [lon - offset, lat - offset]
+        ]]
+      }
+    }
+    
+    setDisasterZones(prev => [...prev, newZone])
+    alert(t('common.hazardReported') || 'Hazard reported!')
+    
+    // If in emergency mode, recalculate route
+    if (mode === 'emergency') {
+      // The triggerSOP effect will run due to disasterZones dependency change
+    }
+  }
+
+  // AI Control Integration
+  const handleAICommand = useCallback((cmd: AICommand) => {
+    console.log('🤖 AI Command:', cmd)
+    if (cmd.type === 'VIEW_MODE') setView(cmd.payload.mode)
+    if (cmd.type === 'SET_FILTER') setMapFilter({ tag: cmd.payload.tag, status: cmd.payload.status })
+    if (cmd.type === 'TOGGLE_MENU') setIsMenuOpen(cmd.payload.open)
+    if (cmd.type === 'UPDATE_NAVIGATION') {
+      setNavigationSteps(cmd.payload.steps)
+      setView('task')
+    }
+    if (cmd.type === 'NAVIGATE') {
+      // Handle navigation request
+      if (cmd.payload.to) {
+        // Logic to resolve 'to' location would go here
+        setView('task')
+      }
+    }
+  }, [])
+
+  useAIControl(handleAICommand)
+
+  const prefersElevator = (hint: string) => /電梯|無障礙|wheelchair|elevators?|エレベータ(ー)?|バリアフリー|車椅子/i.test(hint)
+
+  const currentLocationName = useMemo(() => {
+    return nodeName?.[locale as 'ja' | 'en' | 'zh'] || nodeName?.zh || undefined
+  }, [nodeName, locale])
+
+  const breadcrumbs = useMemo<BreadcrumbItem[]>(() => {
+    const items: BreadcrumbItem[] = [{ label: t('common.home'), onClick: () => setView('explore') }]
+    if (view === 'dashboard' || view === 'task') {
+      const name = nodeName?.[locale as 'ja'|'en'|'zh'] || nodeName?.zh || t('header.defaultLocation')
+      items.push({ label: name, onClick: () => setView('dashboard'), active: view === 'dashboard' })
+    }
+    if (view === 'task') {
+      items.push({ label: t('navigation.title') || 'Navigation', active: true })
+      if (items.length > 1) items[1].active = false
+    }
+    return items
+  }, [view, nodeName, locale, t])
+
+  // -- Effects --
+
+  // Weather Alerts
+  useEffect(() => {
+    const triggerSOP = async () => {
+      if (mode === 'emergency' && targetCategory) {
+        console.log('🚨 SOP Activated:', targetCategory)
+        
+        const start: [number, number] = mapCenter || lastCoords || [139.777, 35.713] // Fallback to Ueno
+        
+        try {
+          // 1. Fetch real facilities from DB
+          const { data, error } = await supabase
+            .from('facilities')
+            .select('*, nodes(location, name)')
+            .eq('type', targetCategory)
+            .limit(20)
+
+          if (error) throw error
+
+          const facilities: L3ServiceFacility[] = (data || []).map(f => ({
+            id: f.id,
+            nodeId: f.node_id,
+            category: f.type,
+            subCategory: f.attributes?.sub_type || 'default',
+            location: {
+              coordinates: [f.nodes.location.coordinates[0], f.nodes.location.coordinates[1]] as [number, number]
+            },
+            provider: { type: 'public' },
+            attributes: {
+              ...f.attributes,
+              ja: f.nodes.name?.ja,
+              en: f.nodes.name?.en,
+              zh: f.nodes.name?.zh,
+            },
+            source: 'official'
+          }))
+
+          // 2. Find nearest
+          const nearest = findNearestFacility(start, facilities, targetCategory)
+          
+          if (nearest && nearest.location.coordinates) {
+            console.log('📍 Found Nearest:', nearest.attributes.ja)
+            
+            // 3. Fetch Real Route (Phase 3 & 4)
+            const sopRoute = await fetchWalkingRoute(start, nearest.location.coordinates, {
+              avoidZones: disasterZones
+            })
+
+            // 4. Update UI
+            setView('explore')
+            setSheetMode('collapsed')
+            setRoute(sopRoute)
+            
+            // Extract and set navigation steps (Phase 3)
+            const steps = sopRoute.features[0]?.properties?.steps as NavigationStep[] | undefined
+            if (steps) setNavigationSteps(steps)
+            
+            // Optionally update node name to show destination
+            const attrs = nearest.attributes as { ja?: string; en?: string; zh?: string }
+            setNodeName({
+              ja: attrs.ja,
+              en: attrs.en,
+              zh: attrs.zh
+            })
+          }
+        } catch (err) {
+          console.error('Failed to execute SOP navigation:', err)
+        }
+      }
+    }
+
+    triggerSOP()
+  }, [mode, targetCategory, mapCenter, lastCoords, disasterZones])
+
+  useEffect(() => {
+    fetch('/api/weather/alerts')
+      .then(r => r.json())
+      .then(data => {
+        if (data.alerts && Array.isArray(data.alerts)) setWeatherAlerts(data.alerts)
+      })
+      .catch(err => console.error('Failed to fetch alerts:', err))
+  }, [])
+
+  // Online/Offline & PWA Install
   useEffect(() => {
     const onOnline = () => setOnline(true)
     const onOffline = () => setOnline(false)
@@ -46,21 +262,14 @@ export default function Home() {
       window.removeEventListener('beforeinstallprompt', onBIP as EventListener)
     }
   }, [])
-  const showInstall = !!installEvt
-  const mapHeight = view === 'explore' ? '100vh' : view === 'dashboard' ? '50vh' : '15vh'
-  const [envStatuses, setEnvStatuses] = useState<{ label: string; tone?: 'yellow' | 'blue' | 'red' | 'green' }[]>([])
-  
-  // Supabase Connection Test
+
+  // Supabase Check
   useEffect(() => {
     const testSupabase = async () => {
-      console.log('🔄 Testing Supabase Connection...')
       try {
         const { data, error } = await supabase.from('facilities').select('count', { count: 'exact', head: true })
-        if (error) {
-          console.error('❌ Supabase Connection Failed:', error.message)
-        } else {
-          console.log('✅ Supabase Connection Successful! Facility Count:', data)
-        }
+        if (error) console.error('❌ Supabase Connection Failed:', error.message)
+        else console.log('✅ Supabase Connection Successful! Facility Count:', data)
       } catch (err) {
         console.error('❌ Supabase Connection Exception:', err)
       }
@@ -68,10 +277,11 @@ export default function Home() {
     testSupabase()
   }, [])
 
+  // Weather/Env Status
   useEffect(() => {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
     const base: { label: string; tone?: 'yellow' | 'blue' | 'red' | 'green' }[] = [
-      { label: `時區：${tz}`, tone: 'blue' },
+      { label: `${t('common.version')}：v1.2.0`, tone: 'blue' },
     ]
     function updateWithWeather(lat: number, lon: number) {
       const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`
@@ -84,8 +294,8 @@ export default function Home() {
             const wcode = Number(cw.weathercode || 0)
             const isRain = [51,53,55,61,63,65,80,81,82].includes(wcode)
             const list = base.slice()
-            list.push({ label: `天氣：${isRain ? '雨' : '晴/多雲'} ${temp}°C`, tone: isRain ? 'yellow' : 'green' })
-            if (isRain) list.push({ label: '雨天備援路線啟用', tone: 'yellow' })
+            list.push({ label: `${t('header.weather')}：${isRain ? '🌧️' : '☀️'} ${temp}°C`, tone: isRain ? 'yellow' : 'green' })
+            if (isRain) list.push({ label: t('header.rainRoute'), tone: 'yellow' })
             setEnvStatuses(list)
           } else {
             setEnvStatuses(base)
@@ -104,45 +314,226 @@ export default function Home() {
       updateWithWeather(fallback[1], fallback[0])
     }
   }, [lastCoords, mapCenter])
-  const actions = ['找廁所', '找置物櫃', '去淺草', '避難']
+
+  // -- Handlers --
+
+  const handleNodeSelected = (f: GeoJSON.Feature) => {
+    const nm = (f.properties as { name?: { ja?: string; en?: string; zh?: string } } | undefined)?.name
+    const id = (f.properties as { id?: string } | undefined)?.id
+    const coords = (f.geometry as { coordinates?: [number, number] } | undefined)?.coordinates
+    if (nm) setNodeName(nm)
+    if (id) setNodeId(id)
+    if (Array.isArray(coords) && coords.length === 2) {
+      const z = detectZoneFromPoint(coords[0], coords[1])
+      setZone(z)
+      setLastCoords(coords)
+      setMapCenter(coords)
+    }
+    setView('dashboard')
+    setSheetMode('half') // Open sheet to 60%
+  }
+
+  const handleRouteHint = async (hint: string) => {
+    const origin = Array.isArray(mapCenter) ? mapCenter : lastCoords
+    if (!origin) return
+    const [lon, lat] = origin
+    let dst: [number, number] | null = null
+    let mid: [number, number] | null = null
+    
+    // Attempt to find elevator
+    try {
+      if (nodeId) {
+        const url = `/api/facilities?node_id=${encodeURIComponent(nodeId)}&type=${encodeURIComponent('elevator')}&limit=10`
+        const r = await fetch(url)
+        if (r.ok) {
+          const j = await r.json()
+          const items = Array.isArray(j?.items) ? j.items as { distance_meters?: number; direction?: string }[] : []
+          const best = items[0]
+          if (best && typeof best?.distance_meters === 'number' && best.distance_meters > 0) {
+            const dist = best.distance_meters
+            const dir = String(best.direction || '').toLowerCase()
+            const az = dir.includes('north') || dir.includes('北') ? 0
+              : dir.includes('east') || dir.includes('東') ? 90
+              : dir.includes('south') || dir.includes('南') ? 180
+              : dir.includes('west') || dir.includes('西') ? 270
+              : 45
+            const rad = (Math.PI / 180) * az
+            const dLat = (dist / 111320) * Math.cos(rad)
+            const dLon = (dist / (111320 * Math.cos((Math.PI / 180) * lat))) * Math.sin(rad)
+            mid = [lon + dLon * 0.5, lat + dLat * 0.5]
+            dst = [lon + dLon, lat + dLat]
+          }
+        }
+      }
+    } catch {}
+    
+    // Fallback simulation
+    if (!dst || !mid) {
+      const dx = 0.002
+      const dy = 0.0015
+      mid = [lon + dx * 0.5, lat + dy * 0.5]
+      dst = [lon + dx, lat + dy]
+    }
+    
+    const fc: FeatureCollection = {
+      type: 'FeatureCollection',
+      features: [
+        { type: 'Feature', geometry: { type: 'LineString', coordinates: [origin, mid, dst] }, properties: { kind: 'route', via: 'elevator', hint } },
+        { type: 'Feature', geometry: { type: 'Point', coordinates: mid }, properties: { kind: 'elevator' } },
+        { type: 'Feature', geometry: { type: 'Point', coordinates: dst }, properties: { kind: 'exit' } },
+      ],
+    }
+    setRoute(fc)
+    setAccessibility({ preferElevator: prefersElevator(hint) || true })
+  }
+
+  // -- FAB Actions --
+  const fabActions = useMemo(() => {
+    const common = [
+      {
+        id: 'ai',
+        icon: <Bot className="w-6 h-6" />,
+        label: 'AI Assistant',
+        onClick: () => setShowAssistant(true),
+        onLongPress: () => {
+          if (navigator.vibrate) navigator.vibrate([50, 50, 50])
+          alert('🎙️ AI Voice Mode Activated')
+        },
+        variant: 'primary' as const
+      },
+      {
+        id: 'report-hazard',
+        icon: <AlertTriangle className="w-6 h-6" />,
+        label: t('actions.reportHazard') || '通報危險',
+        variant: 'danger' as const,
+        onClick: handleReportHazard,
+      }
+    ]
+
+    if (view === 'explore') {
+      return [
+        ...common,
+        {
+          id: 'layers',
+          icon: <Layers className="w-6 h-6" />,
+          label: 'Map Layers',
+          onClick: () => setMapStyleIndex(prev => (prev + 1) % 3),
+          onLongPress: () => alert('🗺️ Advanced Map Settings'),
+          variant: 'secondary' as const
+        }
+      ]
+    }
+
+    if (view === 'dashboard') {
+      return [
+        {
+          id: 'close',
+          icon: <X className="w-6 h-6" />,
+          label: 'Close',
+          onClick: () => {
+            setView('explore')
+            setRoute(null)
+            setAccessibility(null)
+            setSheetMode('collapsed')
+          },
+          variant: 'secondary' as const
+        },
+        ...common,
+        {
+          id: 'navigate',
+          icon: <Navigation className="w-6 h-6" />,
+          label: 'Navigate',
+          onClick: () => setView('task'),
+          onLongPress: () => alert('🚀 Quick Navigate to Home'),
+          variant: 'primary' as const
+        }
+      ]
+    }
+
+    return common
+  }, [view])
+
+  const secondaryFabActions = useMemo(() => [
+    {
+      id: 'wifi',
+      icon: <Wifi className="w-5 h-5" />,
+      label: 'Offline Mode',
+      onClick: () => setOnline(!online),
+    },
+    {
+      id: 'share',
+      icon: <Share2 className="w-5 h-5" />,
+      label: 'Share Route',
+      onClick: () => {
+        if (navigator.share) navigator.share({ title: 'BambiGO Route', url: window.location.href })
+      },
+    },
+    {
+      id: 'emergency',
+      icon: <AlertTriangle className="w-5 h-5 text-red-500" />,
+      label: 'Emergency',
+      onClick: () => alert('SOS Signal Sent'),
+      variant: 'danger' as const
+    }
+  ], [online])
+
+  const showInstall = !!installEvt
+  const actions = [t('actions.toilet'), t('actions.locker'), t('actions.asakusa'), t('actions.evacuate')]
+
   return (
-    <div>
-      {typeof window !== 'undefined' && !online && (
-        <div className="fixed top-2 right-2 bg-gray-900 text-white px-3 py-1.5 rounded-lg text-sm z-[1000] shadow-md">
-          離線狀態
+    <MobileViewport>
+      <Header 
+        breadcrumbs={breadcrumbs} 
+        onMenuClick={() => setIsMenuOpen(true)} 
+        locationName={nodeName[locale as 'ja'|'en'|'zh'] || nodeName.zh}
+      />
+      
+      <NavigationMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+      
+      {/* Layer 0: Map Background */}
+      <div className="absolute inset-0 z-0">
+        <MapCanvas 
+          height="100%"
+          showBus={view !== 'explore'}
+          zone={zone}
+          center={mapCenter || undefined}
+          route={route || null}
+          accessibility={accessibility || undefined}
+          showPopup={view === 'explore'}
+          onNodeSelected={handleNodeSelected}
+          nodes={mockNodes}
+          styleIndex={mapStyleIndex}
+          locale={locale}
+        />
+      </div>
+
+      {/* Layer 1: Bottom Search (Explore mode only) */}
+      {view === 'explore' && (
+        <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none">
+          <div className="pointer-events-auto">
+            <SearchBar onSubmit={(q) => { if (q.trim()) setView('dashboard') }} onMic={() => setShowAssistant(true)} />
+          </div>
         </div>
       )}
-      {showInstall && (
-        <button
-          className="fixed bottom-4 right-4 bg-blue-800 text-white px-4 py-2 rounded-xl shadow-lg z-[1000] active:scale-95 transition-transform"
-          onClick={() => {
-            const ev = installEvt as { prompt?: () => Promise<void> }
-            setInstallEvt(null)
-            ev.prompt?.()
-          }}
-        >
-          安裝到主畫面
-        </button>
-      )}
-      <MapCanvas height={mapHeight} showBus={view !== 'explore' ? true : false} zone={zone} center={mapCenter || undefined} route={route || null} accessibility={accessibility || undefined} showPopup={view === 'explore'} onNodeSelected={(f) => {
-        const nm = (f.properties as { name?: { ja?: string; en?: string; zh?: string } } | undefined)?.name
-        const id = (f.properties as { id?: string } | undefined)?.id
-        const coords = (f.geometry as { coordinates?: [number, number] } | undefined)?.coordinates
-        if (nm) setNodeName(nm)
-        if (id) setNodeId(id)
-        if (Array.isArray(coords) && coords.length === 2) {
-          const z = detectZoneFromPoint(coords[0], coords[1])
-          setZone(z)
-          setLastCoords(coords)
-          setMapCenter(coords)
-        }
-        setView('dashboard')
-      }} />
-      {view === 'explore' && (
-        <>
-          <SearchBar onSubmit={(q) => { if (q.trim()) setView('dashboard') }} onMic={() => setShowAssistant(true)} />
-          {mapFilter && (
-            <div className="fixed top-20 left-1/2 -translate-x-1/2 z-10 flex gap-2">
+
+      {/* Layer 2: Top UI (Alerts, Offline Indicator, Filter) */}
+      <div className="absolute top-16 left-0 right-0 z-10 p-2 pointer-events-none">
+        <div className="pointer-events-auto flex flex-col gap-2">
+          <AlertBanner alerts={weatherAlerts} />
+          
+          {/* Offline Indicator */}
+          {typeof window !== 'undefined' && !online && (
+            <div className="flex justify-end">
+               <div className="bg-gray-900 text-white px-3 py-1.5 rounded-lg text-sm shadow-md flex items-center gap-2">
+                 <AlertTriangle className="w-4 h-4 text-yellow-500" />
+                 {t('common.offline')}
+               </div>
+            </div>
+          )}
+
+          {/* Filter Indicator */}
+          {mapFilter && view === 'explore' && (
+             <div className="flex justify-center">
               <div className="bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-sm font-medium animate-in fade-in slide-in-from-top-4">
                 <span>Filtering: {mapFilter.tag}</span>
                 {mapFilter.status && <span className="text-blue-200 text-xs">({mapFilter.status.replace('_', ' ')})</span>}
@@ -150,151 +541,132 @@ export default function Home() {
                   onClick={() => setMapFilter(undefined)}
                   className="ml-2 w-5 h-5 flex items-center justify-center hover:bg-blue-700 rounded-full"
                 >
-                  ✕
+                  <X className="w-3 h-3" />
                 </button>
               </div>
             </div>
           )}
-        </>
-      )}
+
+          {/* Zone Alerts */}
+          {zone === 'outer' && (
+            <div className="mt-2 bg-red-900/90 text-white px-4 py-3 rounded-xl shadow-lg backdrop-blur-md">
+              <div className="mb-2 text-sm font-medium">{t('common.outOfRange')}</div>
+              <div className="flex gap-2">
+                <button
+                  className="bg-white text-gray-900 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm active:scale-95 transition-transform"
+                  onClick={() => {
+                    const fallback = { lat: 35.681236, lon: 139.767125 }
+                    const lat = Array.isArray(lastCoords) ? lastCoords[1] : fallback.lat
+                    const lon = Array.isArray(lastCoords) ? lastCoords[0] : fallback.lon
+                    const url = `https://www.google.com/maps?q=${lat},${lon}`
+                    window.open(url, '_blank')
+                  }}
+                >
+                  {t('common.openGoogleMaps')}
+                </button>
+                <button
+                  className="bg-yellow-500 text-gray-900 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm active:scale-95 transition-transform"
+                  onClick={() => {
+                    const core = getAdapter('tokyo_core')
+                    if (core) {
+                      const [minLon, minLat, maxLon, maxLat] = core.bounds
+                      const centerLon = (minLon + maxLon) / 2
+                      const centerLat = (minLat + maxLat) / 2
+                      setMapCenter([centerLon, centerLat])
+                    } else {
+                      setMapCenter([139.7774, 35.7141])
+                    }
+                    setZone('core')
+                  }}
+                >
+                  {t('common.backToCenter')}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Layer 2: Main Content (BottomSheet / Task) */}
       {view === 'dashboard' && (
-        <div className="fixed left-0 right-0 bottom-0 max-h-[50vh] overflow-auto p-3 z-10">
-          <NodeDashboard nodeId={nodeId || undefined} name={nodeName} statuses={envStatuses} actions={actions} filterSuitability={(() => { const q = tagging.buildSuitabilityQuery(tagState.tags, 0.6); return { tag: q.tag, minConfidence: q.minConfidence } })()} onAction={(a) => { 
-            if (a.includes('去')) {
-              setView('task')
-            } else if (a.startsWith('app:filter')) {
-              try {
-                const url = new URL(a.replace('app:', 'http://dummy/'))
-                const tag = url.searchParams.get('tag') || undefined
-                const status = url.searchParams.get('status') || undefined
-                const indoor = url.searchParams.get('indoor')
-                let finalTag = tag
-                if (indoor === 'true') finalTag = 'indoor'
-                setMapFilter({ tag: finalTag, status })
-                setView('explore')
-                setNodeId(null)
-              } catch {}
-            }
-          }} onRouteHint={async (hint) => {
-            const origin = Array.isArray(mapCenter) ? mapCenter : lastCoords
-            if (!origin) return
-            const [lon, lat] = origin
-            let dst: [number, number] | null = null
-            let mid: [number, number] | null = null
-            try {
-              if (nodeId) {
-                const url = `/api/facilities?node_id=${encodeURIComponent(nodeId)}&type=${encodeURIComponent('elevator')}&limit=10`
-                const r = await fetch(url)
-                if (r.ok) {
-                  const j = await r.json()
-                  const items = Array.isArray(j?.items) ? j.items as { distance_meters?: number; direction?: string }[] : []
-                  const best = items[0]
-                  if (best && typeof best?.distance_meters === 'number' && best.distance_meters > 0) {
-                    const dist = best.distance_meters
-                    const dir = String(best.direction || '').toLowerCase()
-                    const az = dir.includes('north') || dir.includes('北') ? 0
-                      : dir.includes('east') || dir.includes('東') ? 90
-                      : dir.includes('south') || dir.includes('南') ? 180
-                      : dir.includes('west') || dir.includes('西') ? 270
-                      : 45
-                    const rad = (Math.PI / 180) * az
-                    const dLat = (dist / 111320) * Math.cos(rad)
-                    const dLon = (dist / (111320 * Math.cos((Math.PI / 180) * lat))) * Math.sin(rad)
-                    mid = [lon + dLon * 0.5, lat + dLat * 0.5]
-                    dst = [lon + dLon, lat + dLat]
+        <BottomSheet 
+          mode={sheetMode} 
+          onModeChange={setSheetMode} 
+          collapsedContent={<div className="text-xs text-gray-600 text-center py-2">{t('common.swipeUpForDetails')}</div>} 
+          halfContent={
+            <div className="p-4 h-full overflow-y-auto">
+              <NodeDashboard 
+                nodeId={nodeId || undefined} 
+                name={nodeName} 
+                statuses={envStatuses} 
+                actions={actions} 
+                filterSuitability={(() => { const q = tagging.buildSuitabilityQuery(tagState.tags, 0.6); return { tag: q.tag, minConfidence: q.minConfidence } })()} 
+                onAction={(a) => { 
+                  if (a.includes('去')) {
+                    setView('task')
+                  } else if (a.startsWith('app:filter')) {
+                    try {
+                      const url = new URL(a.replace('app:', 'http://dummy/'))
+                      const tag = url.searchParams.get('tag') || undefined
+                      const status = url.searchParams.get('status') || undefined
+                      const indoor = url.searchParams.get('indoor')
+                      let finalTag = tag
+                      if (indoor === 'true') finalTag = 'indoor'
+                      setMapFilter({ tag: finalTag, status })
+                      setView('explore')
+                      setNodeId(null)
+                    } catch {}
                   }
-                }
-              }
-            } catch {}
-            if (!dst || !mid) {
-              const dx = 0.002
-              const dy = 0.0015
-              mid = [lon + dx * 0.5, lat + dy * 0.5]
-              dst = [lon + dx, lat + dy]
-            }
-            const fc: FeatureCollection = {
-              type: 'FeatureCollection',
-              features: [
-                { type: 'Feature', geometry: { type: 'LineString', coordinates: [origin, mid, dst] }, properties: { kind: 'route', via: 'elevator', hint } },
-                { type: 'Feature', geometry: { type: 'Point', coordinates: mid }, properties: { kind: 'elevator' } },
-                { type: 'Feature', geometry: { type: 'Point', coordinates: dst }, properties: { kind: 'exit' } },
-              ],
-            }
-            setRoute(fc)
-            setAccessibility({ preferElevator: prefersElevator(hint) || true })
-          }} />
-          <div className="mt-2">
-            <TagFilterBar state={tagState} onRemove={(id) => setTagState((s) => tagging.deleteTag(s, id))} />
-          </div>
-          <div className="mt-2">
-            <button className="rounded bg-gray-900 px-3 py-2 text-xs text-white" onClick={() => setSheetMode(sheetMode === 'collapsed' ? 'half' : sheetMode === 'half' ? 'full' : 'collapsed')}>標籤管理</button>
-          </div>
-          <BottomSheet mode={sheetMode} onModeChange={(m) => setSheetMode(m)} collapsedContent={<div className="text-xs text-gray-600">上滑以管理標籤</div>} halfContent={<TagManager value={tagState} onChange={setTagState} />} fullContent={<TagManager value={tagState} onChange={setTagState} />} />
-        </div>
+                }} 
+                onRouteHint={handleRouteHint} 
+              />
+              <div className="mt-4 pb-20">
+                <TagFilterBar state={tagState} onRemove={(id) => setTagState((s) => tagging.deleteTag(s, id))} />
+                <div className="mt-2">
+                   <button className="rounded bg-gray-100 px-3 py-2 text-xs text-gray-700 w-full" onClick={() => setSheetMode('full')}>{t('common.manageTags')}</button>
+                </div>
+              </div>
+            </div>
+          } 
+          fullContent={<TagManager value={tagState} onChange={setTagState} />} 
+        />
       )}
-      {zone === 'buffer' && (
-        <div className="fixed top-2 left-2 bg-gray-900 text-white px-3 py-1.5 rounded-lg text-sm z-[1000] shadow-md">
-          此區域僅提供基本導航
-        </div>
-      )}
-      {zone === 'outer' && (
-        <div className="fixed top-2 left-2 bg-red-900/90 text-white px-4 py-3 rounded-xl z-[1000] shadow-lg backdrop-blur-md max-w-[90vw]">
-          <div className="mb-2 text-sm font-medium">超出主要支援範圍：建議回到中心區域，或使用 Google 地圖規劃路線</div>
-          <div className="flex gap-2">
-            <button
-              className="bg-white text-gray-900 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm active:scale-95 transition-transform"
-              onClick={() => {
-                const fallback = { lat: 35.681236, lon: 139.767125 }
-                const lat = Array.isArray(lastCoords) ? lastCoords[1] : fallback.lat
-                const lon = Array.isArray(lastCoords) ? lastCoords[0] : fallback.lon
-                const url = `https://www.google.com/maps?q=${lat},${lon}`
-                window.open(url, '_blank')
-              }}
-            >
-              用 Google 地圖導航
-            </button>
-            <button
-              className="bg-yellow-500 text-gray-900 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm active:scale-95 transition-transform"
-              onClick={() => {
-                const core = getAdapter('tokyo_core')
-                if (core) {
-                  const [minLon, minLat, maxLon, maxLat] = core.bounds
-                  const centerLon = (minLon + maxLon) / 2
-                  const centerLat = (minLat + maxLat) / 2
-                  setMapCenter([centerLon, centerLat])
-                } else {
-                  setMapCenter([139.7774, 35.7141])
-                }
-                setZone('core')
-              }}
-            >
-              回到中心區域
-            </button>
-          </div>
-        </div>
-      )}
+
       {view === 'task' && (
-        <div className="fixed left-0 right-0 bottom-0 max-h-[85vh] overflow-auto p-3 z-10">
-          <TaskMode destination={'淺草'} />
+        <div className="absolute inset-0 z-50 bg-white/10 backdrop-blur-[2px] pointer-events-auto overflow-hidden animate-in fade-in duration-300">
+          <TaskMode 
+            destination={typeof nodeName === 'string' ? nodeName : nodeName[locale === 'zh-TW' ? 'zh' : (locale as 'ja' | 'en' | 'zh')] || nodeName.zh} 
+            onExit={() => {
+              setView('explore')
+              setRoute(null)
+              setNavigationSteps([])
+            }} 
+            steps={navigationSteps} 
+          />
         </div>
       )}
-      {view !== 'explore' && (
-        <button
-          className="fixed bottom-20 right-4 bg-blue-600 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg z-[1000] active:scale-95 transition-transform"
-          onClick={() => setShowAssistant(true)}
-        >
-          <span style={{ fontSize: 24 }}>🤖</span>
-        </button>
+
+      {/* Layer 3: Controls (FAB) */}
+      <FABGroup mainActions={fabActions} secondaryActions={secondaryFabActions} />
+
+      {/* Install Button (Special) */}
+      {showInstall && (
+        <div className="fixed bottom-4 left-4 z-50">
+           <button
+            className="bg-blue-800 text-white px-4 py-2 rounded-xl shadow-lg active:scale-95 transition-transform flex items-center gap-2"
+            onClick={() => {
+              const ev = installEvt as { prompt?: () => Promise<void> }
+              setInstallEvt(null)
+              ev.prompt?.()
+            }}
+          >
+            {t('common.install')}
+          </button>
+        </div>
       )}
-      {view === 'dashboard' && (
-        <button
-          style={{ position: 'fixed', bottom: 140, right: 16, background: '#111827', color: '#fff', width: 48, height: 48, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', zIndex: 1000 }}
-          onClick={() => { setRoute(null); setAccessibility(null) }}
-        >
-          <span style={{ fontSize: 18 }}>✕</span>
-        </button>
-      )}
+
+      {/* Assistants / Dialogs */}
       <FullScreenAssistant open={showAssistant} onClose={() => setShowAssistant(false)} nodeId={nodeId || undefined} />
-    </div>
+    </MobileViewport>
   )
 }

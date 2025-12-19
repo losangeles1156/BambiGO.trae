@@ -18,7 +18,7 @@
 建立 `.env` 參考 `.env.example`：
 ```
 ASSISTANT_RATE_LIMIT=20,60
-AI_PROVIDER=mock
+AI_PROVIDER=dify
 DATABASE_URL=postgres://user:pass@host:5432/dbname
 ```
 
@@ -39,7 +39,7 @@ DATABASE_URL=postgres://user:pass@host:5432/dbname
 ```
 npm run dev
 ```
-開啟首頁後，按下「🦌 AI」進入助理，全程在瀏覽器側串流渲染；若未設定真實提供者，後端回傳回退 JSON。
+開啟首頁後，按下「🦌 AI」進入助理，全程在瀏覽器側串流渲染；需設定真實提供者（Dify/n8n），否則後端回傳配置錯誤。
 
 ## 測試
 ```

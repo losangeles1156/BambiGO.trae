@@ -1,0 +1,183 @@
+{
+  "name": "Weather Alert Sentry (Tokyo)",
+  "nodes": [
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyMinute",
+              "minute": 5
+            }
+          ]
+        }
+      },
+      "name": "5-Min Timer",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [100, 100]
+    },
+    {
+      "parameters": {
+        "path": "weather/status",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [100, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://www.data.jma.go.jp/developer/xml/feed/extra.xml"
+      },
+      "name": "RSS Feed (Extra)",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [300, 200]
+    },
+    {
+      "parameters": {
+        "url": "https://www.data.jma.go.jp/developer/xml/feed/eqvol.xml"
+      },
+      "name": "RSS Feed (Earthquake)",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [300, 400]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Filter for Tokyo and Severity\nconst item = $input.item.json;\nconst title = item.title || '';\nconst content = item.content || item.summary || '';\nconst fullText = (title + ' ' + content);\n\n// 1. Geo Filter (Tokyo)\nif (!fullText.includes('東京都') && !fullText.includes('東京地方') && !fullText.includes('23区')) {\n  return { json: { match: false } };\n}\n\n// 2. Type & Severity Filter\nlet severity = 'low';\nlet type = 'general';\nlet tags = { l1: [], l3: [], l4: '' };\n\n// Earthquake\nif (title.includes('地震') || title.includes('震度')) {\n  type = 'earthquake';\n  if (fullText.includes('震度５') || fullText.includes('震度６') || fullText.includes('震度７')) {\n    severity = 'high';\n    tags.l4 = 'seek_shelter';\n    tags.l3 = ['evacuation_site'];\n  } else if (fullText.includes('震度３') || fullText.includes('震度４')) {\n    severity = 'medium';\n    tags.l4 = 'secure_items';\n  }\n}\n\n// Rain/Storm\nif (title.includes('大雨') || title.includes('台風') || title.includes('洪水')) {\n  type = 'storm';\n  if (title.includes('警報') || title.includes('特別警報')) {\n    severity = 'high';\n    tags.l4 = 'avoid_underground';\n    tags.l1 = ['park', 'river'];\n  } else if (title.includes('注意報')) {\n    severity = 'medium';\n    tags.l4 = 'bring_umbrella';\n  }\n}\n\n// 3. Return Structure\nif (severity === 'low') return { json: { match: false } };\n\nconst card = {\n  title: `⚠️ ${title}`,\n  desc: content.substring(0, 100) + '...',\n  primary: tags.l4 === 'seek_shelter' ? '尋找避難所' : '查看詳情'\n};\n\nreturn { \n  json: { \n    match: true, \n    cards: [card],\n    active: true,\n    severity,\n    type,\n    title,\n    description: content.substring(0, 200) + '...',\n    timestamp: new Date().toISOString(),\n    tags\n  } \n};"
+      },
+      "name": "3-Stage Filter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.match }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Is Alert?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "name": "Respond Alert",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{ \"active\": false, \"message\": \"No active alerts for Tokyo\" }",
+        "options": {}
+      },
+      "name": "Respond Empty",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [900, 400]
+    }
+  ],
+  "connections": {
+    "5-Min Timer": {
+      "main": [
+        [
+          {
+            "node": "RSS Feed (Extra)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS Feed (Earthquake)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "RSS Feed (Extra)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS Feed (Earthquake)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Feed (Extra)": {
+      "main": [
+        [
+          {
+            "node": "3-Stage Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Feed (Earthquake)": {
+      "main": [
+        [
+          {
+            "node": "3-Stage Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3-Stage Filter": {
+      "main": [
+        [
+          {
+            "node": "Is Alert?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Alert?": {
+      "main": [
+        [
+          {
+            "node": "Respond Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Empty",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

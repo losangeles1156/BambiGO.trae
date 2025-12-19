@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from 'react'
 import maplibregl from 'maplibre-gl'
 import type { StyleSpecification } from 'maplibre-gl'
 import type { FeatureCollection, Feature } from 'geojson'
-import { Locate } from 'lucide-react'
 import NodeCard from './NodeCard'
 import { Colors, MapFilters } from '../../src/lib/designTokens'
 
@@ -168,42 +167,9 @@ export default function MapCanvas({ height, onNodeSelected, showBus = true, zone
     })
     map.on('styledata', () => {
       setStyleError(null)
-      try {
-        const fc = data || { type: 'FeatureCollection', features: [] }
-        const feats = Array.isArray(fc.features) ? fc.features : []
-        let filtered = feats
-        if (filter?.tag) {
-          filtered = feats.filter(f => {
-            const props = f.properties as NodeProps | undefined
-            const tags = props?.supply_tags || []
-            return tags.some(t => t === filter.tag || t === `has_${filter.tag}` || t.includes(filter.tag!))
-          })
-        }
-        const stations: FeatureCollection = { type: 'FeatureCollection', features: filtered.filter((f) => (f.properties as NodeProps | undefined)?.type === 'station') as Feature[] }
-        const busstops: FeatureCollection = { type: 'FeatureCollection', features: filtered.filter((f) => (f.properties as NodeProps | undefined)?.type === 'bus_stop') as Feature[] }
-        const srcStation = map.getSource('src-station') as maplibregl.GeoJSONSource | undefined
-        const srcBus = map.getSource('src-bus') as maplibregl.GeoJSONSource | undefined
-        srcStation?.setData(stations)
-        if (showBusRef.current && srcBus) srcBus.setData(busstops)
-      } catch {}
     })
     map.on('load', () => {
       handleGeolocation()
-      if (!map.getSource('src-station')) map.addSource('src-station', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } as FeatureCollection })
-      if (!map.getLayer('layer-station'))
-        map.addLayer({
-          id: 'layer-station',
-          type: 'circle',
-          source: 'src-station',
-          paint: {
-            'circle-color': Colors.map.stationFill,
-            'circle-opacity': 0.95,
-            'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 7, 14, 10, 18, 13],
-            'circle-stroke-color': Colors.map.circleStroke,
-            'circle-stroke-width': 2,
-          },
-        })
-      if (!map.getSource('src-bus')) map.addSource('src-bus', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } as FeatureCollection })
       if (!map.getLayer('layer-bus'))
         map.addLayer({
           id: 'layer-bus',
@@ -245,24 +211,7 @@ export default function MapCanvas({ height, onNodeSelected, showBus = true, zone
             'circle-stroke-width': 2,
           },
         })
-      try {
-        const fc = data || { type: 'FeatureCollection', features: [] }
-        const feats = Array.isArray(fc.features) ? fc.features : []
-        let filtered = feats
-        if (filter?.tag) {
-          filtered = feats.filter(f => {
-            const props = f.properties as NodeProps | undefined
-            const tags = props?.supply_tags || []
-            return tags.some(t => t === filter.tag || t === `has_${filter.tag}` || t.includes(filter.tag!))
-          })
-        }
-        const stations: FeatureCollection = { type: 'FeatureCollection', features: filtered.filter((f) => (f.properties as NodeProps | undefined)?.type === 'station') as Feature[] }
-        const busstops: FeatureCollection = { type: 'FeatureCollection', features: filtered.filter((f) => (f.properties as NodeProps | undefined)?.type === 'bus_stop') as Feature[] }
-        const srcStation = map.getSource('src-station') as maplibregl.GeoJSONSource | undefined
-        const srcBus = map.getSource('src-bus') as maplibregl.GeoJSONSource | undefined
-        srcStation?.setData(stations)
-        if (showBusRef.current && srcBus) srcBus.setData(busstops)
-      } catch {}
+      
       map.on('click', 'layer-station', (e) => {
         const f = (e as unknown as { features?: Feature[] }).features?.[0]
         if (f) {
@@ -379,7 +328,7 @@ export default function MapCanvas({ height, onNodeSelected, showBus = true, zone
       const routeColor = (preferElevator ? '#2563eb' : '#6b7280')
       if (map.getLayer('layer-route')) map.setPaintProperty('layer-route', 'line-color', routeColor)
     } catch {}
-  }, [zone, accessibility])
+  }, [zone, accessibility, filter])
 
   useEffect(() => {
     const map = mapRef.current

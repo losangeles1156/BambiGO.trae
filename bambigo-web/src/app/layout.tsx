@@ -4,6 +4,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
 import SwRegister from "../../components/SwRegister";
 import { AuthProvider } from "../components/auth/AuthContext";
+import { LanguageProvider } from "../contexts/LanguageContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,6 +31,8 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
 };
 
+import { SOPProvider } from "../contexts/SOPContext";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -41,8 +44,12 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <AuthProvider>
-          <SwRegister />
-          {children}
+          <LanguageProvider>
+            <SOPProvider>
+              <SwRegister />
+              {children}
+            </SOPProvider>
+          </LanguageProvider>
         </AuthProvider>
       </body>
     </html>

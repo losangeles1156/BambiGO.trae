@@ -1,52 +1,144 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  /* Brand Colors */
+  --primary-50: #eff6ff;
+  --primary-100: #dbeafe;
+  --primary-500: #3b82f6;
+  --primary-600: #2563eb;
+  --primary-700: #1d4ed8;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Semantic Colors */
+  --bg-app: #ffffff;
+  --bg-surface: #ffffff;
+  --bg-surface-alt: #f8fafc;
+  
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #94a3b8;
+
+  /* Status Colors */
+  --status-success-bg: #dcfce7;
+  --status-success-text: #166534;
+  --status-warning-bg: #fef9c3;
+  --status-warning-text: #854d0e;
+  --status-error-bg: #fee2e2;
+  --status-error-text: #991b1b;
+  --status-info-bg: #e0f2fe;
+  --status-info-text: #075985;
+
+  /* UI Dimensions */
+  --header-height: 4rem;
+  --touch-target: 48px;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg-app: #0f172a;
+    --bg-surface: #1e293b;
+    --bg-surface-alt: #334155;
+    
+    --text-primary: #f1f5f9;
+    --text-secondary: #cbd5e1;
+    --text-tertiary: #64748b;
   }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg-app);
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, sans-serif;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* UI Components layer: unify Header/Card/Chip styles (plain CSS to avoid @apply issues) */
-.ui-header { background: #fff; border-bottom: 1px solid #f1f5f9; position: sticky; top: 0; z-index: 50; }
-.ui-header__bar { max-width: 80rem; margin: 0 auto; padding: 0 1rem; }
-.ui-header__row { display: flex; align-items: center; justify-content: space-between; height: 4rem; }
-.ui-header__btn { padding: 0.5rem; border-radius: 0.5rem; transition: background-color 150ms ease; }
-.ui-header__btn:hover { background: #f3f4f6; }
-.ui-header__btn:focus-visible { outline: none; }
-.ui-header__location { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; border-radius: 0.5rem; transition: background-color 150ms ease; }
-.ui-header__location:hover { background: #f8fafc; }
-.ui-header__location:focus-visible { outline: none; }
+/* UI Components Layer */
 
-.ui-card { background: #fff; border-radius: 0.75rem; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); transition: box-shadow 150ms ease; }
-.ui-card:hover { box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); }
-.ui-card--compact { border-radius: 0.5rem; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
-.ui-card__title { font-size: 1rem; font-weight: 600; color: #111827; }
-.ui-section__title { font-size: 0.875rem; font-weight: 500; color: #374151; }
+/* Header */
+.ui-header {
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--text-tertiary);
+  height: var(--header-height);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
 
-.ui-chip { display: inline-flex; align-items: center; border-radius: 999px; padding: 0.25rem 0.75rem; font-size: 0.75rem; font-weight: 500; }
-.ui-chip--gray { background: #f3f4f6; color: #1f2937; }
-.ui-chip--yellow { background: #fef3c7; color: #78350f; }
-.ui-chip--purple { background: #ede9fe; color: #4c1d95; }
-.ui-chip--blue { background: #dbeafe; color: #1e3a8a; }
-.ui-chip--green { background: #d1fae5; color: #065f46; }
+.ui-header__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+  padding: 0 1rem;
+}
 
-.ui-card button:focus-visible { outline: none; }
+/* Breadcrumbs */
+.ui-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.ui-breadcrumb__item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.ui-breadcrumb__item--active {
+  color: var(--primary-600);
+  font-weight: 600;
+}
+
+/* Interactive Elements (Touch Target Optimization) */
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  padding: 0.5rem;
+  border-radius: 0.75rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.ui-btn:active {
+  transform: scale(0.96);
+}
+
+.ui-btn:focus-visible {
+  outline: 2px solid var(--primary-500);
+  outline-offset: 2px;
+}
+
+/* Card Styles */
+.ui-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--text-tertiary);
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ui-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* Chip Styles */
+.ui-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 2rem; /* 32px */
+  padding: 0 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.ui-chip--yellow { background: var(--status-warning-bg); color: var(--status-warning-text); }
+.ui-chip--blue { background: var(--status-info-bg); color: var(--status-info-text); }
+.ui-chip--green { background: var(--status-success-bg); color: var(--status-success-text); }

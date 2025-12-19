@@ -1,156 +1,247 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
-import FallbackCard from '../ui/FallbackCard'
-import { z } from 'zod'
 
-const StreamSchema = z.union([
-  z.object({ type: z.literal('message'), content: z.string() }),
-  z.object({ type: z.literal('done') }),
-  z.object({ type: z.literal('error'), message: z.string().optional() })
-])
+import React, { useState, useRef, useEffect } from 'react'
+import { X, Send, Navigation } from 'lucide-react'
+import { clsx } from 'clsx'
 
-type Props = { open: boolean; onClose: () => void; nodeId?: string }
+type Props = {
+  open: boolean
+  onClose: () => void
+  nodeId?: string
+}
+
+type Message = {
+  role: 'user' | 'ai'
+  content: string
+  timestamp: number
+}
+
+const QUICK_QUESTIONS = [
+  { id: 'home', label: '我要回家', prompt: '我想回家，請告訴我最近的車站或交通方式' },
+  { id: 'shop', label: '我想逛街/吃飯', prompt: '這附近有什麼推薦的餐廳或逛街景點？' },
+  { id: 'access', label: '我需要無障礙路線', prompt: '我需要無障礙設施（電梯、坡道），請協助規劃路線' }
+]
+
 export default function FullScreenAssistant({ open, onClose, nodeId }: Props) {
   const [text, setText] = useState('')
-  const [msgs, setMsgs] = useState<{ role: 'user' | 'ai'; content: string }[]>([])
+  const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [fallbackCards, setFallbackCards] = useState<{ title: string; desc?: string }[] | null>(null)
+  
   const esRef = useRef<EventSource | null>(null)
-  const bufRef = useRef<string>('')
-  const rafRef = useRef<number | null>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // Auto-scroll to bottom
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages, loading])
+
   useEffect(() => {
     return () => {
       esRef.current?.close()
       esRef.current = null
-      if (rafRef.current != null) cancelAnimationFrame(rafRef.current)
-      rafRef.current = null
     }
   }, [])
+
+  const handleSubmit = async (queryText: string = text) => {
+    const q = queryText.trim()
+    if (!q || loading) return
+
+    setError(null)
+    setLoading(true)
+    setText('')
+    
+    // Add user message
+    setMessages(prev => [...prev, { role: 'user', content: q, timestamp: Date.now() }])
+
+    try {
+      // Close previous stream if any
+      if (esRef.current) {
+        esRef.current.close()
+      }
+
+      const params = new URLSearchParams()
+      params.set('q', q)
+      if (nodeId) params.set('node_id', nodeId)
+
+      const es = new EventSource(`/api/assistant?${params.toString()}`)
+      esRef.current = es
+
+      // Initial AI message placeholder
+      setMessages(prev => [...prev, { role: 'ai', content: '', timestamp: Date.now() }])
+
+      es.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          
+          if (data.type === 'done') {
+            es.close()
+            setLoading(false)
+            return
+          }
+
+          if (data.type === 'message' && data.content) {
+            setMessages(prev => {
+              const newMsgs = [...prev]
+              const lastMsg = newMsgs[newMsgs.length - 1]
+              if (lastMsg.role === 'ai') {
+                lastMsg.content += data.content
+              }
+              return newMsgs
+            })
+          }
+
+          if (data.type === 'alerts' && Array.isArray(data.content)) {
+             setMessages(prev => [...prev, { 
+               role: 'ai', 
+               content: `⚠️ 注意：有 ${data.content.length} 個相關警報`, 
+               timestamp: Date.now() 
+             }])
+          }
+        } catch (e) {
+          console.error('Failed to parse AI message:', e)
+        }
+      }
+
+      es.onerror = (event) => {
+        console.error('Stream error:', event)
+        setError('連線中斷，請重試。')
+        setLoading(false)
+        es.close()
+      }
+
+    } catch (err) {
+      console.error(err)
+      setError('無法連接到 AI 服務')
+      setLoading(false)
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSubmit()
+    }
+  }
+
   if (!open) return null
+
   return (
-    <div role="dialog" aria-modal="true" className="fixed inset-0 z-[9999] bg-white md:inset-auto md:bottom-20 md:right-4 md:h-[600px] md:w-[400px] md:rounded-xl md:shadow-2xl md:border md:border-gray-200">
-      <div className="flex h-full flex-col">
-        <div className="flex items-center justify-between border-b p-3">
-          <div className="text-base font-semibold">城市 AI 助理</div>
-          <button className="rounded border border-gray-300 px-3 py-1 text-sm" onClick={onClose}>關閉</button>
+    <div className="fixed inset-0 z-[50] flex items-center justify-center bg-black/20 backdrop-blur-sm md:inset-auto md:bottom-24 md:right-6 md:h-[600px] md:w-[400px] md:bg-transparent md:backdrop-blur-none pointer-events-none">
+      <div className="pointer-events-auto flex h-full w-full flex-col bg-white shadow-2xl md:rounded-2xl overflow-hidden animate-in slide-in-from-bottom-10 fade-in duration-300">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between border-b bg-white px-4 py-3">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-100">
+              <span className="text-lg">🦌</span>
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-gray-900">城市 AI 助理</h3>
+              {loading && <p className="text-xs text-orange-500 animate-pulse">正在思考...</p>}
+            </div>
+          </div>
+          <button 
+            onClick={onClose}
+            aria-label="Close Assistant"
+            className="rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+          >
+            <X size={20} />
+          </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-3">
-          {error && (
-            <div className="mb-3 rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-              {error}
+
+        {/* Chat Area */}
+        <div className="flex-1 overflow-y-auto bg-gray-50 p-4 space-y-4">
+          {messages.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-full text-center p-8 opacity-60">
+              <div className="bg-orange-50 p-4 rounded-full mb-4">
+                <Navigation className="w-8 h-8 text-orange-400" />
+              </div>
+              <p className="text-gray-500 text-sm">你好！我是你的城市 AI 助理，請問有什麼我可以幫你的嗎？</p>
             </div>
           )}
-          {msgs.map((m, i) => (
-            <div key={i} className={`mb-2 ${m.role === 'user' ? 'text-right' : 'text-left'}`}>
-              <span className={`inline-block rounded px-3 py-2 text-sm ${m.role === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-900'}`}>{m.content}</span>
+
+          {messages.map((msg, idx) => (
+            <div 
+              key={`${msg.timestamp}-${idx}`} 
+              className={clsx(
+                "flex w-full",
+                msg.role === 'user' ? "justify-end" : "justify-start"
+              )}
+            >
+              <div className={clsx(
+                "max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm",
+                msg.role === 'user' 
+                  ? "bg-blue-600 text-white rounded-br-none" 
+                  : "bg-white text-gray-800 border border-gray-100 rounded-bl-none"
+              )}>
+                {msg.content ? (
+                  <div className="whitespace-pre-wrap">{msg.content}</div>
+                ) : (
+                  <div className="flex space-x-1 h-5 items-center">
+                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
+                  </div>
+                )}
+              </div>
             </div>
           ))}
-          {fallbackCards && (
-            <div className="mt-4">
-              {fallbackCards.map((c, i) => (
-                <FallbackCard key={i} title={c.title} desc={c.desc} onRetry={() => setError(null)}
-                />
-              ))}
+          
+          {error && (
+            <div className="flex justify-center">
+              <div className="bg-red-50 text-red-600 text-xs px-3 py-1 rounded-full border border-red-100">
+                {error}
+              </div>
             </div>
           )}
+          <div ref={messagesEndRef} />
         </div>
-        <div className="border-t p-3">
-          <div className="flex gap-3">
-            <input className="flex-1 rounded border border-gray-300 px-3 py-2 text-sm" value={text} onChange={(e) => setText(e.target.value)} placeholder="你可以問我..." />
+
+        {/* Quick Questions */}
+        <div className="bg-white border-t px-4 py-3">
+           <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+             {QUICK_QUESTIONS.map(q => (
+               <button
+                 key={q.id}
+                 onClick={() => handleSubmit(q.prompt)}
+                 className="flex-shrink-0 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs rounded-full transition-colors whitespace-nowrap border border-gray-200"
+               >
+                 {q.label}
+               </button>
+             ))}
+           </div>
+        
+          {/* Input Area */}
+          <div className="flex items-center gap-2 mt-1">
+            <div className="relative flex-1">
+              <input
+                ref={inputRef}
+                type="text"
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="你可以問我..."
+                className="w-full bg-gray-100 text-gray-900 text-sm rounded-full pl-4 pr-10 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                disabled={loading}
+              />
+            </div>
             <button
-              className={`rounded px-3 py-2 text-sm text-white ${loading ? 'bg-blue-300' : 'bg-blue-600'}`}
-              onClick={() => {
-                if (!text.trim()) return
-                setFallbackCards(null)
-                setError(null)
-                setMsgs((v) => [...v, { role: 'user', content: text }])
-                setLoading(true)
-                try {
-                  esRef.current?.close()
-                  const url = `/api/assistant?q=${encodeURIComponent(text)}${nodeId ? `&node_id=${encodeURIComponent(nodeId)}` : ''}`
-                  esRef.current = new EventSource(url)
-                  esRef.current.onmessage = (ev) => {
-                            try {
-                              const json = JSON.parse(ev.data)
-                              const parsed = StreamSchema.safeParse(json)
-                              
-                              if (!parsed.success) {
-                                console.warn('Stream validation failed:', parsed.error)
-                                return
-                              }
-                              
-                              const obj = parsed.data
-                              
-                              if (obj.type === 'done') {
-                                setLoading(false)
-                                esRef.current?.close()
-                                esRef.current = null
-                                return
-                              }
-                              
-                              if (obj.type === 'error') {
-                                setError(obj.message || 'Unknown error')
-                                setLoading(false)
-                                esRef.current?.close()
-                                return
-                              }
-                              
-                              if (obj.type === 'message' && obj.content) {
-                                bufRef.current += obj.content
-                                if (rafRef.current == null) {
-                                  rafRef.current = requestAnimationFrame(() => {
-                                    rafRef.current = null
-                                    const chunk = bufRef.current
-                                    bufRef.current = ''
-                                    setMsgs((v) => {
-                                      const last = v[v.length - 1]
-                                      if (last && last.role === 'ai') {
-                                        const copy = v.slice()
-                                        copy[copy.length - 1] = { role: 'ai', content: copy[copy.length - 1].content + chunk }
-                                        return copy
-                                      }
-                                      return [...v, { role: 'ai', content: chunk }]
-                                    })
-                                  })
-                                }
-                              }
-                            } catch {}
-                          }
-                  esRef.current.onerror = async () => {
-                    setLoading(false)
-                    esRef.current?.close()
-                    esRef.current = null
-                    try {
-                      const r = await fetch(`/api/assistant?q=${encodeURIComponent(text)}`)
-                      if (r.headers.get('Content-Type')?.includes('application/json')) {
-                        const j = await r.json()
-                        if (j?.fallback?.cards) setFallbackCards(j.fallback.cards)
-                        else if (j?.error?.message) setError(`錯誤: ${j.error.message}`)
-                        else setError('AI 服務暫不可用，請稍後重試')
-                      } else {
-                        setError('AI 服務暫不可用，請稍後重試')
-                      }
-                    } catch {
-                      setError('AI 服務暫不可用，請稍後重試')
-                    }
-                  }
-                } catch {
-                  setLoading(false)
-                  setError('無法建立串流連線')
-                }
-                setText('')
-              }}
+              onClick={() => handleSubmit()}
+              disabled={!text.trim() || loading}
+              aria-label="Send Message"
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-full p-2.5 shadow-sm transition-all active:scale-95"
             >
-              {loading ? '處理中…' : '送出'}
+              <Send size={18} />
             </button>
           </div>
-          <div className="mt-3 flex flex-wrap gap-3">
-            {['我要回家', '我想逛街/吃飯', '我需要無障礙路線'].map((q) => (
-              <button key={q} className="rounded border border-gray-300 px-3 py-1 text-sm" onClick={() => setText(q)}>{q}</button>
-            ))}
-          </div>
         </div>
+
       </div>
     </div>
   )

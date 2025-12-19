@@ -1,112 +1,106 @@
 'use client';
 
-import { useState } from 'react';
-import { Menu, Search, User, Sparkles } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Menu, Search, User, Sparkles, ChevronDown, Globe, ChevronRight, Home } from 'lucide-react';
 import Link from 'next/link';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { Locale } from '../../i18n/dictionary';
+import { LanguageSelector } from './LanguageSelector';
+
+export interface BreadcrumbItem {
+  label: string;
+  href?: string;
+  active?: boolean;
+  onClick?: () => void;
+}
 
 interface HeaderProps {
   onMenuClick?: () => void;
+  breadcrumbs?: BreadcrumbItem[];
+  locationName?: string;
 }
 
-export default function Header({ onMenuClick }: HeaderProps) {
-  const [elderlyMode] = useState(false); // Used in JSX logic
-  const [language, setLanguage] = useState<'zh' | 'en' | 'ja'>('zh');
-
-  const languageLabels = {
-    zh: '繁',
-    en: 'EN', 
-    ja: '日'
-  };
-
-  const toggleLanguage = () => {
-    const languages: Array<'zh' | 'en' | 'ja'> = ['zh', 'en', 'ja'];
-    const currentIndex = languages.indexOf(language);
-    const nextIndex = (currentIndex + 1) % languages.length;
-    setLanguage(languages[nextIndex]);
-  };
+export default function Header({ onMenuClick, breadcrumbs = [], locationName }: HeaderProps) {
+  const [elderlyMode] = useState(false);
+  const { locale, setLocale, t } = useLanguage();
 
   return (
     <header className="ui-header">
-      {/* 主要導航列 */}
-      <div className="ui-header__bar">
-        <div className="ui-header__row">
-          {/* 左側：位置選擇器 */}
-          <div className="flex items-center space-x-4">
-            <button 
-              className="ui-header__location"
-            >
-              <span className="text-gray-900 font-medium text-sm">你在</span>
-              <span className="text-primary-600 font-semibold text-sm">捷運台北101/世貿站</span>
-              <Menu className="w-4 h-4 text-gray-400" onClick={onMenuClick} />
-            </button>
+      <div className="ui-header__row">
+        {/* Left: Breadcrumbs or Location */}
+        <div className="flex items-center gap-4 flex-1 min-w-0">
+          <button 
+            onClick={onMenuClick}
+            className="ui-btn md:hidden"
+            aria-label="Menu"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
 
-            {/* 長者模式標籤 */}
-            <div className="hidden sm:flex items-center">
-              <span className={`text-xs ${elderlyMode ? 'text-blue-600 font-bold' : 'text-gray-500'} transform -rotate-90 origin-center whitespace-nowrap`}>
-                {elderlyMode ? '長者模式開啟' : '長者模式'}
+          {breadcrumbs.length > 0 ? (
+            <nav aria-label="Breadcrumb" className="hidden md:flex ui-breadcrumb">
+              <Link href="/" className="ui-breadcrumb__item hover:text-blue-600 transition-colors">
+                <Home className="w-4 h-4" />
+                <span>{t('common.home')}</span>
+              </Link>
+              {breadcrumbs.map((item, index) => (
+                <div key={index} className="ui-breadcrumb__item">
+                  <ChevronRight className="w-4 h-4 text-gray-400" />
+                  {item.href ? (
+                    <Link 
+                      href={item.href}
+                      className={`hover:text-blue-600 transition-colors ${item.active ? 'ui-breadcrumb__item--active' : ''}`}
+                    >
+                      {item.label}
+                    </Link>
+                  ) : (
+                    <span className={item.active ? 'ui-breadcrumb__item--active' : ''}>
+                      {item.label}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </nav>
+          ) : (
+            <div className="flex items-center gap-2 overflow-hidden">
+              <span className="text-sm font-medium text-gray-500 whitespace-nowrap hidden sm:inline">
+                {t('header.youAreAt')}
               </span>
-            </div>
-          </div>
-
-          {/* 中間：狀態標籤 */}
-          <div className="hidden md:flex items-center space-x-2">
-            <div className="px-2 py-1 bg-status-yellow-light rounded-full flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-yellow-600" />
-              <span className="text-xs text-gray-800">天氣：雨 24°C</span>
-            </div>
-            <div className="px-2 py-1 bg-status-yellow-light rounded-full">
-              <span className="text-xs text-gray-800">雨天備援路線啟用</span>
-            </div>
-            <div className="px-2 py-1 bg-status-yellow-light rounded-full">
-              <span className="text-xs text-gray-800">目前人潮普通</span>
-            </div>
-            <div className="px-2 py-1 bg-status-yellow-light rounded-full">
-              <span className="text-xs text-gray-800">信義商圈活動中</span>
-            </div>
-          </div>
-
-          {/* 右側：操作按鈕 */}
-          <div className="flex items-center space-x-3">
-            {/* 語言切換 */}
-            <div className="flex items-center bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={toggleLanguage}
-                className="px-3 py-1 text-xs font-medium rounded-md transition-colors"
-              >
-                {languageLabels[language]}
+              <button className="ui-btn !min-w-0 !p-2 !h-auto bg-gray-100 hover:bg-gray-200">
+                <span className="text-sm font-semibold text-blue-600 truncate">
+                  {locationName || t('header.defaultLocation')}
+                </span>
+                <ChevronDown className="w-4 h-4 text-gray-500 ml-1" />
               </button>
             </div>
+          )}
+        </div>
 
-            {/* 搜尋按鈕 */}
-            <button
-              className="ui-header__btn"
-            >
-              <Search className="w-5 h-5 text-gray-600" />
-            </button>
-
-            {/* 個人檔案 */}
-            <Link href="/profile" className="ui-header__btn">
-              <User className="w-5 h-5 text-gray-600" />
-            </Link>
+        {/* Center: Status Chips (Desktop) */}
+        <div className="hidden lg:flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2">
+          <div className="ui-chip ui-chip--yellow gap-2">
+            <Sparkles className="w-3 h-3" />
+            <span>{t('header.weather')}：{t('header.weatherRain')}</span>
+          </div>
+          <div className="ui-chip ui-chip--blue">
+            <span>{t('header.rainRoute')}</span>
           </div>
         </div>
-      </div>
 
-      {/* 手機版狀態標籤 */}
-      <div className="md:hidden px-4 pb-3">
-          <div className="flex flex-wrap gap-2">
-          <div className="ui-chip ui-chip--yellow">
-            <span className="text-xs text-gray-800">天氣：雨 24°C</span>
+        {/* Right: Actions */}
+        <div className="flex items-center gap-2">
+          {/* Language Selector */}
+          <div className="flex items-center">
+            <LanguageSelector />
           </div>
-          <div className="ui-chip ui-chip--yellow">
-            <span className="text-xs text-gray-800">雨天備援路線啟用</span>
-          </div>
-          <div className="ui-chip ui-chip--yellow">
-            <span className="text-xs text-gray-800">目前人潮普通</span>
-          </div>
-          <div className="ui-chip ui-chip--yellow">
-            <span className="text-xs text-gray-800">信義商圈活動中</span>
-          </div>
+
+          <button className="ui-btn hover:bg-gray-100" aria-label="Search">
+            <Search className="w-5 h-5 text-gray-600" />
+          </button>
+
+          <Link href="/profile" className="ui-btn hover:bg-gray-100" aria-label="Profile">
+            <User className="w-5 h-5 text-gray-600" />
+          </Link>
         </div>
       </div>
     </header>

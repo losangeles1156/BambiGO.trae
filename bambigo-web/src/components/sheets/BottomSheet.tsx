@@ -18,7 +18,7 @@ export default function BottomSheet({ mode = 'collapsed', onModeChange, collapse
   const pendingPercentRef = useRef<number | null>(null)
   const draggingRef = useRef<boolean>(false)
   const dragRef = useRef<{ startY: number; startPercent: number } | null>(null)
-  const heights = useMemo(() => ({ collapsed: 0.15, half: 0.5, full: 0.85 }), [])
+  const heights = useMemo(() => ({ collapsed: 0.15, half: 0.6, full: 0.9 }), [])
 
   const applyTransform = (percent: number) => {
     const el = containerRef.current

@@ -11,6 +11,8 @@ const config = {
   theme: {
     extend: {
       colors: {
+        background: 'var(--background)',
+        foreground: 'var(--foreground)',
         // 溫暖橘色調 - 主要品牌色
         primary: {
           50: '#fff7ed',

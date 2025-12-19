@@ -36,6 +36,26 @@ Each layer uses a distinct visual style for its tags:
     - Body: Dynamic Key-Value pairs based on schema (e.g., `accessible: boolean`, `payment: array`).
     - Footer: "Verified" status toggle.
 
+### 2.4 L4 Action Card (Strategy)
+- **Pattern:** Actionable Insight Card.
+- **Structure:**
+    - **Header:** Icon (Contextual) + Title (e.g., "Family Easy Access").
+    - **Body:** Description text (e.g., "Baby care and accessible facilities available.").
+    - **Rationale:** Small text explaining *why* this card appeared (e.g., "Detected via Persona").
+    - **Action Area:** Primary button (e.g., "View Family Facilities").
+- **Variants:**
+    - **Family Easy Access:** Pink/Rose gradient. Icon: Stroller/Family.
+    - **Night Safety Tips:** Indigo/Dark gradient. Icon: Moon/Shield.
+    - **Beat the Heat:** Orange/Red gradient. Icon: Sun/Water Drop.
+    - **Time to Eat:** Dynamic time badge. Icon: Utensils.
+
+### 2.5 Persona Badge (L2)
+- **Pattern:** User Context Indicator.
+- **Visual:**
+    - Small, pill-shaped badge appearing near the Node Title.
+    - **Style:** `bg-purple-100` text `purple-700` border `purple-200`.
+    - **Examples:** "Family Friendly", "Maze Node", "Digital Nomad Ready".
+
 ## 3. Interaction Flows
 
 ### 3.1 Adding a New Tag (L1)

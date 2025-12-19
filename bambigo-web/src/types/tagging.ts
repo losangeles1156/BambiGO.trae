@@ -95,7 +95,7 @@ export type L3ServiceFacility = {
 }
 
 // --- L4: Action Strategy ---
-export type L4CardType = 'primary' | 'secondary'
+export type L4CardType = 'primary' | 'secondary' | 'alert'
 
 export type L4ActionCard = {
   type: L4CardType

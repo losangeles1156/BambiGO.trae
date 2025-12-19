@@ -9,7 +9,7 @@ import { useAuth } from '../auth/AuthContext'
 import { derivePersonaFromFacilities } from '../../lib/tagging'
 import { supabase } from '../../lib/supabase'
 import { L1_CATEGORIES_DATA } from '../tagging/constants'
-import { L3ServiceFacility } from '../../types/tagging'
+import { L3ServiceFacility, L4ActionCard } from '../../types/tagging'
 import { adaptFacilityItem } from '../../lib/adapters/facilities'
 import { FacilityItem } from '../../app/api/facilities/route'
 import TagChip from '../ui/TagChip'
@@ -25,7 +25,7 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
   const [msgs, setMsgs] = useState<{ role: 'user' | 'ai'; content: string }[]>([])
   const esRef = useRef<EventSource | null>(null)
   const [loading, setLoading] = useState(false)
-  const [cards, setCards] = useState<{ title: string; desc?: string; primary?: string }[]>([])
+  const [cards, setCards] = useState<L4ActionCard[]>([])
   const [facilities, setFacilities] = useState<L3ServiceFacility[]>([])
   const [stations, setStations] = useState<{ id: string; name: string; bikes_available: number; docks_available: number }[]>([])
   const [persona, setPersona] = useState<string[]>([])
@@ -129,15 +129,18 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
         const sts = Array.isArray(j?.live?.mobility?.stations) ? (j.live?.mobility?.stations as LiveStationRaw[]) : []
         
         // Generate Action Cards
-        const newCards: { title: string; desc?: string; primary?: string }[] = []
+        const newCards: L4ActionCard[] = []
         
         // 1. Shared Mobility
         const availableBikes = sts.reduce((sum, s) => sum + (Number(s.bikes_available) || 0), 0)
         if (availableBikes > 0) {
           newCards.push({
+            type: 'primary',
             title: '共享單車',
-            desc: `附近 ${sts.length} 個站點，共 ${availableBikes} 台車可用`,
-            primary: '預約'
+            description: `附近 ${sts.length} 個站點，共 ${availableBikes} 台車可用`,
+            rationale: 'Mobility',
+            tags: ['transport', 'bike'],
+            actions: [{ label: '預約', uri: 'app:bike' }]
           })
         }
         
@@ -145,9 +148,12 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
         const hasToilet = adaptedItems.some(f => f.category === 'toilet')
         if (hasToilet) {
           newCards.push({
+            type: 'secondary',
             title: '洗手間',
-            desc: '附近有公共洗手間',
-            primary: '導航'
+            description: '附近有公共洗手間',
+            rationale: 'Convenience',
+            tags: ['toilet'],
+            actions: [{ label: '導航', uri: 'app:nav' }]
           })
         }
 
@@ -155,9 +161,12 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
         const tStatus = j?.live?.transit?.status
         if (tStatus === 'delayed' || tStatus === 'suspended') {
            newCards.push({
+             type: 'alert',
              title: '大眾運輸',
-             desc: `目前狀態：${tStatus === 'delayed' ? '延誤' : '暫停'}`,
-             primary: '查看替代路線'
+             description: `目前狀態：${tStatus === 'delayed' ? '延誤' : '暫停'}`,
+             rationale: 'Alert',
+             tags: ['transport', 'warning'],
+             actions: [{ label: '查看替代路線', uri: 'app:transit' }]
            })
         }
 
@@ -165,9 +174,12 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
         const hasTaxi = adaptedItems.some(f => f.subCategory === 'taxi_stand')
         if (hasTaxi) {
           newCards.push({
+            type: 'secondary',
             title: '計程車',
-            desc: '附近有計程車招呼站',
-            primary: '叫車'
+            description: '附近有計程車招呼站',
+            rationale: 'Mobility',
+            tags: ['taxi'],
+            actions: [{ label: '叫車', uri: 'app:taxi' }]
           })
         }
 
@@ -226,7 +238,14 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
         if (obj?.type === 'alerts') {
           const arr = Array.isArray(obj?.content) ? (obj.content as string[]) : []
           if (arr.length) {
-            const alertCards = arr.map((msg) => ({ title: '即時提醒', desc: msg, primary: '了解' }))
+            const alertCards: L4ActionCard[] = arr.map((msg) => ({
+              type: 'alert',
+              title: '即時提醒',
+              description: msg,
+              rationale: 'Real-time Alert',
+              tags: ['alert'],
+              actions: [{ label: '了解', uri: 'app:dismiss' }]
+            }))
             setCards((prev) => [...alertCards, ...prev])
           }
           return
@@ -262,7 +281,18 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
           const primary = j?.fallback?.primary
           const secondary = Array.isArray(j?.fallback?.secondary) ? j.fallback.secondary : []
           const legacy = Array.isArray(j?.fallback?.cards) ? j.fallback.cards : []
-          const merged = primary ? [primary, ...secondary] : legacy
+          
+          // Helper to ensure card is L4ActionCard
+          const toL4 = (c: any): L4ActionCard => ({
+             type: c.type || 'secondary',
+             title: c.title || 'Info',
+             description: c.description || c.desc || '',
+             rationale: c.rationale || 'AI Suggestion',
+             tags: Array.isArray(c.tags) ? c.tags : [],
+             actions: Array.isArray(c.actions) ? c.actions : (c.primary ? [{ label: c.primary, uri: '#' }] : [])
+          })
+
+          const merged = (primary ? [primary, ...secondary] : legacy).map(toL4)
           setCards(merged)
         }
       } catch {}
@@ -332,9 +362,9 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
           <ActionCarousel 
             cards={cards} 
             onPrimaryClick={(c) => { 
-              if (c.title === '即時提醒' && c.desc) { 
-                onRouteHint?.(c.desc)
-                send(c.desc)
+              if (c.title === '即時提醒' && c.description) { 
+                onRouteHint?.(c.description)
+                send(c.description)
                 return 
               } 
               onAction(c.title)

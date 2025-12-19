@@ -291,6 +291,62 @@ export async function GET(req: Request) {
     )
   }
   
+  if (provider === 'n8n') {
+    const webhookUrl = process.env.N8N_WEBHOOK_URL
+    if (!webhookUrl) {
+      return new NextResponse(
+        JSON.stringify({ error: { code: 'CONFIG_ERROR', message: 'n8n webhook URL missing' } }),
+        { status: 500, headers: { 'Content-Type': 'application/json', 'X-API-Version': 'v1' } }
+      )
+    }
+
+    try {
+      // Forward the request to n8n
+      const n8nRes = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-BambiGO-Node-ID': nodeId || '',
+          'X-BambiGO-Query': encodeURIComponent(q),
+        },
+        body: JSON.stringify({
+          query: q,
+          nodeId,
+          context: systemContext,
+          // Include trap alerts if any
+          trapAlerts: trapAlertsGlobal
+        })
+      })
+
+      if (!n8nRes.ok) {
+        throw new Error(`n8n responded with ${n8nRes.status}`)
+      }
+
+      const data = await n8nRes.json()
+      // Expecting n8n to return the card structure or a text that we wrap
+      // If n8n returns a raw text, wrap it in a card
+      let cards = data.cards || data.fallback?.primary ? [] : [{
+        title: 'AI 建議',
+        desc: data.text || data.message || '收到建議',
+        primary: '了解'
+      }]
+      
+      if (data.cards) cards = data.cards
+      if (data.fallback) return new NextResponse(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } })
+
+      return new NextResponse(
+        JSON.stringify({ fallback: { primary: cards[0], secondary: cards.slice(1) }, echo: { q } }),
+        { status: 200, headers: { 'Content-Type': 'application/json', 'X-API-Version': 'v1' } }
+      )
+    } catch (err) {
+      console.error('n8n error:', err)
+      return new NextResponse(
+        JSON.stringify({ error: { code: 'UPSTREAM_ERROR', message: 'Failed to connect to AI workflow' } }),
+        { status: 502, headers: { 'Content-Type': 'application/json', 'X-API-Version': 'v1' } }
+      )
+    }
+  }
+
   if (provider === 'dify') {
     const apiKey = process.env.DIFY_API_KEY
     const apiUrl = process.env.DIFY_API_URL

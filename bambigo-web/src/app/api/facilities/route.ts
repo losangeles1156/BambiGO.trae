@@ -161,7 +161,8 @@ async function handler(req: Request) {
     try { await client.query("select set_config('request.jwt.claims', $1, true)", [JSON.stringify({ role: 'anon' })]) } catch {}
     // Build SQL with optional filters and suitability join
     const useSuitability = !!suitTag
-    const values: (string | number)[] = []
+    const tagList = useSuitability ? suitTag!.split(',').map((s) => s.trim()).filter((s) => s.length > 0) : []
+    const values: (string | number | string[])[] = []
     let where = ''
     let joinNodes = false
 
@@ -183,11 +184,14 @@ async function handler(req: Request) {
       where += ` and f.type = $${values.length}`
     }
     if (useSuitability) {
-      values.push(suitTag!)
-      where += ` and s.tag = $${values.length}`
+      values.push(tagList)
+      const tagIdx = values.length
       if (minConfidence > 0) {
         values.push(minConfidence)
-        where += ` and s.confidence >= $${values.length}`
+        const confIdx = values.length
+        where += ` and exists (select 1 from public.facility_suitability s where s.facility_id = f.id and s.tag = any($${tagIdx}::text[]) and s.confidence >= $${confIdx})`
+      } else {
+        where += ` and exists (select 1 from public.facility_suitability s where s.facility_id = f.id and s.tag = any($${tagIdx}::text[]))`
       }
     }
 
@@ -210,14 +214,14 @@ async function handler(req: Request) {
         f.status_updated_at,
         f.attributes,
         f.booking_url,
-        case when bool_or(s.tag is not null) then
-          json_agg(json_build_object('tag', s.tag, 'confidence', s.confidence)) filter (where s.tag is not null)
-        else '[]'::json end as suitability
+        coalesce((
+          select json_agg(json_build_object('tag', s.tag, 'confidence', s.confidence))
+          from public.facility_suitability s
+          where s.facility_id = f.id
+        ), '[]'::json) as suitability
       from public.facilities f
       ${joinNodes ? 'join public.nodes n on f.node_id = n.id' : ''}
-      ${useSuitability ? 'left join public.facility_suitability s on s.facility_id = f.id' : 'left join public.facility_suitability s on false'}
       where ${where}
-      group by f.id
       order by coalesce(f.distance_meters, 999999) asc
       ${limitSql}
     `

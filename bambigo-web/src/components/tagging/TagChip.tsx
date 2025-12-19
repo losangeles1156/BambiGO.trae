@@ -37,6 +37,24 @@ export const TagChip: React.FC<TagChipProps> = ({
           className
         )
       )}
+      tabIndex={0}
+      aria-selected={true}
+      data-role="tag-chip"
+      onKeyDown={(e) => {
+        const target = e.currentTarget;
+        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+          const chips = Array.from(target.parentElement?.querySelectorAll('[data-role="tag-chip"]') || []) as HTMLElement[];
+          const idx = chips.findIndex(el => el === target);
+          if (idx >= 0) {
+            const nextIdx = e.key === 'ArrowRight' ? Math.min(idx + 1, chips.length - 1) : Math.max(idx - 1, 0);
+            chips[nextIdx]?.focus();
+          }
+        } else if ((e.key === 'Enter' || e.key === ' ') && onClick) {
+          onClick();
+        } else if (e.key === 'Delete' && onRemove) {
+          onRemove();
+        }
+      }}
     >
       {icon ? (
         <span className="w-4 h-4 flex items-center justify-center">{icon}</span>
@@ -57,6 +75,7 @@ export const TagChip: React.FC<TagChipProps> = ({
             `focus:ring-${config.color}-500`
           )}
           aria-label={`Remove ${label}`}
+          tabIndex={-1}
         >
           <XMarkIcon className="w-3.5 h-3.5" />
         </button>

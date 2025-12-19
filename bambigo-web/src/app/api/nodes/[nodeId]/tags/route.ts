@@ -8,8 +8,9 @@ const L1_CATEGORIES = new Set(['medical', 'shopping', 'dining', 'leisure', 'educ
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { nodeId: string } }
+  props: { params: Promise<{ nodeId: string }> }
 ) {
+  const params = await props.params;
   const nodeId = params.nodeId;
 
   const { data: facilities, error } = await supabase
@@ -68,8 +69,9 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { nodeId: string } }
+  props: { params: Promise<{ nodeId: string }> }
 ) {
+  const params = await props.params;
   const nodeId = params.nodeId;
   const body = await request.json();
   const { layer, data } = body; // Expecting { layer: 'L1' | 'L3', data: ... }
@@ -131,8 +133,9 @@ export async function POST(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { nodeId: string } }
+  props: { params: Promise<{ nodeId: string }> }
 ) {
+  const params = await props.params;
   const { searchParams } = new URL(request.url);
   const tagId = searchParams.get('id');
 

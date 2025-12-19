@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { HierarchySelector } from '@/components/tagging/HierarchySelector';
+import { HierarchySelector, HierarchicalPopover } from '@/components/tagging/HierarchySelector';
 import { FacilityEditor } from '@/components/tagging/FacilityEditor';
 import { TagChip } from '@/components/tagging/TagChip';
 import { L4StrategyCard } from '@/components/tagging/L4StrategyCard';
@@ -113,7 +113,7 @@ export default function TaggingSystemDemo() {
     }
   };
 
-  const handleAddL3 = async (facility: { type: L3Category; label: string; icon: string; attributes: Record<string, any> }) => {
+  const handleAddL3 = async (facility: { type: L3Category; label: string; icon: string; attributes: Record<string, any>; verified: boolean }) => {
     if (!activeNodeId) return;
     const node = nodes.find(n => n.id === activeNodeId);
     if (!node) return;
@@ -124,7 +124,10 @@ export default function TaggingSystemDemo() {
         category: facility.type,
         subCategory: facility.attributes.subCategory || 'facility',
         provider: { type: 'public', name: facility.label },
-        attributes: facility.attributes,
+        attributes: {
+          ...facility.attributes,
+          verified: facility.verified
+        },
         location: {
           coordinates: [node.location.lng, node.location.lat]
         }
@@ -207,9 +210,7 @@ export default function TaggingSystemDemo() {
               <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">
                 1. Define Structure (L1)
               </h2>
-              <HierarchySelector 
-                onSelect={handleAddL1} 
-              />
+              <HierarchicalPopover onSelect={handleAddL1} />
             </section>
 
             <section>

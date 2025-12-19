@@ -57,10 +57,10 @@ export function filterFacilitiesByTags(items: FacilityItem[], tags: AppTag[]): F
 }
 
 export function buildSuitabilityQuery(tags: AppTag[], minConfidence = 0): { tag?: string; minConfidence?: number } {
-  const l3 = tags.find((t) => t.layer === 'L3' && t.l3)
-  if (!l3) return {}
-  const tag = l3.l3!.subCategory
-  return { tag, minConfidence }
+  const l3s = tags.filter((t) => t.layer === 'L3' && t.l3)
+  if (!l3s.length) return {}
+  const joined = l3s.map((t) => t.l3!.subCategory).join(',')
+  return { tag: joined, minConfidence }
 }
 
 export function mapSuitabilityToCategory(sub: string): string {

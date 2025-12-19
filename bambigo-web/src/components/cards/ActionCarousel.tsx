@@ -21,17 +21,17 @@ export default function ActionCarousel({ cards, onPrimaryClick }: Props) {
           key={i}
           className={`
             snap-center shrink-0 
-            ${i === 0 ? 'min-w-[80vw] md:min-w-[20rem] border-blue-500 bg-blue-50/90 backdrop-blur-sm' : 'min-w-[70vw] md:min-w-[16rem] bg-white/90 backdrop-blur-sm'} 
-            rounded-2xl border ${i === 0 ? 'shadow-lg ring-1 ring-blue-500/20' : 'shadow-md ring-1 ring-black/5'} 
+            ${i === 0 ? 'min-w-[80vw] md:min-w-[20rem]' : 'min-w-[70vw] md:min-w-[16rem]'} 
+            rounded-2xl border border-rose-200 bg-gradient-to-r from-rose-50 to-orange-50 backdrop-blur-sm shadow-lg ring-1 ring-rose-200/40 
             p-4 flex flex-col justify-between
           `}
         >
           <div>
-            <div className={`font-bold ${i === 0 ? 'text-base text-blue-900' : 'text-base text-gray-900'}`}>
+            <div className={`font-bold text-base text-rose-700`}>
               {c.title}
             </div>
             {c.desc && (
-              <div className={`${i === 0 ? 'mt-2 text-sm text-blue-800/80' : 'mt-2 text-sm text-gray-600'}`}>
+              <div className={`mt-2 text-sm text-gray-700`}>
                 {c.desc}
               </div>
             )}
@@ -42,7 +42,7 @@ export default function ActionCarousel({ cards, onPrimaryClick }: Props) {
               onClick={() => onPrimaryClick?.(c)} 
               className={`
                 mt-4 w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm
-                ${i === 0 ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-800 hover:bg-gray-900'}
+                bg-rose-600 hover:bg-rose-700
                 active:scale-[0.97] transition-all
               `}
             >

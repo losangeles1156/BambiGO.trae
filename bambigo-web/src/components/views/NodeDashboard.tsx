@@ -38,13 +38,12 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
         if (!ignore) setIsFavorite(false)
         return
       }
-      const { data } = await supabase
+      const { count } = await supabase
         .from('saved_locations')
-        .select('id')
+        .select('id', { count: 'exact', head: true })
         .eq('user_id', user.id)
         .eq('node_id', nodeId)
-        .single()
-      if (!ignore) setIsFavorite(!!data)
+      if (!ignore) setIsFavorite((count || 0) > 0)
     }
     checkFavorite()
     async function fetchNodeType() {

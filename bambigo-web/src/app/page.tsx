@@ -46,13 +46,43 @@ export default function Home() {
   }, [])
   const showInstall = !!installEvt
   const mapHeight = view === 'explore' ? '100vh' : view === 'dashboard' ? '50vh' : '15vh'
-  const statuses = [
-    { label: '天氣：雨 24°C', color: 'yellow' as const },
-    { label: '雨天備援路線啟用', color: 'yellow' as const },
-    { label: '目前人潮普通', color: 'yellow' as const },
-    { label: '信義商圈活動中', color: 'yellow' as const },
-  ]
-  const l2 = statuses.map((s) => ({ label: s.label, tone: 'yellow' as const }))
+  const [envStatuses, setEnvStatuses] = useState<{ label: string; tone?: 'yellow' | 'blue' | 'red' | 'green' }[]>([])
+  useEffect(() => {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+    const base: { label: string; tone?: 'yellow' | 'blue' | 'red' | 'green' }[] = [
+      { label: `時區：${tz}`, tone: 'blue' },
+    ]
+    function updateWithWeather(lat: number, lon: number) {
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`
+      fetch(url)
+        .then((r) => r.json())
+        .then((j) => {
+          const cw = j?.current_weather
+          if (cw && typeof cw?.temperature === 'number') {
+            const temp = Math.round(cw.temperature)
+            const wcode = Number(cw.weathercode || 0)
+            const isRain = [51,53,55,61,63,65,80,81,82].includes(wcode)
+            const list = base.slice()
+            list.push({ label: `天氣：${isRain ? '雨' : '晴/多雲'} ${temp}°C`, tone: isRain ? 'yellow' : 'green' })
+            if (isRain) list.push({ label: '雨天備援路線啟用', tone: 'yellow' })
+            setEnvStatuses(list)
+          } else {
+            setEnvStatuses(base)
+          }
+        })
+        .catch(() => setEnvStatuses(base))
+    }
+    const fallback = lastCoords || mapCenter || [139.767125, 35.681236]
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => updateWithWeather(pos.coords.latitude, pos.coords.longitude),
+        () => updateWithWeather(fallback[1], fallback[0]),
+        { enableHighAccuracy: false, timeout: 3000 }
+      )
+    } else {
+      updateWithWeather(fallback[1], fallback[0])
+    }
+  }, [lastCoords, mapCenter])
   const actions = ['找廁所', '找置物櫃', '去淺草', '避難']
   return (
     <div>
@@ -92,7 +122,7 @@ export default function Home() {
       )}
       {view === 'dashboard' && (
         <div className="fixed left-0 right-0 bottom-0 max-h-[50vh] overflow-auto p-3 z-10">
-          <NodeDashboard nodeId={nodeId || undefined} name={nodeName} statuses={l2} actions={actions} filterSuitability={(() => { const q = tagging.buildSuitabilityQuery(tagState.tags, 0.6); return { tag: q.tag, minConfidence: q.minConfidence } })()} onAction={(a) => { if (a.includes('去')) setView('task') }} onRouteHint={async (hint) => {
+          <NodeDashboard nodeId={nodeId || undefined} name={nodeName} statuses={envStatuses} actions={actions} filterSuitability={(() => { const q = tagging.buildSuitabilityQuery(tagState.tags, 0.6); return { tag: q.tag, minConfidence: q.minConfidence } })()} onAction={(a) => { if (a.includes('去')) setView('task') }} onRouteHint={async (hint) => {
             const origin = Array.isArray(mapCenter) ? mapCenter : lastCoords
             if (!origin) return
             const [lon, lat] = origin

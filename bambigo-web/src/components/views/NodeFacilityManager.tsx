@@ -1,9 +1,10 @@
 'use client'
 import React, { useState } from 'react'
-import { Plus, ArrowLeft } from 'lucide-react'
+import { Plus, ArrowLeft, Loader2 } from 'lucide-react'
 import FacilityList from '../lists/FacilityList'
 import FacilityAttributeEditor from '../tagging/FacilityAttributeEditor'
 import { L3_FACILITIES_DATA } from '../tagging/constants'
+import { TaggingService } from '../../lib/api/tagging'
 import type { L3ServiceFacility, L3Category } from '../../types/tagging'
 
 type Props = {
@@ -15,107 +16,124 @@ type Props = {
 export default function NodeFacilityManager({ nodeId, initialFacilities, onUpdate }: Props) {
   const [facilities, setFacilities] = useState<L3ServiceFacility[]>(initialFacilities)
   const [mode, setMode] = useState<'list' | 'add_select' | 'edit'>('list')
-  const [editingFacility, setEditingFacility] = useState<Partial<L3ServiceFacility> | null>(null)
+  const [editingFacility, setEditingFacility] = useState<L3ServiceFacility | null>(null)
+  const [loading, setLoading] = useState(false)
 
-  const handleSave = (data: Partial<L3ServiceFacility>) => {
-    let newFacilities: L3ServiceFacility[]
-    if (data.id && facilities.some(f => f.id === data.id)) {
-      // Update existing
-      newFacilities = facilities.map(f => f.id === data.id ? { ...f, ...data } as L3ServiceFacility : f)
-    } else {
-      // Add new
-      const newFacility = {
-        ...data,
-        id: data.id || crypto.randomUUID(),
-        nodeId,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      } as L3ServiceFacility
-      newFacilities = [...facilities, newFacility]
+  const handleSave = async (data: Partial<L3ServiceFacility>) => {
+    setLoading(true)
+    try {
+      let newFacilities: L3ServiceFacility[]
+      
+      if (data.id && facilities.some(f => f.id === data.id)) {
+        // Update existing
+        const updated = await TaggingService.updateL3Facility(data as L3ServiceFacility)
+        newFacilities = facilities.map(f => f.id === updated.id ? updated : f)
+      } else {
+        // Add new
+        const newFacilityRaw = {
+          ...data,
+          nodeId,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        } as Omit<L3ServiceFacility, 'id'>
+        
+        const saved = await TaggingService.addL3Facility(newFacilityRaw)
+        newFacilities = [...facilities, saved]
+      }
+      
+      setFacilities(newFacilities)
+      onUpdate?.(newFacilities)
+      setMode('list')
+      setEditingFacility(null)
+    } catch (e) {
+      console.error('Failed to save facility', e)
+      alert('Failed to save changes')
+    } finally {
+      setLoading(false)
     }
-    setFacilities(newFacilities)
-    onUpdate?.(newFacilities)
-    setMode('list')
-    setEditingFacility(null)
   }
 
-  const handleDelete = (id: string) => {
-    const newFacilities = facilities.filter(f => f.id !== id)
-    setFacilities(newFacilities)
-    onUpdate?.(newFacilities)
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this facility?')) return
+    
+    setLoading(true)
+    try {
+      await TaggingService.removeL3Facility(nodeId, id)
+      const newFacilities = facilities.filter(f => f.id !== id)
+      setFacilities(newFacilities)
+      onUpdate?.(newFacilities)
+    } catch (e) {
+      console.error('Failed to delete facility', e)
+      alert('Failed to delete')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const startAdd = () => {
-    setMode('add_select')
-    setEditingFacility(null)
-  }
-
-  const startEdit = (facility: L3ServiceFacility) => {
-    setEditingFacility(facility)
-    setMode('edit')
-  }
-
-  const selectCategory = (catId: string) => {
+  const handleCategorySelect = (catId: string) => {
     setEditingFacility({
-      category: catId as L3Category,
+      id: '', // Placeholder
       nodeId,
-      subCategory: catId // Default subCategory to category for now
+      category: catId as L3Category,
+      subCategory: catId,
+      location: {},
+      provider: { type: 'public' },
+      attributes: {},
+      source: 'manual'
     })
     setMode('edit')
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden h-full flex flex-col">
+    <div className="flex flex-col h-full bg-white">
       {/* Header */}
       <div className="bg-gray-50 px-4 py-3 border-b border-gray-100 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
             {mode !== 'list' && (
-                <button onClick={() => setMode('list')} className="mr-1 text-gray-500 hover:text-gray-700">
+                <button onClick={() => setMode('list')} className="mr-1 text-gray-500 hover:text-gray-700" disabled={loading}>
                     <ArrowLeft size={18} />
                 </button>
             )}
-            <h3 className="font-semibold text-gray-800">
+            <h3 className="font-semibold text-gray-800 flex items-center gap-2">
                 {mode === 'list' ? 'Manage Facilities' : mode === 'add_select' ? 'Select Type' : 'Edit Facility'}
+                {loading && <Loader2 size={16} className="animate-spin text-blue-500" />}
             </h3>
         </div>
         {mode === 'list' && (
-          <button 
-            onClick={startAdd}
-            className="flex items-center gap-1 text-xs font-medium bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus size={14} />
-            Add
-          </button>
+            <button 
+                onClick={() => setMode('add_select')}
+                className="bg-emerald-600 text-white p-1.5 rounded-full hover:bg-emerald-700 shadow-sm"
+            >
+                <Plus size={20} />
+            </button>
         )}
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto">
         {mode === 'list' && (
-          <div className="space-y-4">
-            <FacilityList 
-              items={facilities} 
-              onEdit={startEdit}
-              onDelete={handleDelete}
-            />
-            {facilities.length === 0 && (
-                <div className="text-center py-8 text-gray-400 text-sm">
-                    No facilities yet. Click Add to start.
-                </div>
-            )}
-          </div>
+          <FacilityList 
+            items={facilities} 
+            onEdit={(item) => {
+                setEditingFacility(item)
+                setMode('edit')
+            }}
+            onDelete={handleDelete}
+          />
         )}
 
         {mode === 'add_select' && (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 p-4">
             {L3_FACILITIES_DATA.map((cat) => (
               <button
                 key={cat.id}
-                onClick={() => selectCategory(cat.id)}
-                className="flex flex-col items-center justify-center p-4 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all gap-2 group bg-white"
+                onClick={() => handleCategorySelect(cat.id)}
+                className="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-xl hover:border-emerald-500 hover:bg-emerald-50 transition-all gap-2"
               >
-                <span className="text-2xl group-hover:scale-110 transition-transform">{cat.icon}</span>
-                <span className="text-sm font-medium text-gray-700 group-hover:text-blue-700">{cat.label}</span>
+                <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-2xl">
+                  {cat.icon}
+                </div>
+                <span className="text-sm font-medium text-gray-700">{cat.label}</span>
               </button>
             ))}
           </div>

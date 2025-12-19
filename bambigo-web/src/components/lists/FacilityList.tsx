@@ -18,7 +18,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   'other': HelpCircle
 }
 
-export default function FacilityList({ items }: Props) {
+export default function FacilityList({ items, onEdit, onDelete }: Props) {
   if (!items || items.length === 0) {
     return <div className="p-4 text-center text-gray-500 text-sm">暫無設施資訊</div>
   }
@@ -28,12 +28,27 @@ export default function FacilityList({ items }: Props) {
       <ul className="space-y-3">
         {items.map((it) => {
           const Icon = ICON_MAP[it.category] || HelpCircle
-          const name = (it.attributes as any)?.name?.zh || (it.attributes as any)?.name?.en || it.subCategory
-          const desc = [
-             it.location.floor ? `${it.location.floor}F` : null,
-             it.location.direction,
-             (it.attributes as any)?.is_free ? '免費' : null
-          ].filter(Boolean).join(' • ')
+          const attrs = (it.attributes || {}) as Record<string, any>
+          const name = attrs.name?.zh || attrs.name?.en || it.subCategory
+          
+          // Generate rich description based on category
+          const details = []
+          if (it.location?.floor) details.push(`${it.location.floor}`)
+          if (it.location?.direction) details.push(it.location.direction)
+          
+          if (it.category === 'wifi' && attrs.ssid) details.push(`SSID: ${attrs.ssid}`)
+          if (it.category === 'toilet') {
+             if (attrs.has_accessible) details.push('♿')
+             if (attrs.has_baby_care) details.push('👶')
+             if (attrs.door_width) details.push(`🚪${attrs.door_width}cm`)
+          }
+          if (it.category === 'charging') {
+             if (attrs.socket_type) details.push(attrs.socket_type)
+             if (attrs.fast_charge) details.push('⚡Fast')
+          }
+          if (it.category === 'accessibility' && attrs.elevator_width) details.push(`↔️${attrs.elevator_width}cm`)
+
+          const desc = details.join(' • ')
 
           return (
             <li key={it.id} className="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors group">
@@ -44,11 +59,29 @@ export default function FacilityList({ items }: Props) {
                 <div className="text-sm font-medium text-gray-900 truncate capitalize">
                   {name.replace(/_/g, ' ')}
                 </div>
-                {desc && <div className="text-xs text-gray-500 mt-0.5">{desc}</div>}
+                {desc && <div className="text-xs text-gray-500 mt-0.5 line-clamp-1">{desc}</div>}
               </div>
-              {it.openingHours === '24 Hours' && (
-                 <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-medium border border-emerald-200">24H</span>
-              )}
+              
+              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                {onEdit && (
+                  <button 
+                    onClick={() => onEdit(it)}
+                    className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"
+                    title="Edit"
+                  >
+                    <Edit2 size={14} />
+                  </button>
+                )}
+                {onDelete && (
+                  <button 
+                    onClick={() => onDelete(it.id)}
+                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
+                    title="Delete"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
+              </div>
             </li>
           )
         })}

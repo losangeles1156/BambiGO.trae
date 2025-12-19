@@ -125,14 +125,14 @@ export class OdptClient {
         this.writeCache(cacheKey, data)
         await this.sleep(this.throttleMs)
         return data
-      } catch (e: any) {
+      } catch (e: unknown) {
         if (attempt < this.maxRetries) {
           attempt++
           await this.sleep(delay + Math.floor(Math.random() * 150))
           delay = Math.min(5000, delay * 2)
           continue
         }
-        console.error('[ODPT] request failed:', this.maskToken(cacheKey), e?.message || e)
+        console.error('[ODPT] request failed:', this.maskToken(cacheKey), (e instanceof Error ? e.message : String(e)))
         throw e
       }
     }

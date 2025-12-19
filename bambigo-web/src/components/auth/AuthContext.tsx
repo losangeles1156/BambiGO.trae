@@ -20,11 +20,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then((res: { data?: { session?: Session | null } }) => {
+      const session = res?.data?.session as Session | null;
       setSession(session);
       setUser(session?.user ?? null);
       setIsLoading(false);
-    }).catch((err) => {
+    }).catch((err: unknown) => {
       console.error('Auth initialization error:', err);
       setIsLoading(false);
     });
@@ -32,7 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((_event: string, session: Session | null) => {
       setSession(session);
       setUser(session?.user ?? null);
       setIsLoading(false);

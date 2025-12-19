@@ -172,7 +172,7 @@ async function handler(req: Request) {
     headers: {
       'Content-Type': 'application/json',
       'Cache-Control': 'public, max-age=10, stale-while-revalidate=60',
-      'X-API-Version': 'v4.2-beta',
+      'X-API-Version': 'v4.1-strict',
     },
   })
 }

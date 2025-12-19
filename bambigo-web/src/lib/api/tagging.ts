@@ -1,4 +1,4 @@
-import { L1Tag, L3ServiceFacility, L1Category, L3Category } from '@/types/tagging';
+import { L1Tag, L3ServiceFacility, L4ActionCard } from '@/types/tagging';
 
 // --- API Service for Tagging System ---
 
@@ -69,6 +69,17 @@ export const TaggingService = {
     };
   },
 
+  async updateL3Facility(facility: L3ServiceFacility): Promise<L3ServiceFacility> {
+    const res = await fetch(`${API_BASE}/${facility.nodeId}/tags?id=${facility.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ layer: 'L3', data: facility })
+    });
+
+    if (!res.ok) throw new Error('Failed to update L3 facility');
+    return facility;
+  },
+
   async removeL3Facility(nodeId: string, facilityId: string): Promise<void> {
     const res = await fetch(`${API_BASE}/${nodeId}/tags?id=${facilityId}`, {
       method: 'DELETE'
@@ -78,7 +89,7 @@ export const TaggingService = {
 
   // --- Aggregation (L4) ---
   
-  async generateStrategy(nodeId: string, context: { weather?: string, time?: string }): Promise<any> {
+  async generateStrategy(nodeId: string, context: { weather?: string, time?: string }): Promise<L4ActionCard | L4ActionCard[]> {
     const res = await fetch(`${API_BASE}/${nodeId}/strategy`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -92,6 +103,7 @@ export const TaggingService = {
          type: 'secondary',
          title: 'Explore',
          description: 'Discover the area manually.',
+         rationale: 'Fallback strategy due to error.',
          tags: [],
          actions: []
        };

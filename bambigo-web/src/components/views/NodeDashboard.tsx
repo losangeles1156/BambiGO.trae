@@ -1,15 +1,16 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { Heart, Edit2 } from 'lucide-react'
 import ActionCarousel from '../cards/ActionCarousel'
 import Chip from '../ui/Chip'
 import FacilityList from '../lists/FacilityList'
 import NodeFacilityManager from './NodeFacilityManager'
+import NodeL1Manager from './NodeL1Manager'
 import { useAuth } from '../auth/AuthContext'
 import { derivePersonaFromFacilities } from '../../lib/tagging'
 import { supabase } from '../../lib/supabase'
 import { L1_CATEGORIES_DATA } from '../tagging/constants'
-import { L3ServiceFacility, L4ActionCard } from '../../types/tagging'
+import { L3ServiceFacility, L4ActionCard, L4CardType } from '../../types/tagging'
 import { adaptFacilityItem } from '../../lib/adapters/facilities'
 import { FacilityItem } from '../../app/api/facilities/route'
 import TagChip from '../ui/TagChip'
@@ -28,7 +29,6 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
   const [cards, setCards] = useState<L4ActionCard[]>([])
   const [facilities, setFacilities] = useState<L3ServiceFacility[]>([])
   const [stations, setStations] = useState<{ id: string; name: string; bikes_available: number; docks_available: number }[]>([])
-  const [persona, setPersona] = useState<string[]>([])
   const [nodeType, setNodeType] = useState<string>('')
   const [transitStatus, setTransitStatus] = useState<string | undefined>(undefined)
   const [isEditingFacilities, setIsEditingFacilities] = useState(false)
@@ -128,6 +128,26 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
 
         const sts = Array.isArray(j?.live?.mobility?.stations) ? (j.live?.mobility?.stations as LiveStationRaw[]) : []
         
+        // Fetch AI Strategy
+        let strategyCards: L4ActionCard[] = []
+        try {
+           const sRes = await fetch(`/api/nodes/${nodeId}/strategy`, {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({ 
+               time: new Date().toISOString() 
+             })
+           })
+           if (sRes.ok) {
+             const sData = await sRes.json()
+             if (Array.isArray(sData)) {
+               strategyCards = sData
+             }
+           }
+        } catch (e) {
+           console.error('Failed to fetch strategy', e)
+        }
+
         // Generate Action Cards
         const newCards: L4ActionCard[] = []
         
@@ -200,28 +220,30 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
     }
     run()
     return () => { abort = true }
-  }, [nodeId])
+  }, [nodeId, filterSuitability?.tag, filterSuitability?.minConfidence])
 
   // Derive Persona when dependencies change
-  useEffect(() => {
+  const persona = useMemo(() => {
     // Find L1 context
     const l1 = L1_CATEGORIES_DATA.find(c => c.id === nodeType || c.subCategories.some(s => s.id === nodeType))
     const l1Main = l1?.id
     const l1Sub = nodeType
 
-    const p = derivePersonaFromFacilities(
-      facilities.map(f => ({ 
-          type: f.subCategory, 
-          has_wheelchair_access: !!(f.attributes as any).has_wheelchair_access,
-          has_baby_care: !!(f.attributes as any).has_baby_care 
-      })), 
-      { 
+    return derivePersonaFromFacilities(
+      facilities.map(f => {
+          const attrs = f.attributes as Record<string, unknown>
+          return { 
+            type: f.subCategory, 
+            has_wheelchair_access: !!attrs.has_wheelchair_access,
+            has_baby_care: !!attrs.has_baby_care 
+          }
+      }), 
+      {  
         l1MainCategory: l1Main, 
         l1SubCategory: l1Sub,
         transit: { status: transitStatus } 
       }
     )
-    setPersona(p)
   }, [facilities, nodeType, transitStatus])
 
   const send = (q: string) => {
@@ -283,14 +305,29 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
           const legacy = Array.isArray(j?.fallback?.cards) ? j.fallback.cards : []
           
           // Helper to ensure card is L4ActionCard
-          const toL4 = (c: any): L4ActionCard => ({
-             type: c.type || 'secondary',
-             title: c.title || 'Info',
-             description: c.description || c.desc || '',
-             rationale: c.rationale || 'AI Suggestion',
-             tags: Array.isArray(c.tags) ? c.tags : [],
-             actions: Array.isArray(c.actions) ? c.actions : (c.primary ? [{ label: c.primary, uri: '#' }] : [])
-          })
+          const toL4 = (c: unknown): L4ActionCard => {
+            const item = (c ?? {}) as Record<string, unknown>
+            const rawType = String(item.type || 'secondary')
+            const type = (rawType === 'primary' || rawType === 'alert' ? rawType : 'secondary') as L4CardType
+            const tags = Array.isArray(item.tags) ? (item.tags as unknown[]).map((t) => String(t)) : []
+            const actions = Array.isArray(item.actions)
+              ? (item.actions as unknown[]).map((a) => {
+                  const obj = (a ?? {}) as Record<string, unknown>
+                  return {
+                    label: String(obj.label || '查看'),
+                    uri: String(obj.uri || 'app:open')
+                  }
+                })
+              : []
+            return {
+              type,
+              title: String(item.title || 'Info'),
+              description: String(item.description || item.desc || ''),
+              rationale: String(item.rationale || ''),
+              tags,
+              actions
+            }
+          }
 
           const merged = (primary ? [primary, ...secondary] : legacy).map(toL4)
           setCards(merged)
@@ -348,11 +385,10 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
 
-        {/* L1 Tag Manager - TODO: Implement NodeL1Manager
+        {/* L1 Tag Manager */}
         <section>
           <NodeL1Manager nodeId={nodeId || ''} />
         </section>
-        */}
         
         {/* Action Cards (L4) */}
         <section>

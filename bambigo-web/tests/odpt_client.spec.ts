@@ -1,9 +1,20 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { OdptClient } from '../src/lib/odptClient'
+import fs from 'fs'
+import path from 'path'
+import os from 'os'
 
 describe('OdptClient', () => {
+  const tmpDir = path.join(os.tmpdir(), 'odpt-test-' + Date.now())
+
   beforeEach(() => {
     vi.stubEnv('ODPT_API_TOKEN', 'test-token')
+  })
+
+  afterEach(() => {
+    if (fs.existsSync(tmpDir)) {
+      fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
   })
 
   it('retries on 429 and succeeds', async () => {

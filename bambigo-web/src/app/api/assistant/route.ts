@@ -43,6 +43,9 @@ function checkRate(req: Request): { ok: true } | { ok: false; retry: number } {
   return { ok: true }
 }
 
+import { DifyClient } from '@/lib/integrations/dify'
+import { N8nClient } from '@/lib/integrations/n8n'
+
 export async function GET(req: Request) {
   const rate = checkRate(req)
   if (!rate.ok) {
@@ -85,7 +88,7 @@ export async function GET(req: Request) {
     return 'llm'
   }
 
-  async function buildToolFallback(nodeIdParam: string | null, query: string) {
+  async function buildToolFallback(req: Request, nodeIdParam: string | null, query: string) {
     const isWeather = /天氣|下雨|雨備/i.test(query)
     const isNav = /導航|路線|怎麼走/i.test(query)
     try {
@@ -97,7 +100,7 @@ export async function GET(req: Request) {
       const r = await fetch(`${origin}/api/nodes/live/facilities?${params.toString()}`, { headers: { 'x-real-ip': getIP(req) } })
       type Station = { id: string; name?: string; bikesAvailable?: number; bikes_available?: number; docksAvailable?: number; docks_available?: number }
       type Live = { transit?: { status?: 'normal' | 'delayed' | 'suspended' }; mobility?: { stations?: Station[] } }
-      type FacilitiesItem = { id: string; type: string }
+      type FacilitiesItem = { id: string; type: string; l3?: { category?: string } }
       type Facilities = { items?: FacilitiesItem[] }
       type Agg = { live?: Live; facilities?: Facilities }
       const j: Agg = await r.json().catch(() => ({} as Agg))
@@ -112,9 +115,7 @@ export async function GET(req: Request) {
       const stations: Station[] = Array.isArray(live?.mobility?.stations) ? (live.mobility!.stations as Station[]) : []
       const bikes = stations.reduce((sum: number, s: Station) => sum + (Number(s?.bikesAvailable ?? s?.bikes_available ?? 0)), 0)
       if (bikes > 0) cards.push({ title: '共享單車', desc: `附近 ${stations.length} 個站點，共 ${bikes} 台可用`, primary: '預約' })
-      const items: any[] = Array.isArray(j?.facilities?.items) ? j.facilities!.items : []
-      
-      // L3 Priority Logic (v4.2-beta Compliance)
+      const items: FacilitiesItem[] = Array.isArray(j?.facilities?.items) ? (j.facilities!.items as FacilitiesItem[]) : []
       const hasWifi = items.some((f) => f.l3?.category === 'wifi' || String(f.type).includes('wifi'))
       const hasToilet = items.some((f) => f.l3?.category === 'toilet' || String(f.type).includes('toilet'))
       const hasCharging = items.some((f) => f.l3?.category === 'charging' || /charge|outlet/i.test(String(f.type)))
@@ -170,13 +171,14 @@ export async function GET(req: Request) {
         const prompt = data.persona_prompt || ''
         // Construct a rich context
         systemContext = `
-[目前所在位置] ${name}
-[在地嚮導提示] ${prompt}
-[重要規則]
-1. 你是 BambiGO 的在地嚮導，必須展現對該地點「結構與空間」的深刻理解。
-2. 回答轉乘或移動問題時，禁止只給出「時間」，必須描述「過程中的阻力」（如：手扶梯數量、樓層落差、通道長度、心理感受）。
-3. 若遇到東京車站京葉線、上野新幹線等複雜場景，請明確告知「心理建設」，例如「這段路很遠，請預留從容的時間」。
-4. 請基於以上[在地嚮導提示]與你的知識庫回答。
+[目前位置] ${name}
+[在地知識] ${prompt || ''}
+
+[核心指令]
+1. **直球對決**：針對問題直接給出結論，不需過多鋪陳或寒暄。
+2. **精簡扼要**：回答控制在 3-4 句話內。除非用戶詢問「詳細路線」或「為什麼」，否則不主動展開長篇大論。
+3. **引導互動**：回答完後，可簡短詢問是否需要更多資訊（例如：「需要詳細指引嗎？」）。
+4. **安全底線**：若涉及下方[即時提醒]中的內容，必須用「一句話」帶過重點警告。
 `
 
         const trapAlerts: string[] = []
@@ -279,7 +281,7 @@ export async function GET(req: Request) {
   const mode = routeMode(q)
 
   if (mode === 'tool') {
-    return await buildToolFallback(nodeId || null, q)
+    return await buildToolFallback(req, nodeId || null, q)
   }
 
   if (mode === 'rule' && systemContext) {
@@ -301,35 +303,21 @@ export async function GET(req: Request) {
     }
 
     try {
-      // Forward the request to n8n
-      const n8nRes = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-BambiGO-Node-ID': nodeId || '',
-          'X-BambiGO-Query': encodeURIComponent(q),
-        },
-        body: JSON.stringify({
-          query: q,
-          nodeId,
-          context: systemContext,
-          // Include trap alerts if any
-          trapAlerts: trapAlertsGlobal
-        })
+      const client = new N8nClient({ webhookUrl })
+      const data = await client.trigger({
+        query: q,
+        nodeId,
+        context: systemContext,
+        trapAlerts: trapAlertsGlobal
       })
 
-      if (!n8nRes.ok) {
-        throw new Error(`n8n responded with ${n8nRes.status}`)
-      }
-
-      const data = await n8nRes.json()
       // Expecting n8n to return the card structure or a text that we wrap
       // If n8n returns a raw text, wrap it in a card
-      let cards = data.cards || data.fallback?.primary ? [] : [{
+      let cards = data.cards || (data.fallback?.primary ? [] : [{
         title: 'AI 建議',
         desc: data.text || data.message || '收到建議',
         primary: '了解'
-      }]
+      }])
       
       if (data.cards) cards = data.cards
       if (data.fallback) return new NextResponse(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } })
@@ -358,39 +346,23 @@ export async function GET(req: Request) {
     }
 
     try {
-      const difyRes = await fetch(`${apiUrl}/chat-messages`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
+      const client = new DifyClient({ apiKey, apiUrl })
+      const streamBody = await client.chatMessageStream({
+        inputs: {
+          context: systemContext
         },
-        body: JSON.stringify({
-          inputs: {
-            // Inject context into Dify variables if configured, or prepend to query
-            context: systemContext
-          },
-          query: systemContext ? `${systemContext}\n\n用戶問題: ${q}` : q,
-          response_mode: 'streaming',
-          user: 'bambigo-user', 
-          auto_generate_name: false
-        }),
+        query: q,
+        response_mode: 'streaming',
+        user: 'bambigo-user',
+        auto_generate_name: false
       })
 
-      if (!difyRes.ok) {
-        const errText = await difyRes.text()
-        console.error('Dify API error:', difyRes.status, errText)
-        throw new Error(`Dify API error: ${difyRes.status}`)
-      }
-
-      if (!difyRes.body) throw new Error('No response body from Dify')
-
-      const encoder = new TextEncoder()
       const decoder = new TextDecoder()
-      const reader = difyRes.body.getReader()
+      const reader = streamBody.getReader()
 
       const stream = new ReadableStream({
         async start(controller) {
-          const write = (data: string) => controller.enqueue(encoder.encode(`data: ${data}\n\n`))
+          const write = (data: string) => controller.enqueue(new TextEncoder().encode(`data: ${data}\n\n`))
           if (trapAlertsGlobal.length) {
             write(JSON.stringify({ role: 'ai', type: 'alerts', content: trapAlertsGlobal }))
           }

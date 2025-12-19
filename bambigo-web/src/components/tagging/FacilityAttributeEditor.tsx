@@ -62,6 +62,8 @@ export default function FacilityAttributeEditor({ facility, onSave, onCancel, cl
   const [attributes, setAttributes] = useState<Record<string, any>>(facility.attributes || {})
   const [isVerified, setIsVerified] = useState(false) // In a real app, this might come from data
 
+  const [location, setLocation] = useState<{ floor?: string; direction?: string }>(facility.location || {})
+
   const category = (data.category || 'other') as L3Category
   const schema = ATTRIBUTE_SCHEMAS[category] || ATTRIBUTE_SCHEMAS['other']
   
@@ -73,10 +75,15 @@ export default function FacilityAttributeEditor({ facility, onSave, onCancel, cl
     setAttributes(prev => ({ ...prev, [key]: value }))
   }
 
+  const handleLocationChange = (key: 'floor' | 'direction', value: string) => {
+    setLocation(prev => ({ ...prev, [key]: value }))
+  }
+
   const handleSave = () => {
     onSave({
       ...data,
       attributes,
+      location,
       updatedAt: new Date().toISOString()
       // In real app, we'd handle verification logic here
     })
@@ -98,6 +105,44 @@ export default function FacilityAttributeEditor({ facility, onSave, onCancel, cl
       </div>
 
       {/* Body */}
+      <div className="p-4 space-y-6 overflow-y-auto max-h-[60vh]">
+        
+        {/* Location Section (Common) */}
+        <section className="space-y-3">
+          <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-1">
+             📍 Location Details
+          </h4>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-gray-500">Floor</label>
+              <input 
+                type="text" 
+                value={location.floor || ''}
+                onChange={(e) => handleLocationChange('floor', e.target.value)}
+                placeholder="e.g. 1F, B1"
+                className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-emerald-500 focus:outline-none"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-gray-500">Direction / Note</label>
+              <input 
+                type="text" 
+                value={location.direction || ''}
+                onChange={(e) => handleLocationChange('direction', e.target.value)}
+                placeholder="Near entrance..."
+                className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-emerald-500 focus:outline-none"
+              />
+            </div>
+          </div>
+        </section>
+
+        <hr className="border-gray-100" />
+
+        {/* Specific Attributes */}
+        <section className="space-y-3">
+           <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-1">
+             ⚙️ Attributes
+           </h4>
       <div className="p-4 space-y-4 max-h-[60vh] overflow-y-auto">
         {/* Basic Info */}
         <div className="space-y-3">
@@ -158,6 +203,8 @@ export default function FacilityAttributeEditor({ facility, onSave, onCancel, cl
             </div>
           ))}
         </div>
+      </div>
+      </section>
       </div>
 
       {/* Footer */}

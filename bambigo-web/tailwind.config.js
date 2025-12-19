@@ -1,3 +1,5 @@
+import tailwindcssAnimate from "tailwindcss-animate";
+
 /** @type {import('tailwindcss').Config} */
 const config = {
   content: [
@@ -80,7 +82,7 @@ const config = {
   },
   darkMode: "class",
   plugins: [
-    require("tailwindcss-animate"),
+    tailwindcssAnimate,
   ],
 };
 

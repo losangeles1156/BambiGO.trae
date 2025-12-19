@@ -192,7 +192,10 @@ export const FacilityEditor: React.FC<FacilityEditorProps> = (props) => {
             {L3_FACILITIES_DATA.map((f) => (
               <button
                 key={f.id}
-                onClick={() => setSelectedType(f.id)}
+                onClick={() => {
+                  setSelectedType(f.id)
+                  setAttributes({})
+                }}
                 className={clsx(
                   'flex flex-col items-center justify-center gap-1 px-2 py-2 rounded-lg border text-xs transition-all h-16',
                   selectedType === f.id 

@@ -14,8 +14,8 @@
     "export:geojson": "tsx scripts/export_geojson.ts",
     "dev:setup": "tsx scripts/dev_check_env.ts && tsx scripts/setup_v4_1_schema.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest",
-    "test:ci": "vitest --run --coverage",
+    "test": "vitest run",
+    "test:ci": "vitest run --coverage",
     "prepare": "husky"
   },
   "dependencies": {
@@ -38,6 +38,7 @@
     "@types/pg": "^8.16.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/coverage-v8": "^4.0.16",
     "babel-plugin-react-compiler": "1.0.0",
     "dotenv": "^17.2.3",
     "eslint": "^9",
@@ -47,6 +48,7 @@
     "lint-staged": "^16.2.7",
     "pg": "^8.16.3",
     "tailwindcss": "^4",
+    "tailwindcss-animate": "^1.0.7",
     "tsx": "^4.21.0",
     "typescript": "^5",
     "vitest": "^4.0.15"
@@ -67,6 +69,9 @@
       "functions": 70,
       "branches": 70,
       "statements": 70
-    }
+    },
+    "testExclude": [
+      "e2e/**"
+    ]
   }
 }

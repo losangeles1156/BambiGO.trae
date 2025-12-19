@@ -13,9 +13,9 @@ type Facility = {
   type: string;
   attributes?: {
     subCategory?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
-  [key: string]: any;
+  [key: string]: unknown;
 };
 
 function getTimeSlot(ctx: Context): 'breakfast' | 'lunch' | 'dinner' | 'night' | 'other' {
@@ -52,7 +52,8 @@ function isOpenNowDining(facilities: Facility[], now: Date): boolean {
     const sub = String(f.attributes?.subCategory || '').toLowerCase();
     const isDining = f.type.toLowerCase() === 'dining' || sub === 'restaurant' || sub === 'cafe';
     if (!isDining) continue;
-    const ranges = parseOpeningHours(f.attributes?.openingHours || f.openingHours);
+    const oh = (f.attributes?.openingHours || f.openingHours) as string | undefined;
+    const ranges = parseOpeningHours(oh);
     if (ranges.length === 0) return true;
     if (ranges.some(r => jstMinutes >= r.start && jstMinutes <= r.end)) return true;
   }
@@ -105,7 +106,7 @@ export class StrategyEngine {
       });
     }
 
-    const slot = context.time ? (context.time as any) : getTimeSlot(context);
+    const slot = context.time ? (context.time as string) : getTimeSlot(context);
     if ((slot === 'lunch' || slot === 'dinner') && hasDining && isOpenNowDining(facilities, context.now ?? new Date())) {
       strategy.push({
         type: 'primary',
@@ -113,7 +114,7 @@ export class StrategyEngine {
         description: 'Dining options available now.',
         rationale: 'Meal time window detected with dining nearby.',
         tags: ['dining'],
-        actions: [{ label: 'See Restaurants', uri: 'app:filter?tag=dining' }]
+        actions: [{ label: 'See Restaurants', uri: 'app:filter?tag=dining&status=open_now' }]
       });
     }
 

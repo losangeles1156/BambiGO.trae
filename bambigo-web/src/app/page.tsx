@@ -12,6 +12,7 @@ import TaskMode from '../components/views/TaskMode'
 import FullScreenAssistant from '../components/assistant/FullScreenAssistant'
 import { detectZoneFromPoint, Zone } from '../lib/zones/detector'
 import { getAdapter } from '../lib/adapters'
+import { supabase } from '../lib/supabase'
  
 export default function Home() {
   const [online, setOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true)
@@ -28,6 +29,7 @@ export default function Home() {
   const [sheetMode, setSheetMode] = useState<'collapsed' | 'half' | 'full'>('collapsed')
   const prefersElevator = (hint: string) => /電梯|無障礙|wheelchair|elevators?|エレベータ(ー)?|バリアフリー|車椅子/i.test(hint)
   const [showAssistant, setShowAssistant] = useState(false)
+  const [mapFilter, setMapFilter] = useState<{ tag?: string; status?: string } | undefined>(undefined)
   useEffect(() => {
     const onOnline = () => setOnline(true)
     const onOffline = () => setOnline(false)
@@ -47,6 +49,25 @@ export default function Home() {
   const showInstall = !!installEvt
   const mapHeight = view === 'explore' ? '100vh' : view === 'dashboard' ? '50vh' : '15vh'
   const [envStatuses, setEnvStatuses] = useState<{ label: string; tone?: 'yellow' | 'blue' | 'red' | 'green' }[]>([])
+  
+  // Supabase Connection Test
+  useEffect(() => {
+    const testSupabase = async () => {
+      console.log('🔄 Testing Supabase Connection...')
+      try {
+        const { data, error } = await supabase.from('facilities').select('count', { count: 'exact', head: true })
+        if (error) {
+          console.error('❌ Supabase Connection Failed:', error.message)
+        } else {
+          console.log('✅ Supabase Connection Successful! Facility Count:', data)
+        }
+      } catch (err) {
+        console.error('❌ Supabase Connection Exception:', err)
+      }
+    }
+    testSupabase()
+  }, [])
+
   useEffect(() => {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
     const base: { label: string; tone?: 'yellow' | 'blue' | 'red' | 'green' }[] = [
@@ -118,11 +139,43 @@ export default function Home() {
         setView('dashboard')
       }} />
       {view === 'explore' && (
-        <SearchBar onSubmit={(q) => { if (q.trim()) setView('dashboard') }} onMic={() => setShowAssistant(true)} />
+        <>
+          <SearchBar onSubmit={(q) => { if (q.trim()) setView('dashboard') }} onMic={() => setShowAssistant(true)} />
+          {mapFilter && (
+            <div className="fixed top-20 left-1/2 -translate-x-1/2 z-10 flex gap-2">
+              <div className="bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-sm font-medium animate-in fade-in slide-in-from-top-4">
+                <span>Filtering: {mapFilter.tag}</span>
+                {mapFilter.status && <span className="text-blue-200 text-xs">({mapFilter.status.replace('_', ' ')})</span>}
+                <button 
+                  onClick={() => setMapFilter(undefined)}
+                  className="ml-2 w-5 h-5 flex items-center justify-center hover:bg-blue-700 rounded-full"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
       {view === 'dashboard' && (
         <div className="fixed left-0 right-0 bottom-0 max-h-[50vh] overflow-auto p-3 z-10">
-          <NodeDashboard nodeId={nodeId || undefined} name={nodeName} statuses={envStatuses} actions={actions} filterSuitability={(() => { const q = tagging.buildSuitabilityQuery(tagState.tags, 0.6); return { tag: q.tag, minConfidence: q.minConfidence } })()} onAction={(a) => { if (a.includes('去')) setView('task') }} onRouteHint={async (hint) => {
+          <NodeDashboard nodeId={nodeId || undefined} name={nodeName} statuses={envStatuses} actions={actions} filterSuitability={(() => { const q = tagging.buildSuitabilityQuery(tagState.tags, 0.6); return { tag: q.tag, minConfidence: q.minConfidence } })()} onAction={(a) => { 
+            if (a.includes('去')) {
+              setView('task')
+            } else if (a.startsWith('app:filter')) {
+              try {
+                const url = new URL(a.replace('app:', 'http://dummy/'))
+                const tag = url.searchParams.get('tag') || undefined
+                const status = url.searchParams.get('status') || undefined
+                const indoor = url.searchParams.get('indoor')
+                let finalTag = tag
+                if (indoor === 'true') finalTag = 'indoor'
+                setMapFilter({ tag: finalTag, status })
+                setView('explore')
+                setNodeId(null)
+              } catch {}
+            }
+          }} onRouteHint={async (hint) => {
             const origin = Array.isArray(mapCenter) ? mapCenter : lastCoords
             if (!origin) return
             const [lon, lat] = origin
@@ -241,7 +294,7 @@ export default function Home() {
           <span style={{ fontSize: 18 }}>✕</span>
         </button>
       )}
-      <FullScreenAssistant open={showAssistant} onClose={() => setShowAssistant(false)} />
+      <FullScreenAssistant open={showAssistant} onClose={() => setShowAssistant(false)} nodeId={nodeId || undefined} />
     </div>
   )
 }

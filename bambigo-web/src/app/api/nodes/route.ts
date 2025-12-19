@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { Client } from 'pg'
+import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
 const rateBuckets = new Map<string, { count: number; resetAt: number }>()
 
@@ -29,6 +30,40 @@ const mockNodes = [
     }
   }
 ]
+
+function parseWKBPoint(hex: string): [number, number] | null {
+  try {
+    // Basic EWKB/WKB parser for Point
+    const buffer = Buffer.from(hex, 'hex')
+    if (buffer.length < 21) return null // Min length for Point (1+4+16)
+    
+    const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength)
+    const littleEndian = view.getUint8(0) === 1
+    // const type = view.getUint32(1, littleEndian) 
+    // We assume it's a Point (type 1 or 0x20000001).
+    // X is at 9, Y at 17 for standard EWKB Point with SRID present?
+    // Sample: 01 01000020 E6100000 ...
+    // Byte 0: 01 (LE)
+    // Byte 1-4: 01000020 (Type | SRID flag)
+    // Byte 5-8: E6100000 (SRID 4326)
+    // Byte 9-16: X
+    // Byte 17-24: Y
+    
+    // Check if SRID flag is set (0x20000000)
+    const type = view.getUint32(1, littleEndian)
+    let offset = 5
+    if ((type & 0x20000000) !== 0) {
+      offset += 4 // Skip SRID
+    }
+    
+    const x = view.getFloat64(offset, littleEndian)
+    const y = view.getFloat64(offset + 8, littleEndian)
+    return [x, y]
+  } catch (e) {
+    console.error('WKB Parse error:', e)
+    return null
+  }
+}
 
 export async function GET(req: Request) {
   const rateCfg = process.env.NODES_RATE_LIMIT
@@ -66,10 +101,12 @@ export async function GET(req: Request) {
       )
     }
   }
+
   const url = new URL(req.url)
   const bboxParam = url.searchParams.get('bbox')
   const typeParam = url.searchParams.get('type') || url.searchParams.get('category')
   const limitParam = url.searchParams.get('limit')
+  
   let bbox = defaultBbox
   if (bboxParam) {
     const parts = bboxParam.split(',').map((s) => parseFloat(s))
@@ -82,17 +119,15 @@ export async function GET(req: Request) {
     }
     bbox = { minLon: parts[0], minLat: parts[1], maxLon: parts[2], maxLat: parts[3] }
   }
-  let limit: number | undefined = undefined
+
+  let limit = 2000 // Default higher limit to cover bbox
   if (limitParam !== null) {
     const n = Number(limitParam)
-    if (!Number.isFinite(n) || n <= 0) {
-      return new NextResponse(
-        JSON.stringify({ error: { code: 'INVALID_PARAMETER', message: 'limit must be a positive integer', details: { limit: limitParam } } }),
-        { status: 400, headers: { 'Content-Type': 'application/json', 'X-API-Version': 'v4.1-strict' } }
-      )
+    if (Number.isFinite(n) && n > 0) {
+      limit = Math.min(10000, Math.floor(n))
     }
-    limit = Math.min(10000, Math.max(1, Math.floor(n)))
   }
+
   const allowedTypes = new Set(['station', 'bus_stop'])
   const typeFilter = typeParam || null
   if (typeFilter && !allowedTypes.has(typeFilter)) {
@@ -101,123 +136,77 @@ export async function GET(req: Request) {
       { status: 400, headers: { 'Content-Type': 'application/json', 'X-API-Version': 'v4.1-strict' } }
     )
   }
-  const rawConn = process.env.DATABASE_URL
-  if (!rawConn) {
-    return new NextResponse(
-      JSON.stringify({ type: 'FeatureCollection', features: [] }),
-      { headers: { 'Content-Type': 'application/json', 'X-API-Version': 'v4.1-strict' } }
-    )
-  }
 
-  // Use raw connection string to match health check logic
-  // normalizeConn removed as it may conflict with ssl config or password encoding
-  const conn = rawConn
-  const client = new Client({ connectionString: conn, ssl: { rejectUnauthorized: false } })
   try {
-    await client.connect()
-    const sql = `
-      select
-        id,
-        name,
-        type,
-        metadata,
-        external_links,
-        ST_X(location::geometry) as lon,
-        ST_Y(location::geometry) as lat
-      from public.nodes
-      where location is not null
-        and ST_X(location::geometry) >= $1
-        and ST_X(location::geometry) <= $3
-        and ST_Y(location::geometry) >= $2
-        and ST_Y(location::geometry) <= $4
-        ${typeFilter ? `and type = $5` : ``}
-      ${limit ? `limit ${limit}` : ``}
-    `
-    const values: (number | string)[] = [bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat]
-    if (typeFilter) values.push(typeFilter)
-    let rows: {
-      id: string
-      name: unknown
-      type: string
-      metadata: unknown
-      external_links: unknown
-      lon: number
-      lat: number
-    }[] = []
-    try {
-      const r1 = await client.query<{
-        id: string
-        name: unknown
-        type: string
-        metadata: unknown
-        external_links: unknown
-        lon: number
-        lat: number
-      }>(sql, values)
-      rows = r1.rows
-    } catch {
-      const sql2 = `
-        select
-          id,
-          name,
-          type,
-          metadata,
-          external_links,
-          ST_X(geom::geometry) as lon,
-          ST_Y(geom::geometry) as lat
-        from public.nodes
-        where geom is not null
-          and ST_Within(
-            geom::geometry,
-            ST_MakeEnvelope($1, $2, $3, $4, 4326)
-          )
-          ${typeFilter ? `and type = $5` : ``}
-        ${limit ? `limit ${limit}` : ``}
-      `
-      const r2 = await client.query<{
-        id: string
-        name: unknown
-        type: string
-        metadata: unknown
-        external_links: unknown
-        lon: number
-        lat: number
-      }>(sql2, values)
-      rows = r2.rows
-    }
-    const features = rows.map((r) => ({
-      type: 'Feature',
-      geometry: { type: 'Point', coordinates: [r.lon, r.lat] },
-      properties: {
-        id: r.id,
-        name: r.name as { ja?: string; en?: string; zh?: string },
-        type: r.type,
-        supply_tags: r.type === 'station' ? ['has_train'] : r.type === 'bus_stop' ? ['has_bus'] : [],
-        suitability_tags: [],
-        external_links: r.external_links,
-        metadata: r.metadata,
-      },
-    }))
-    
-    // Fallback: If no features found from DB (or specific nodes missing), append mock nodes for demo
-    if (features.length === 0) {
-      features.push(...(mockNodes as any[]))
+    let features: Array<{
+      type: 'Feature'
+      geometry: { type: 'Point'; coordinates: [number, number] }
+      properties: Record<string, unknown>
+    }> = []
+
+    const canUseAdmin = !!process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (canUseAdmin) {
+      try {
+        const { data, error } = await supabaseAdmin.rpc('get_nodes_in_bbox', {
+          min_lon: bbox.minLon,
+          min_lat: bbox.minLat,
+          max_lon: bbox.maxLon,
+          max_lat: bbox.maxLat,
+          p_type: typeFilter || null,
+          p_limit: limit,
+        })
+        if (error) throw error
+        // RPC returns an array of GeoJSON Features already
+        if (Array.isArray(data)) {
+          features = data as any
+        }
+      } catch (e) {
+        console.warn('RPC get_nodes_in_bbox unavailable, falling back:', e)
+      }
     }
 
-    const fc = { type: 'FeatureCollection', features }
-    return new NextResponse(JSON.stringify(fc), {
+    if (features.length === 0) {
+      let query = supabase.from('nodes').select('id, name, type, location, metadata, external_links')
+      if (typeFilter) query = query.eq('type', typeFilter)
+      query = query.limit(limit)
+      const { data, error } = await query
+      if (error) throw error
+      features = (data || []).reduce((acc: { type: 'Feature'; geometry: { type: 'Point'; coordinates: [number, number] }; properties: Record<string, unknown> }[], node: any) => {
+        if (!node.location) return acc
+        const coords = parseWKBPoint(node.location)
+        if (!coords) return acc
+        const [lon, lat] = coords
+        if (lon < bbox.minLon || lon > bbox.maxLon || lat < bbox.minLat || lat > bbox.maxLat) return acc
+        acc.push({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: coords },
+          properties: {
+            id: node.id,
+            name: node.name,
+            type: node.type,
+            supply_tags: node.type === 'station' ? ['has_train'] : node.type === 'bus_stop' ? ['has_bus'] : [],
+            suitability_tags: [],
+            external_links: node.external_links,
+            metadata: node.metadata,
+          },
+        })
+        return acc
+      }, [])
+    }
+
+    return new NextResponse(JSON.stringify({ type: 'FeatureCollection', features }), {
       headers: {
         'Content-Type': 'application/json',
         'Cache-Control': 'public, max-age=30, stale-while-revalidate=300',
         'X-API-Version': 'v4.1-strict',
       },
     })
-  } catch {
+
+  } catch (err) {
+    console.error('Nodes API Error:', err)
     return new NextResponse(
       JSON.stringify({ type: 'FeatureCollection', features: mockNodes }),
       { headers: { 'Content-Type': 'application/json', 'X-API-Version': 'v4.1-strict' } }
     )
-  } finally {
-    try { await client.end() } catch {}
   }
 }

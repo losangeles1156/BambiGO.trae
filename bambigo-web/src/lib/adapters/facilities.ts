@@ -1,4 +1,4 @@
-import { L3ServiceFacility } from '../../types/tagging'
+import { L3ServiceFacility, L3Category } from '../../types/tagging'
 import { L3CategorySchema } from '../validators/tagging'
 import { FacilityItem } from '../../app/api/facilities/route'
 
@@ -14,9 +14,9 @@ export function adaptFacilityItem(item: FacilityItem): L3ServiceFacility {
 
   // 1. Map 'type' to L3Category
   // The API uses various strings, we need to normalize them to the enum
-  let category: any = 'other'
+  let category: L3Category = 'other'
   
-  const typeMap: Record<string, string> = {
+  const typeMap: Record<string, L3Category> = {
     'toilet': 'toilet',
     'restroom': 'toilet',
     'charging': 'charging',
@@ -43,7 +43,7 @@ export function adaptFacilityItem(item: FacilityItem): L3ServiceFacility {
 
   // 2. Extract attributes
   const attributes: Record<string, unknown> = {
-    ...(item.attributes as object || {}),
+    ...(item.attributes as Record<string, unknown> || {}),
     is_free: item.is_free,
     is_24h: item.is_24h,
     has_wheelchair_access: item.has_wheelchair_access,

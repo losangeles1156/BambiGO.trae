@@ -9,8 +9,8 @@ const StreamSchema = z.union([
   z.object({ type: z.literal('error'), message: z.string().optional() })
 ])
 
-type Props = { open: boolean; onClose: () => void }
-export default function FullScreenAssistant({ open, onClose }: Props) {
+type Props = { open: boolean; onClose: () => void; nodeId?: string }
+export default function FullScreenAssistant({ open, onClose, nodeId }: Props) {
   const [text, setText] = useState('')
   const [msgs, setMsgs] = useState<{ role: 'user' | 'ai'; content: string }[]>([])
   const [loading, setLoading] = useState(false)
@@ -68,7 +68,8 @@ export default function FullScreenAssistant({ open, onClose }: Props) {
                 setLoading(true)
                 try {
                   esRef.current?.close()
-                  esRef.current = new EventSource(`/api/assistant?q=${encodeURIComponent(text)}`)
+                  const url = `/api/assistant?q=${encodeURIComponent(text)}${nodeId ? `&node_id=${encodeURIComponent(nodeId)}` : ''}`
+                  esRef.current = new EventSource(url)
                   esRef.current.onmessage = (ev) => {
                             try {
                               const json = JSON.parse(ev.data)

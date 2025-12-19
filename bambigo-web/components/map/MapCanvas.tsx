@@ -64,8 +64,8 @@ const OSM_STYLE_DARK: StyleSpecification = {
   ],
 }
 
-type Props = { height?: number | string; onNodeSelected?: (f: Feature) => void; showBus?: boolean; zone?: 'core' | 'buffer' | 'outer'; center?: [number, number]; route?: FeatureCollection | null; accessibility?: { preferElevator?: boolean }; showPopup?: boolean }
-export default function MapCanvas({ height, onNodeSelected, showBus = true, zone = 'core', center, route, accessibility, showPopup = true }: Props) {
+type Props = { height?: number | string; onNodeSelected?: (f: Feature) => void; showBus?: boolean; zone?: 'core' | 'buffer' | 'outer'; center?: [number, number]; route?: FeatureCollection | null; accessibility?: { preferElevator?: boolean }; showPopup?: boolean; filter?: { tag?: string; status?: string } }
+export default function MapCanvas({ height, onNodeSelected, showBus = true, zone = 'core', center, route, accessibility, showPopup = true, filter }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [data, setData] = useState<FeatureCollection | null>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
@@ -168,6 +168,24 @@ export default function MapCanvas({ height, onNodeSelected, showBus = true, zone
     })
     map.on('styledata', () => {
       setStyleError(null)
+      try {
+        const fc = data || { type: 'FeatureCollection', features: [] }
+        const feats = Array.isArray(fc.features) ? fc.features : []
+        let filtered = feats
+        if (filter?.tag) {
+          filtered = feats.filter(f => {
+            const props = f.properties as NodeProps | undefined
+            const tags = props?.supply_tags || []
+            return tags.some(t => t === filter.tag || t === `has_${filter.tag}` || t.includes(filter.tag!))
+          })
+        }
+        const stations: FeatureCollection = { type: 'FeatureCollection', features: filtered.filter((f) => (f.properties as NodeProps | undefined)?.type === 'station') as Feature[] }
+        const busstops: FeatureCollection = { type: 'FeatureCollection', features: filtered.filter((f) => (f.properties as NodeProps | undefined)?.type === 'bus_stop') as Feature[] }
+        const srcStation = map.getSource('src-station') as maplibregl.GeoJSONSource | undefined
+        const srcBus = map.getSource('src-bus') as maplibregl.GeoJSONSource | undefined
+        srcStation?.setData(stations)
+        if (showBusRef.current && srcBus) srcBus.setData(busstops)
+      } catch {}
     })
     map.on('load', () => {
       handleGeolocation()
@@ -227,6 +245,24 @@ export default function MapCanvas({ height, onNodeSelected, showBus = true, zone
             'circle-stroke-width': 2,
           },
         })
+      try {
+        const fc = data || { type: 'FeatureCollection', features: [] }
+        const feats = Array.isArray(fc.features) ? fc.features : []
+        let filtered = feats
+        if (filter?.tag) {
+          filtered = feats.filter(f => {
+            const props = f.properties as NodeProps | undefined
+            const tags = props?.supply_tags || []
+            return tags.some(t => t === filter.tag || t === `has_${filter.tag}` || t.includes(filter.tag!))
+          })
+        }
+        const stations: FeatureCollection = { type: 'FeatureCollection', features: filtered.filter((f) => (f.properties as NodeProps | undefined)?.type === 'station') as Feature[] }
+        const busstops: FeatureCollection = { type: 'FeatureCollection', features: filtered.filter((f) => (f.properties as NodeProps | undefined)?.type === 'bus_stop') as Feature[] }
+        const srcStation = map.getSource('src-station') as maplibregl.GeoJSONSource | undefined
+        const srcBus = map.getSource('src-bus') as maplibregl.GeoJSONSource | undefined
+        srcStation?.setData(stations)
+        if (showBusRef.current && srcBus) srcBus.setData(busstops)
+      } catch {}
       map.on('click', 'layer-station', (e) => {
         const f = (e as unknown as { features?: Feature[] }).features?.[0]
         if (f) {
@@ -287,19 +323,30 @@ export default function MapCanvas({ height, onNodeSelected, showBus = true, zone
     if (!map || !data) return
     const fc = data as FeatureCollection
     const featuresArr = Array.isArray(fc.features) ? fc.features : []
+
+    let filteredFeatures = featuresArr
+    if (filter?.tag) {
+      filteredFeatures = featuresArr.filter(f => {
+        const props = f.properties as NodeProps | undefined
+        const tags = props?.supply_tags || []
+        // Flexible match: exact match OR "has_" prefix match
+        return tags.some(t => t === filter.tag || t === `has_${filter.tag}` || t.includes(filter.tag!))
+      })
+    }
+
     const stations: FeatureCollection = {
       type: 'FeatureCollection',
-      features: (featuresArr as Feature[]).filter((f) => (f.properties as NodeProps | undefined)?.type === 'station'),
+      features: (filteredFeatures as Feature[]).filter((f) => (f.properties as NodeProps | undefined)?.type === 'station'),
     }
     const busstops: FeatureCollection = {
       type: 'FeatureCollection',
-      features: (featuresArr as Feature[]).filter((f) => (f.properties as NodeProps | undefined)?.type === 'bus_stop'),
+      features: (filteredFeatures as Feature[]).filter((f) => (f.properties as NodeProps | undefined)?.type === 'bus_stop'),
     }
     const srcStation = map.getSource('src-station') as maplibregl.GeoJSONSource | undefined
     const srcBus = map.getSource('src-bus') as maplibregl.GeoJSONSource | undefined
     if (srcStation) srcStation.setData(stations)
     if (showBusRef.current && srcBus) srcBus.setData(busstops)
-  }, [data])
+  }, [data, filter])
 
   useEffect(() => {
     const map = mapRef.current
@@ -316,7 +363,12 @@ export default function MapCanvas({ height, onNodeSelected, showBus = true, zone
       const preferElevator = !!accessibility?.preferElevator
       const isBuffer = zone === 'buffer'
       const isOuter = zone === 'outer'
-      const stationColor = isBuffer || isOuter ? '#9CA3AF' : Colors.map.stationFill
+      
+      // Dynamic styling based on filter status
+      let baseStationColor = Colors.map.stationFill
+      if (filter?.status === 'open_now') baseStationColor = '#16a34a' // green-600
+      
+      const stationColor = isBuffer || isOuter ? '#9CA3AF' : baseStationColor
       const busColor = isBuffer || isOuter ? '#9CA3AF' : Colors.map.busFill
       const stationRadius = isBuffer ? ['interpolate', ['linear'], ['zoom'], 10, 5, 14, 7, 18, 9] : ['interpolate', ['linear'], ['zoom'], 10, 7, 14, 10, 18, 13]
       const busRadius = isBuffer ? ['interpolate', ['linear'], ['zoom'], 13, 4, 15, 6, 18, 8] : ['interpolate', ['linear'], ['zoom'], 13, 6, 15, 8, 18, 10]

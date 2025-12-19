@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
-import { Client } from 'pg'
 import { withMonitor } from '../../../lib/monitor'
 import { L3ServiceFacility, L3Category } from '../../../types/tagging'
+import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
 // Rate limit buckets (per-IP)
 const rateBuckets = new Map<string, { count: number; resetAt: number }>()
@@ -33,14 +34,20 @@ export type FacilitiesResponse = {
   items: FacilityItem[]
 }
 
-function normalizeConn(s: string) {
+function parseWKBPoint(hex: string): [number, number] | null {
   try {
-    const u = new URL(s)
-    if (u.hostname !== 'localhost' && !u.searchParams.has('sslmode')) u.searchParams.set('sslmode', 'require')
-    if (u.password) u.password = encodeURIComponent(decodeURIComponent(u.password))
-    return u.toString()
+    const buffer = Buffer.from(hex, 'hex')
+    if (buffer.length < 21) return null
+    const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength)
+    const littleEndian = view.getUint8(0) === 1
+    const type = view.getUint32(1, littleEndian)
+    let offset = 5
+    if ((type & 0x20000000) !== 0) offset += 4
+    const x = view.getFloat64(offset, littleEndian)
+    const y = view.getFloat64(offset + 8, littleEndian)
+    return [x, y]
   } catch {
-    return s
+    return null
   }
 }
 
@@ -162,117 +169,82 @@ async function handler(req: Request) {
     limit = Math.min(500, Math.max(1, Math.floor(n)))
   }
 
-  const rawConn = process.env.DATABASE_URL
-    || process.env.SUPABASE_DB_URL
-    || process.env.SUPABASE_POSTGRES_URL
-    || process.env.SUPABASE_DATABASE_URL
-
-  // If no DB configured, return empty list gracefully
-  if (!rawConn) {
-    const empty: FacilitiesResponse = { items: [] }
-    return new NextResponse(JSON.stringify(empty), {
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=15, stale-while-revalidate=120',
-        'X-API-Version': 'v4.1-strict',
-      },
-    })
-  }
-
-  const conn = normalizeConn(rawConn)
-  const client = new Client({ connectionString: conn })
-
   try {
-    await client.connect()
-    try { await client.query("select set_config('request.jwt.claims', $1, true)", [JSON.stringify({ role: 'anon' })]) } catch {}
-    // Build SQL with optional filters and suitability join
-    const useSuitability = !!suitTag
-    const tagList = useSuitability ? suitTag!.split(',').map((s) => s.trim()).filter((s) => s.length > 0) : []
-    const values: (string | number | string[])[] = []
-    let where = ''
-    let joinNodes = false
-
-    if (bbox) {
-      joinNodes = true
-      values.push(bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat)
-      where = `ST_Within(n.location::geometry, ST_MakeEnvelope($1, $2, $3, $4, 4326))`
-      if (nodeId) {
-        values.push(nodeId)
-        where += ` and f.node_id = $${values.length}`
+    let nodeIds: string[] = []
+    if (nodeId) {
+      nodeIds = [nodeId]
+    } else if (bbox) {
+      const canUseAdmin = !!process.env.SUPABASE_SERVICE_ROLE_KEY
+      if (canUseAdmin) {
+        try {
+          const { data, error } = await supabaseAdmin.rpc('get_nodes_in_bbox', {
+            min_lon: bbox.minLon,
+            min_lat: bbox.minLat,
+            max_lon: bbox.maxLon,
+            max_lat: bbox.maxLat,
+            p_type: null,
+            p_limit: 5000,
+          })
+          if (error) throw error
+          nodeIds = (data || []).map((n: any) => String(n.id))
+        } catch {}
       }
-    } else {
-      values.push(nodeId!)
-      where = `f.node_id = $1`
-    }
-
-    if (typeParam) {
-      values.push(typeParam)
-      where += ` and f.type = $${values.length}`
-    }
-    if (useSuitability) {
-      values.push(tagList)
-      const tagIdx = values.length
-      if (minConfidence > 0) {
-        values.push(minConfidence)
-        const confIdx = values.length
-        where += ` and exists (select 1 from public.facility_suitability s where s.facility_id = f.id and s.tag = any($${tagIdx}::text[]) and s.confidence >= $${confIdx})`
-      } else {
-        where += ` and exists (select 1 from public.facility_suitability s where s.facility_id = f.id and s.tag = any($${tagIdx}::text[]))`
+      if (nodeIds.length === 0) {
+        const { data, error } = await supabase
+          .from('nodes')
+          .select('id, location')
+          .limit(10000)
+        if (!error && Array.isArray(data)) {
+          nodeIds = data
+            .map((n: any) => {
+              const coords = n.location ? parseWKBPoint(n.location) : null
+              if (!coords) return null
+              const [lon, lat] = coords
+              if (lon < bbox!.minLon || lon > bbox!.maxLon || lat < bbox!.minLat || lat > bbox!.maxLat) return null
+              return String(n.id)
+            })
+            .filter(Boolean) as string[]
+        }
       }
     }
 
-    const limitSql = limit ? `limit ${limit}` : ''
-    const sql = `
-      select
-        f.id::text as id,
-        f.node_id,
-        f.city_id,
-        f.type,
-        f.name,
-        f.distance_meters,
-        f.direction,
-        f.floor,
-        f.has_wheelchair_access,
-        f.has_baby_care,
-        f.is_free,
-        f.is_24h,
-        f.current_status,
-        f.status_updated_at,
-        f.attributes,
-        f.booking_url,
-        coalesce((
-          select json_agg(json_build_object('tag', s.tag, 'confidence', s.confidence))
-          from public.facility_suitability s
-          where s.facility_id = f.id
-        ), '[]'::json) as suitability
-      from public.facilities f
-      ${joinNodes ? 'join public.nodes n on f.node_id = n.id' : ''}
-      where ${where}
-      order by coalesce(f.distance_meters, 999999) asc
-      ${limitSql}
-    `
+    if (nodeIds.length === 0) {
+      const empty: FacilitiesResponse = { items: [] }
+      return new NextResponse(JSON.stringify(empty), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'public, max-age=15, stale-while-revalidate=120',
+          'X-API-Version': 'v4.1-strict',
+        },
+      })
+    }
 
-    const r = await client.query<{
-      id: string
-      node_id: string | null
-      city_id: string | null
-      type: string
-      name: unknown
-      distance_meters: number | null
-      direction: string | null
-      floor: string | null
-      has_wheelchair_access: boolean
-      has_baby_care: boolean
-      is_free: boolean
-      is_24h: boolean
-      current_status: string
-      status_updated_at: string | null
-      attributes: unknown
-      booking_url: string | null
-      suitability: unknown
-    }>(sql, values)
+    let facQuery = supabase
+      .from('facilities')
+      .select('*')
+      .in('node_id', nodeIds)
+    if (typeParam) facQuery = facQuery.eq('type', typeParam)
+    if (limit) facQuery = facQuery.limit(limit)
+    const { data: facRows, error: facErr } = await facQuery
+    if (facErr) throw facErr
 
-    const items: FacilityItem[] = r.rows.map((row) => {
+    let suitability: Record<string, { tag: string; confidence: number }[]> = {}
+    if (suitTag) {
+      const ids = (facRows || []).map((r: any) => String(r.id)).filter((x: string) => x.length > 0)
+      const { data: suitRows, error: suitErr } = await supabase
+        .from('facility_suitability')
+        .select('facility_id, tag, confidence')
+        .in('facility_id', ids)
+      if (!suitErr && Array.isArray(suitRows)) {
+        for (const r of suitRows as any[]) {
+          if (minConfidence > 0 && Number(r.confidence) < minConfidence) continue
+          const arr = (suitability[r.facility_id] ||= [])
+          arr.push({ tag: String(r.tag), confidence: Number(r.confidence) })
+        }
+      }
+    }
+
+    const items: FacilityItem[] = (facRows || []).map((row: any) => {
       // Map to L3
       const typeMap: Record<string, L3Category> = {
         'toilet': 'toilet',
@@ -287,11 +259,11 @@ async function handler(req: Request) {
         'bench': 'rest_area',
         'smoking_area': 'rest_area'
       }
-      const normalizedType = row.type?.toLowerCase() || 'other'
+      const normalizedType = String(row.type || '').toLowerCase() || 'other'
       const category: L3Category = typeMap[normalizedType] || 'other'
 
       const l3: L3ServiceFacility = {
-        id: row.id,
+        id: String(row.id),
         nodeId: row.node_id || '',
         category,
         subCategory: normalizedType,
@@ -316,11 +288,11 @@ async function handler(req: Request) {
       }
 
       return {
-        id: row.id,
+        id: String(row.id),
         node_id: row.node_id,
         city_id: row.city_id,
-        type: row.type,
-        name: row.name as { ja?: string; en?: string; zh?: string },
+        type: String(row.type || ''),
+        name: (row.name || null) as { ja?: string; en?: string; zh?: string },
         distance_meters: row.distance_meters,
         direction: row.direction,
         floor: row.floor,
@@ -332,11 +304,7 @@ async function handler(req: Request) {
         status_updated_at: row.status_updated_at,
         attributes: row.attributes,
         booking_url: row.booking_url,
-        suitability_tags: Array.isArray(row.suitability)
-          ? (row.suitability as { tag?: string; confidence?: number }[])
-              .filter((x) => typeof x?.tag === 'string' && typeof x?.confidence === 'number')
-              .map((x) => ({ tag: x.tag as string, confidence: x.confidence as number }))
-          : [],
+        suitability_tags: suitability[String(row.id)] || [],
         l3
       }
     })
@@ -346,7 +314,7 @@ async function handler(req: Request) {
       headers: {
         'Content-Type': 'application/json',
         'Cache-Control': 'public, max-age=15, stale-while-revalidate=120',
-        'X-API-Version': 'v4.2-beta',
+        'X-API-Version': 'v4.1-strict',
       },
     })
   } catch {
@@ -354,7 +322,5 @@ async function handler(req: Request) {
       JSON.stringify({ items: [] } satisfies FacilitiesResponse),
       { headers: { 'Content-Type': 'application/json', 'X-API-Version': 'v4.1-strict' } }
     )
-  } finally {
-    try { await client.end() } catch {}
   }
 }

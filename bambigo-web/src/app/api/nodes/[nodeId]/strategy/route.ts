@@ -45,5 +45,5 @@ export async function POST(
     personaLabels
   });
 
-  return NextResponse.json(strategies[0]);
+  return NextResponse.json(strategies);
 }

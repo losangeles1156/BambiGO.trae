@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Plus, X, Edit2, Tag } from 'lucide-react'
 import TagChip from '../ui/TagChip'
 import { HierarchySelector } from '../tagging/HierarchySelector'
@@ -17,12 +17,7 @@ export default function NodeL1Manager({ nodeId, className }: Props) {
   const [loading, setLoading] = useState(false)
   const [mode, setMode] = useState<'view' | 'edit' | 'add'>('view')
 
-  useEffect(() => {
-    if (!nodeId) return
-    loadTags()
-  }, [nodeId])
-
-  const loadTags = async () => {
+  const loadTags = useCallback(async () => {
     setLoading(true)
     try {
       const data = await TaggingService.getL1Tags(nodeId)
@@ -32,7 +27,12 @@ export default function NodeL1Manager({ nodeId, className }: Props) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [nodeId])
+
+  useEffect(() => {
+    if (!nodeId) return
+    loadTags()
+  }, [nodeId, loadTags])
 
   const handleAdd = async (selection: { main: L1Category; sub: string; label: string }) => {
     try {
@@ -44,7 +44,7 @@ export default function NodeL1Manager({ nodeId, className }: Props) {
       })
       await loadTags()
       setMode('view')
-    } catch (err) {
+    } catch {
       alert('Failed to add tag')
     }
   }
@@ -54,7 +54,7 @@ export default function NodeL1Manager({ nodeId, className }: Props) {
     try {
       await TaggingService.removeL1Tag(nodeId, tagId)
       await loadTags()
-    } catch (err) {
+    } catch {
       alert('Failed to remove tag')
     }
   }

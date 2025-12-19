@@ -161,7 +161,11 @@ export default function TaggingSystemDemo() {
         weather: 'rain', // Hardcoded for demo to trigger "Rainy" logic if applicable
         time: 'lunch'
       });
-      setGeneratedStrategy(strategy);
+      if (Array.isArray(strategy)) {
+        setGeneratedStrategy(strategy[0] || null);
+      } else {
+        setGeneratedStrategy(strategy);
+      }
     } catch (err) {
       console.error('Failed to generate strategy', err);
     } finally {

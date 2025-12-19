@@ -134,6 +134,74 @@ export async function POST(
   return NextResponse.json(inserted);
 }
 
+export async function PUT(
+  request: NextRequest,
+  props: { params: Promise<{ nodeId: string }> }
+) {
+  const params = await props.params;
+  const nodeId = params.nodeId;
+  const { searchParams } = new URL(request.url);
+  const tagId = searchParams.get('id');
+  const body = await request.json();
+  const { layer, data } = body;
+
+  if (!tagId) {
+    return NextResponse.json({ error: 'Missing tag ID' }, { status: 400 });
+  }
+  if (!layer || !data) {
+    return NextResponse.json({ error: 'Missing layer or data' }, { status: 400 });
+  }
+
+  let dbRow: any = {};
+
+  if (layer === 'L1') {
+    const tag = data as L1Tag;
+    dbRow = {
+      type: tag.mainCategory,
+      name: tag.name,
+      distance_meters: tag.distanceMeters,
+      direction: tag.direction,
+      attributes: {
+        subCategory: tag.subCategory,
+        detailCategory: tag.detailCategory,
+        brand: tag.brand
+      },
+      updated_at: new Date().toISOString()
+    };
+  } else if (layer === 'L3') {
+    const facility = data as L3ServiceFacility;
+    dbRow = {
+      type: facility.category,
+      name: facility.provider?.name ? { en: facility.provider.name } : null,
+      floor: facility.location?.floor,
+      direction: facility.location?.direction,
+      attributes: {
+        ...facility.attributes,
+        subCategory: facility.subCategory,
+        provider: facility.provider,
+        openingHours: facility.openingHours
+      },
+      updated_at: new Date().toISOString()
+    };
+  } else {
+    return NextResponse.json({ error: 'Invalid layer' }, { status: 400 });
+  }
+
+  const { data: updated, error } = await supabaseAdmin
+    .from('facilities')
+    .update(dbRow)
+    .eq('id', tagId)
+    .eq('node_id', nodeId)
+    .select()
+    .single();
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json(updated);
+}
+
 export async function DELETE(
   request: NextRequest,
   props: { params: Promise<{ nodeId: string }> }

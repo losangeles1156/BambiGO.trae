@@ -66,6 +66,7 @@ const MapCanvas = ({
   const geolocateControl = useRef<maplibregl.GeolocateControl | null>(null)
   const [loaded, setLoaded] = useState(false)
   const activeStyleIndexRef = useRef(styleIndex)
+  const lastLocationErrorRef = useRef<{ code: string; at: number } | null>(null)
 
   // Keep callback ref up to date
   useEffect(() => {
@@ -100,11 +101,9 @@ const MapCanvas = ({
       })
 
       mapInstance.on('error', (e: { error?: { message?: string; status?: number } }) => {
-        // Catch tile loading errors or style errors
         if (e.error?.message?.includes('tile') || e.error?.status === 404) {
           console.warn(`Map Tile error detected on style ${sIndex}:`, e.error)
           
-          // If the current style is failing and we have more styles, try the next one
           if (sIndex < MAP_STYLES.length - 1) {
             console.info('Switching to fallback map style...')
             mapInstance.remove()
@@ -140,6 +139,14 @@ const MapCanvas = ({
 
     const UENO_STATION_COORDS: [number, number] = [139.7774, 35.7141]
 
+    const emitLocationError = (code: string) => {
+      const now = Date.now()
+      const last = lastLocationErrorRef.current
+      if (last && last.code === code && now - last.at < 30000) return
+      lastLocationErrorRef.current = { code, at: now }
+      if (onLocationError) onLocationError(code)
+    }
+
     geolocate.on('geolocate', (position: GeolocationPosition) => {
       const userCoords: [number, number] = [position.coords.longitude, position.coords.latitude]
       
@@ -163,15 +170,22 @@ const MapCanvas = ({
         if (minDistance > 50) {
           console.log('User is > 50km from nearest node. Resetting to Ueno Station.')
           mapInstance.flyTo({ center: UENO_STATION_COORDS, zoom: 15 })
-          
-          if (onLocationError) {
-            onLocationError('OUT_OF_RANGE')
-          }
 
-          // Optionally select Ueno station if it exists in nodes
-          const ueno = nodes.features.find(f => f.id === 'ueno-station' || (f.properties as Record<string, unknown>)?.id === 'ueno-station')
-          if (ueno && onNodeSelectedRef.current) {
-            onNodeSelectedRef.current(ueno)
+          emitLocationError('OUT_OF_RANGE')
+
+          if (onNodeSelectedRef.current) {
+            let best: Feature | null = null
+            let bestDist = Infinity
+            nodes.features.forEach((feature: Feature) => {
+              if (feature.geometry.type !== 'Point') return
+              const nodeCoords = feature.geometry.coordinates as [number, number]
+              const d = getDistance(UENO_STATION_COORDS, nodeCoords)
+              if (d < bestDist) {
+                bestDist = d
+                best = feature
+              }
+            })
+            if (best) onNodeSelectedRef.current(best)
           }
         } else if (nearestNode && onNodeSelectedRef.current) {
           const node = nearestNode as Feature;
@@ -183,15 +197,18 @@ const MapCanvas = ({
         const distToUeno = getDistance(userCoords, UENO_STATION_COORDS)
         if (distToUeno > 50) {
           mapInstance.flyTo({ center: UENO_STATION_COORDS, zoom: 15 })
-          if (onLocationError) onLocationError('OUT_OF_RANGE')
+          emitLocationError('OUT_OF_RANGE')
         }
       }
     })
 
     geolocate.on('error', (e: unknown) => {
       console.warn('Geolocation error:', e)
-      if (onLocationError) onLocationError('PERMISSION_DENIED')
-      // Fallback: If geolocation fails, fly to initial center
+      const code = (e as { code?: number } | null | undefined)?.code
+      if (code === 1) emitLocationError('PERMISSION_DENIED')
+      else if (code === 2) emitLocationError('POSITION_UNAVAILABLE')
+      else if (code === 3) emitLocationError('TIMEOUT')
+      else emitLocationError('PERMISSION_DENIED')
       mapInstance.flyTo({ center: initialCenter, zoom: 14 })
     })
 

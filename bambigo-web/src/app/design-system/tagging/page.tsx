@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { HierarchicalPopover } from '@/components/tagging/HierarchySelector';
 import { FacilityEditor } from '@/components/tagging/FacilityEditor';
 import TagChip from '@/components/ui/TagChip';
+import { AlertBanner, SystemAlert } from '@/components/ui/AlertBanner';
 import { L4StrategyCard } from '@/components/tagging/L4StrategyCard';
 import { TagLayer } from '@/components/tagging/constants';
 import { TaggingService } from '@/lib/api/tagging';
@@ -33,6 +34,38 @@ export default function TaggingSystemDemo() {
   const [loading, setLoading] = useState(false);
   const [strategyLoading, setStrategyLoading] = useState(false);
   const [generatedStrategy, setGeneratedStrategy] = useState<L4ActionCard | null>(null);
+  const [systemAlerts, setSystemAlerts] = useState<SystemAlert[]>([]);
+
+  const systemAlertTimersRef = useRef<Map<string, number>>(new Map());
+  const alertDedupeRef = useRef<Map<string, number>>(new Map());
+
+  const pushSystemAlert = useCallback((input: { severity: SystemAlert['severity']; title: string; summary: string; ttlMs?: number; dedupeMs?: number }) => {
+    const now = Date.now();
+    const key = `${input.severity}:${input.title}:${input.summary}`;
+    const dedupeMs = typeof input.dedupeMs === 'number' ? input.dedupeMs : 15000;
+    const last = alertDedupeRef.current.get(key) || 0;
+    if (now - last < dedupeMs) return;
+    alertDedupeRef.current.set(key, now);
+
+    const id = `sys-${now}-${Math.random().toString(16).slice(2)}`;
+    const alert: SystemAlert = { id, type: 'system', severity: input.severity, title: input.title, summary: input.summary };
+    setSystemAlerts((prev) => [alert, ...prev].slice(0, 6));
+
+    const ttl = typeof input.ttlMs === 'number' ? input.ttlMs : 8000;
+    const timer = window.setTimeout(() => {
+      setSystemAlerts((prev) => prev.filter((a) => a.id !== id));
+      systemAlertTimersRef.current.delete(id);
+    }, ttl);
+    systemAlertTimersRef.current.set(id, timer);
+  }, []);
+
+  useEffect(() => {
+    const timers = systemAlertTimersRef.current;
+    return () => {
+      for (const timer of timers.values()) window.clearTimeout(timer);
+      timers.clear();
+    };
+  }, []);
 
   // 1. Fetch Nodes on Mount
   useEffect(() => {
@@ -110,7 +143,7 @@ export default function TaggingSystemDemo() {
       });
       loadTags(activeNodeId);
     } catch {
-      alert('Failed to add tag');
+      pushSystemAlert({ severity: 'medium', title: 'Tagging', summary: 'Failed to add tag' });
     }
   };
 
@@ -135,7 +168,7 @@ export default function TaggingSystemDemo() {
       });
       loadTags(activeNodeId);
     } catch {
-      alert('Failed to add facility');
+      pushSystemAlert({ severity: 'medium', title: 'Tagging', summary: 'Failed to add facility' });
     }
   };
 
@@ -149,7 +182,7 @@ export default function TaggingSystemDemo() {
       }
       loadTags(activeNodeId);
     } catch {
-      alert('Failed to remove tag');
+      pushSystemAlert({ severity: 'medium', title: 'Tagging', summary: 'Failed to remove tag' });
     }
   };
 
@@ -178,6 +211,7 @@ export default function TaggingSystemDemo() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-8 font-sans">
+      <AlertBanner alerts={systemAlerts} />
       <div className="max-w-6xl mx-auto space-y-8">
         
         {/* Header */}

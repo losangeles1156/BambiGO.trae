@@ -2,16 +2,6 @@ import { NextResponse } from 'next/server'
 
 type RouteHandler = (req: Request, ...args: unknown[]) => Promise<Response>
 
-/**
- * API Performance & Error Monitoring Wrapper
- * 
- * Responsibilities:
- * 1. Latency Tracking: Measures execution time.
- * 2. Error Trapping: Catches unhandled exceptions and returns standardized 500.
- * 3. Logging: Structured logging for observability (ready for Datadog/Sentry).
- * 4. Alerting: Flags slow requests (>1s) or critical errors.
- */
-
 export interface LogEntry {
   type: 'API_METRIC' | 'API_ERROR' | 'SYSTEM_ALERT'
   timestamp: string
@@ -27,27 +17,44 @@ export interface LogEntry {
 export type ExternalLogger = (entry: LogEntry) => void
 
 const externalLoggers: ExternalLogger[] = []
-
-/**
- * Register an external logger (e.g., Sentry, Datadog, or custom analytics)
- */
 export function registerLogger(logger: ExternalLogger) {
   externalLoggers.push(logger)
 }
 
+const throttleMap = new Map<string, number>()
+
+function shouldThrottle(key: string, intervalMs: number) {
+  const now = Date.now()
+  const last = throttleMap.get(key) || 0
+  if (now - last < intervalMs) return true
+  throttleMap.set(key, now)
+  return false
+}
+
 function dispatchLog(entry: LogEntry) {
-  // Console Output (JSON for machine readability in prod, text for dev)
+  const isError = (entry.status || 0) >= 400 || entry.type === 'API_ERROR'
+  const slowThreshold = Math.max(500, parseInt(process.env.MONITOR_SLOW_MS || '1500', 10) || 1500)
+  const isSlow = entry.type === 'SYSTEM_ALERT' || (entry.duration_ms || 0) > slowThreshold
+
+  const throttleKeyBase = `${entry.type}:${entry.method}:${entry.path}`
+  const shouldSkip = !isError && isSlow && shouldThrottle(throttleKeyBase, 15000)
+
   if (process.env.NODE_ENV === 'production') {
-    console.log(JSON.stringify(entry))
+    // In production, only log errors or alerts to reduce log volume
+    if (!shouldSkip && (isError || isSlow)) {
+      console.log(JSON.stringify(entry))
+    }
   } else {
-    const color = (entry.status || 0) >= 500 || entry.type === 'API_ERROR' ? '\x1b[31m' : (entry.status || 0) >= 400 ? '\x1b[33m' : '\x1b[32m'
-    const reset = '\x1b[0m'
-    const statusStr = entry.status ? ` ${entry.status}` : ''
-    const durationStr = entry.duration_ms ? ` - ${Math.round(entry.duration_ms)}ms` : ''
-    console.log(`${color}[${entry.type}] ${entry.method} ${entry.path}${statusStr}${durationStr}${reset}`)
+    // In development, only log errors or slow queries to reduce noise
+    if (!shouldSkip && (isError || isSlow)) {
+      const color = (entry.status || 0) >= 500 || entry.type === 'API_ERROR' ? '\x1b[31m' : '\x1b[33m'
+      const reset = '\x1b[0m'
+      const statusStr = entry.status ? ` ${entry.status}` : ''
+      const durationStr = entry.duration_ms ? ` - ${Math.round(entry.duration_ms)}ms` : ''
+      console.log(`${color}[${entry.type}] ${entry.method} ${entry.path}${statusStr}${durationStr}${reset}`)
+    }
   }
 
-  // Dispatch to external loggers
   externalLoggers.forEach(logger => {
     try {
       logger(entry)
@@ -83,7 +90,6 @@ export function withMonitor(handler: RouteHandler, handlerName?: string): RouteH
 
       dispatchLog(logEntry)
 
-      // Performance Alert
       if (duration > 1000) {
         dispatchLog({
           type: 'SYSTEM_ALERT',

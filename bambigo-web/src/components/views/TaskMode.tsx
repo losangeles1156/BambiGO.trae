@@ -138,7 +138,10 @@ export default function TaskMode({ destination, onExit, steps }: Props) {
           )}
         </div>
         
-        <button onClick={handleExit} className="w-full text-center text-xs text-gray-400 py-2">
+        <button 
+          onClick={handleExit} 
+          className="w-full text-center text-sm font-medium text-gray-500 py-3 active:text-gray-800 transition-colors"
+        >
           {t('common.cancel')}
         </button>
       </div>

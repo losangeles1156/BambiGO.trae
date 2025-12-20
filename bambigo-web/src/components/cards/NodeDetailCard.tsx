@@ -9,6 +9,18 @@ import { WeatherAlert } from '../../lib/weather/jma_rss'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { CloudRain, AlertTriangle, Zap } from 'lucide-react'
 
+const FACILITY_ICON_MAP = {
+  shop: Store,
+  office: Briefcase,
+  service: Activity,
+} as const
+
+const FACILITY_LABEL_MAP = {
+  shop: '商店',
+  office: '辦公',
+  service: '服務',
+} as const
+
 type Name = { ja?: string; en?: string; zh?: string }
 
 interface Facility {
@@ -86,27 +98,56 @@ export default function NodeDetailCard({
     >
       {/* Header Section */}
       <div className="p-5 border-b border-gray-50 bg-gradient-to-b from-gray-50/50 to-white">
-        <div className="flex items-start justify-between">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              {isBuffer ? (
-                <div className="w-2 h-2 bg-gray-400 rounded-full" />
-              ) : (
-                <Train size={18} className="text-blue-600" />
-              )}
-              <h2 className="text-xl font-bold text-gray-900 truncate">
-                {getLocalizedName(name as Record<string, string>, locale)}
-              </h2>
-            </div>
-            <div className="flex items-center text-gray-400 text-xs font-medium uppercase tracking-wider">
-              <MapPin size={12} className="mr-1" />
-              <span>{name.en || name.ja}</span>
+        <div className="flex flex-col gap-3">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                {isBuffer ? (
+                  <div className="w-2 h-2 bg-gray-400 rounded-full" />
+                ) : (
+                  <Train size={18} className="text-blue-600 flex-shrink-0" />
+                )}
+                <h2 className="text-xl font-bold text-gray-900 truncate leading-tight">
+                  {getLocalizedName(name as Record<string, string>, locale)}
+                </h2>
+              </div>
+              <div className="flex items-center text-gray-400 text-xs font-medium uppercase tracking-wider">
+                <MapPin size={12} className="mr-1 flex-shrink-0" />
+                <span className="truncate">{name.en || name.ja}</span>
+              </div>
             </div>
           </div>
+          
+          {/* L1 Tag Row - Moved here for better visibility and spacing */}
           {!isBuffer && l1Summary && (
-            <TagChip label={l1Summary} layer="L1" icon={Building2} />
+            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-300">
+              <TagChip label={l1Summary} layer="L1" icon={Building2} />
+            </div>
           )}
         </div>
+
+        {/* L3 Facilities Section (Service Facilities) */}
+        {!isBuffer && facilities.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-gray-100/50">
+            <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">服務設施 (L3)</h3>
+            <div className="flex flex-wrap gap-2">
+              {facilities.map((facility) => {
+                const Icon = FACILITY_ICON_MAP[facility.type] || Info
+                const label = FACILITY_LABEL_MAP[facility.type] || facility.name || '設施'
+                return (
+                  <div 
+                    key={facility.id}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-50 text-gray-600 rounded-lg border border-gray-100 text-xs font-medium transition-colors hover:bg-gray-100"
+                    title={facility.name}
+                  >
+                    <Icon size={14} className="text-blue-500" />
+                    <span>{label}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* L1 Fingerprint & Vibe Tags (Core only) */}
         {!isBuffer && (facilityCounts || vibeTags.length > 0) && (

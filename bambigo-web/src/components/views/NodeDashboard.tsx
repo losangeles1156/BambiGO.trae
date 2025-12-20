@@ -1,7 +1,6 @@
 'use client'
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { Edit2, MessageSquare, ChevronRight, Bell, ShieldCheck } from 'lucide-react'
-import Image from 'next/image'
 import ActionCarousel from '../cards/ActionCarousel'
 import FacilityList from '../lists/FacilityList'
 import NodeFacilityManager from './NodeFacilityManager'
@@ -24,11 +23,21 @@ interface Station {
   bikes_available: number;
   docks_available: number;
 }
-type Props = { nodeId?: string; name: Name; statuses: Status[]; actions: string[]; onAction: (a: string) => void; onRouteHint?: (hint: string) => void; filterSuitability?: { tag?: string; minConfidence?: number } }
+type Props = {
+  nodeId?: string
+  name: Name
+  statuses: Status[]
+  actions: string[]
+  onAction: (a: string) => void
+  onRouteHint?: (hint: string) => void
+  filterSuitability?: { tag?: string; minConfidence?: number }
+  onSystemAlert?: (input: { severity: 'high' | 'medium' | 'low'; title: string; summary: string; ttlMs?: number; dedupeMs?: number }) => void
+  onClientLog?: (entry: { level: 'error' | 'warn' | 'info'; message: string; data?: Record<string, unknown> }) => void
+}
 
 import { useLanguage } from '../../contexts/LanguageContext'
 
-export default function NodeDashboard({ nodeId, name, onAction, onRouteHint, filterSuitability }: Props) {
+export default function NodeDashboard({ nodeId, name, onAction, onRouteHint, filterSuitability, onSystemAlert, onClientLog }: Props) {
   const { t } = useLanguage()
   const { user, session } = useAuth()
   const [text, setText] = useState('')
@@ -47,7 +56,10 @@ export default function NodeDashboard({ nodeId, name, onAction, onRouteHint, fil
   const [facilityCounts, setFacilityCounts] = useState<CategoryCounts | null>(null)
   const [vibeTags, setVibeTags] = useState<string[]>([])
   const [weatherAlerts, setWeatherAlerts] = useState<WeatherAlert[]>([])
-  const [showLineIcon, setShowLineIcon] = useState(true)
+
+  const notify = (input: { severity: 'high' | 'medium' | 'low'; title: string; summary: string; ttlMs?: number; dedupeMs?: number }) => {
+    onSystemAlert?.(input)
+  }
 
   useEffect(() => {
     const controller = new AbortController()
@@ -433,30 +445,27 @@ export default function NodeDashboard({ nodeId, name, onAction, onRouteHint, fil
               <button 
                 onClick={() => {
                   if (!user) {
-                    alert(t('dashboard.loginRequired'))
+                    onClientLog?.({ level: 'warn', message: 'tripGuard:loginRequired', data: { nodeId } })
+                    notify({
+                      severity: 'medium',
+                      title: t('dashboard.loginRequired'),
+                      summary: t('dashboard.loginRequired'),
+                      dedupeMs: 15000,
+                    })
                   } else {
                     // Simulate Line Enrollment
                     setLoading(true)
                     setTimeout(() => {
                       setIsLineBound(true)
                       setLoading(false)
-                      alert('LINE 帳號綁定成功！')
+                      onClientLog?.({ level: 'info', message: 'tripGuard:lineBindSuccess', data: { nodeId } })
+                      notify({ severity: 'low', title: t('navigation.tripGuard'), summary: 'LINE 帳號綁定成功！', dedupeMs: 5000 })
                     }, 1500)
                   }
                 }}
                 className="w-full bg-white text-green-600 font-bold py-3 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-md"
               >
-                {showLineIcon && (
-                  <Image
-                    src="/line-icon.png"
-                    alt="LINE"
-                    width={20}
-                    height={20}
-                    className="w-5 h-5"
-                    onError={() => setShowLineIcon(false)}
-                    unoptimized
-                  />
-                )}
+                <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-[10px] text-white font-black">L</div>
                 {t('dashboard.tripGuardEnroll')}
                 <ChevronRight size={16} />
               </button>
@@ -538,6 +547,8 @@ export default function NodeDashboard({ nodeId, name, onAction, onRouteHint, fil
                 nodeId={nodeId || ''} 
                 initialFacilities={facilities} 
                 onUpdate={(newFacilities: L3ServiceFacility[]) => setFacilities(newFacilities)}
+                onSystemAlert={onSystemAlert}
+                onClientLog={onClientLog}
               />
             </div>
           ) : (

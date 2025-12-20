@@ -11,13 +11,19 @@ type Props = {
   nodeId: string
   initialFacilities: L3ServiceFacility[]
   onUpdate?: (facilities: L3ServiceFacility[]) => void
+  onSystemAlert?: (input: { severity: 'high' | 'medium' | 'low'; title: string; summary: string; ttlMs?: number; dedupeMs?: number }) => void
+  onClientLog?: (entry: { level: 'error' | 'warn' | 'info'; message: string; data?: Record<string, unknown> }) => void
 }
 
-export default function NodeFacilityManager({ nodeId, initialFacilities, onUpdate }: Props) {
+export default function NodeFacilityManager({ nodeId, initialFacilities, onUpdate, onSystemAlert, onClientLog }: Props) {
   const [facilities, setFacilities] = useState<L3ServiceFacility[]>(initialFacilities)
   const [mode, setMode] = useState<'list' | 'add_select' | 'edit'>('list')
   const [editingFacility, setEditingFacility] = useState<L3ServiceFacility | null>(null)
   const [loading, setLoading] = useState(false)
+
+  const notify = (input: { severity: 'high' | 'medium' | 'low'; title: string; summary: string; ttlMs?: number; dedupeMs?: number }) => {
+    onSystemAlert?.(input)
+  }
 
   const handleSave = async (data: Partial<L3ServiceFacility>) => {
     setLoading(true)
@@ -47,7 +53,8 @@ export default function NodeFacilityManager({ nodeId, initialFacilities, onUpdat
       setEditingFacility(null)
     } catch (e) {
       console.error('Failed to save facility', e)
-      alert('Failed to save changes')
+      onClientLog?.({ level: 'error', message: 'tagging:l3SaveFailed', data: { nodeId } })
+      notify({ severity: 'medium', title: 'Tagging', summary: 'Failed to save changes', dedupeMs: 15000 })
     } finally {
       setLoading(false)
     }
@@ -64,7 +71,8 @@ export default function NodeFacilityManager({ nodeId, initialFacilities, onUpdat
       onUpdate?.(newFacilities)
     } catch (e) {
       console.error('Failed to delete facility', e)
-      alert('Failed to delete')
+      onClientLog?.({ level: 'error', message: 'tagging:l3DeleteFailed', data: { nodeId, id } })
+      notify({ severity: 'medium', title: 'Tagging', summary: 'Failed to delete', dedupeMs: 15000 })
     } finally {
       setLoading(false)
     }

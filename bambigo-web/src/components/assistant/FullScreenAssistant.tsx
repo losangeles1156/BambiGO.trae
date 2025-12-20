@@ -3,12 +3,15 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { X, Send, Navigation, MessageSquare, ShieldCheck } from 'lucide-react'
 import { clsx } from 'clsx'
-import Image from 'next/image'
 import { useLanguage } from '../../contexts/LanguageContext'
+
+import { useAuth } from '../auth/AuthContext'
+import { AICommand } from '@/lib/ai/control/types'
 
 type Props = {
   open: boolean
   onClose: () => void
+  onCommand?: (cmd: AICommand) => void
   nodeId?: string
 }
 
@@ -20,22 +23,23 @@ type Message = {
 
 type TripGuardStatus = 'inactive' | 'active' | 'alert'
 
-export default function FullScreenAssistant({ open, onClose, nodeId }: Props) {
+export default function FullScreenAssistant({ open, onClose, onCommand, nodeId }: Props) {
   const { t } = useLanguage()
+  const { session } = useAuth()
   const [text, setText] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showLinePrompt, setShowLinePrompt] = useState(false)
   const [tripGuardStatus, setTripGuardStatus] = useState<TripGuardStatus>('inactive')
-  const [showLineIcon, setShowLineIcon] = useState(true)
   
-  const esRef = useRef<EventSource | null>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const QUICK_QUESTIONS_LOCALIZED = [
     { id: 'trip_guard', label: t('navigation.tripGuard'), prompt: t('header.langLabel') === '日' ? '上野から羽田空港までのルートをトリップガードで監視してください。' : '我想要啟用行程守護功能，監控我下午從上野到羽田機場的路線。' },
+    { id: 'report_hazard', label: t('actions.reportHazard') || '通報危險', prompt: t('header.langLabel') === '日' ? '危険箇所を報告したいです。' : '我要通報路況危險，請協助標記。' },
     { id: 'home', label: t('common.home'), prompt: t('header.langLabel') === '日' ? '家に帰りたいです。最寄りの駅を教えてください。' : '我想回家，請告訴我最近的車站或交通方式' },
     { id: 'shop', label: t('actions.asakusa'), prompt: t('header.langLabel') === '日' ? '浅草に行きたいです。' : '我想去淺草。' },
   ]
@@ -51,8 +55,8 @@ export default function FullScreenAssistant({ open, onClose, nodeId }: Props) {
 
   useEffect(() => {
     return () => {
-      esRef.current?.close()
-      esRef.current = null
+      abortControllerRef.current?.abort()
+      abortControllerRef.current = null
     }
   }, [])
 
@@ -66,6 +70,10 @@ export default function FullScreenAssistant({ open, onClose, nodeId }: Props) {
     
     // Add user message
     setMessages(prev => [...prev, { role: 'user', content: q, timestamp: Date.now() }])
+
+    // Cancel previous request
+    abortControllerRef.current?.abort()
+    abortControllerRef.current = new AbortController()
 
     // Special case for Trip Guard simulation
     if (q.includes('行程守護') || q.includes('監視') || q.includes('Trip Guard')) {
@@ -94,63 +102,107 @@ export default function FullScreenAssistant({ open, onClose, nodeId }: Props) {
       return
     }
 
-    try {
-      // Close previous stream if any
-      if (esRef.current) {
-        esRef.current.close()
-      }
+    // Special case for Hazard Reporting
+    if (q.includes('通報') || q.includes('報告') || q.includes('Hazard')) {
+      setTimeout(() => {
+        setMessages(prev => [...prev, { 
+          role: 'ai', 
+          content: t('header.langLabel') === '日' 
+            ? '危険報告を受け付けました。位置情報を確認し、システムに登録します。他のユーザーの回避ルートに反映されます。' 
+            : '收到您的危險通報。系統已標記該區域，並將即時更新導航路線以引導其他使用者避開此危險。感謝您的熱心回報！', 
+          timestamp: Date.now() 
+        }])
+        setLoading(false)
+        
+        // Push a simulated system alert visual feedback in chat
+        setMessages(prev => [...prev, {
+          role: 'ai',
+          content: '✅ 已建立危險標記：\n• 類型：路況異常\n• 範圍：當前位置半徑 50m\n• 效期：2小時',
+          timestamp: Date.now() + 100
+        }])
 
+        if (onCommand) {
+          onCommand({ type: 'REPORT_HAZARD', payload: {} })
+        }
+      }, 1000)
+      return
+    }
+
+    try {
       const params = new URLSearchParams()
       params.set('q', q)
       if (nodeId) params.set('node_id', nodeId)
+      if (session?.access_token) params.set('token', session.access_token)
 
-      const es = new EventSource(`/api/assistant?${params.toString()}`)
-      esRef.current = es
+      const url = `/api/assistant?${params.toString()}`
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
+      const response = await fetch(url, {
+        headers,
+        signal: abortControllerRef.current?.signal
+      })
+
+      if (!response.ok || !response.body) {
+        throw new Error('Network error or AI service unavailable')
+      }
 
       // Initial AI message placeholder
       setMessages(prev => [...prev, { role: 'ai', content: '', timestamp: Date.now() }])
 
-      es.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data)
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        const chunk = decoder.decode(value, { stream: true })
+        buffer += chunk
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+
+        for (const line of lines) {
+          if (!line.trim().startsWith('data: ')) continue
           
-          if (data.type === 'done') {
-            es.close()
-            setLoading(false)
-            return
-          }
+          try {
+            const data = JSON.parse(line.replace('data: ', '').trim())
+            
+            if (data.type === 'done') {
+              setLoading(false)
+              return
+            }
 
-          if (data.type === 'message' && data.content) {
-            setMessages(prev => {
-              const newMsgs = [...prev]
-              const lastMsg = newMsgs[newMsgs.length - 1]
-              if (lastMsg.role === 'ai') {
-                lastMsg.content += data.content
-              }
-              return newMsgs
-            })
-          }
+            if (data.type === 'message' && data.content) {
+              setMessages(prev => {
+                const newMsgs = [...prev]
+                const lastMsg = newMsgs[newMsgs.length - 1]
+                if (lastMsg && lastMsg.role === 'ai') {
+                  lastMsg.content += data.content
+                }
+                return newMsgs
+              })
+            }
 
-          if (data.type === 'alerts' && Array.isArray(data.content)) {
-             setMessages(prev => [...prev, { 
-               role: 'ai', 
-               content: `⚠️ 注意：有 ${data.content.length} 個相關警報`, 
-               timestamp: Date.now() 
-             }])
+            if (data.type === 'alerts' && Array.isArray(data.content)) {
+               setMessages(prev => [...prev, { 
+                 role: 'ai', 
+                 content: `⚠️ 注意：有 ${data.content.length} 個相關警報`, 
+                 timestamp: Date.now() 
+               }])
+            }
+          } catch (e) {
+            console.warn('Failed to parse AI chunk:', e)
           }
-        } catch (e) {
-          console.error('Failed to parse AI message:', e)
         }
       }
 
-      es.onerror = (event) => {
-        console.error('Stream error:', event)
-        setError('連線中斷，請重試。')
-        setLoading(false)
-        es.close()
-      }
-
+      setLoading(false)
     } catch (err) {
+      if ((err as Error).name === 'AbortError') return
       console.error(err)
       setError('無法連接到 AI 服務')
       setLoading(false)
@@ -255,17 +307,7 @@ export default function FullScreenAssistant({ open, onClose, nodeId }: Props) {
                   {t('dashboard.tripGuardDesc')}
                 </p>
                 <button className="w-full bg-white text-green-600 font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-md">
-                  {showLineIcon && (
-                    <Image
-                      src="/line-icon.png"
-                      alt="LINE"
-                      width={16}
-                      height={16}
-                      className="w-4 h-4"
-                      onError={() => setShowLineIcon(false)}
-                      unoptimized
-                    />
-                  )}
+                  <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center text-[10px] text-white font-black">L</div>
                   立即加入 LINE 守護
                 </button>
               </div>

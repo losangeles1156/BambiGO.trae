@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { L1Tag, L3ServiceFacility, L1Category, L3Category } from '@/types/tagging';
+import { L3CategorySchema } from '@/lib/validators/tagging';
 
 // Define categories to distinguish L1 vs L3
 const L1_CATEGORIES = new Set([
@@ -9,12 +10,105 @@ const L1_CATEGORIES = new Set([
   'accommodation', 'business', 'religion', 'nature', 'transport', 'public', 'residential'
 ]);
 
+const L3_TYPE_MAP: Record<string, L3Category> = {
+  toilet: 'toilet',
+  restroom: 'toilet',
+  wc: 'toilet',
+  charging: 'charging',
+  power_outlet: 'charging',
+  wifi: 'wifi',
+  locker: 'locker',
+  coin_locker: 'locker',
+  accessibility: 'accessibility',
+  elevator: 'accessibility',
+  escalator: 'accessibility',
+  ramp: 'accessibility',
+  rest_area: 'rest_area',
+  bench: 'rest_area',
+  smoking_area: 'rest_area',
+  shelter: 'shelter',
+  medical_aid: 'medical_aid',
+};
+
+function parseWKBPoint(hex: string): [number, number] | null {
+  try {
+    const buffer = Buffer.from(hex, 'hex');
+    if (buffer.length < 21) return null;
+    const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+    const littleEndian = view.getUint8(0) === 1;
+    const type = view.getUint32(1, littleEndian);
+    let offset = 5;
+    if ((type & 0x20000000) !== 0) offset += 4;
+    if (offset + 16 > buffer.length) return null;
+    const x = view.getFloat64(offset, littleEndian);
+    const y = view.getFloat64(offset + 8, littleEndian);
+    return [x, y];
+  } catch {
+    return null;
+  }
+}
+
+function normalizeL3Category(rawType: string | null | undefined): { category: L3Category; normalizedType: string } {
+  const normalizedType = String(rawType || 'other').trim().toLowerCase();
+  const mapped = L3_TYPE_MAP[normalizedType];
+  if (mapped) return { category: mapped, normalizedType };
+  const direct = L3CategorySchema.safeParse(normalizedType);
+  if (direct.success) return { category: normalizedType as L3Category, normalizedType };
+  return { category: 'other', normalizedType };
+}
+
+function normalizeSource(sourceDataset: string | null | undefined): 'manual' | 'osm' | 'official' {
+  const s = (sourceDataset || '').toLowerCase();
+  if (s.includes('osm')) return 'osm';
+  if (s.includes('official') || s.includes('odpt') || s.includes('jr') || s.includes('tokyometro') || s.includes('keisei')) return 'official';
+  return 'manual';
+}
+
 export async function GET(
   request: NextRequest,
   props: { params: Promise<{ nodeId: string }> }
 ) {
   const params = await props.params;
   const nodeId = params.nodeId;
+
+  if (nodeId === 'mock-ueno' || nodeId === 'mock-ueno-station') {
+    const l1: L1Tag[] = [];
+    const l3: L3ServiceFacility[] = [
+      {
+        id: 'mock-ueno-toilet-1',
+        nodeId,
+        category: 'toilet',
+        subCategory: 'station_toilet',
+        location: { floor: 'B1', direction: 'Tokyo Metro concourse' },
+        provider: { type: 'station', name: 'Tokyo Metro' },
+        attributes: {
+          has_wheelchair_access: true,
+          has_baby_care: true,
+          gender: 'unisex',
+        },
+        openingHours: '24 Hours',
+        source: 'official',
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: 'mock-ueno-locker-1',
+        nodeId,
+        category: 'locker',
+        subCategory: 'coin_locker',
+        location: { floor: '1F', direction: 'Near main gates (summary)' },
+        provider: { type: 'station', name: 'JR East / Tokyo Metro / Keisei' },
+        attributes: {
+          total: 19,
+          by_provider: { jr_east: 11, tokyometro: 5, keisei: 3 },
+          payment: ['Cash', 'IC Card'],
+          size: ['S', 'M', 'L', 'XL'],
+        },
+        source: 'official',
+        updatedAt: new Date().toISOString(),
+      },
+    ];
+    return NextResponse.json({ l1, l3 });
+  }
 
   const { data: facilities, error } = await supabase
     .from('facilities')
@@ -37,10 +131,11 @@ export async function GET(
     distance_meters?: number
     direction?: string
     floor?: string
+    location?: string | null
     source_dataset?: string
     updated_at?: string
   }
-  facilities.forEach((row: Row) => {
+  ;(facilities || []).forEach((row: Row) => {
     // Determine if L1 or L3 based on type/category
     // Note: The DB column is 'type'
     
@@ -58,29 +153,39 @@ export async function GET(
         direction: row.direction
       });
     } else {
-      // Assume L3 for everything else (or check L3 categories)
-      // Map to L3ServiceFacility
+      const { category, normalizedType } = normalizeL3Category(row.type);
+      const attrs = (row.attributes || {}) as Record<string, unknown>;
+      const locationCoords = typeof row.location === 'string' ? parseWKBPoint(row.location) : null;
+
+      const subCategory = (() => {
+        const s1 = (attrs as { subCategory?: unknown } | undefined)?.subCategory;
+        if (typeof s1 === 'string' && s1.trim()) return s1;
+        const s2 = (attrs as { sub_type?: unknown } | undefined)?.sub_type;
+        if (typeof s2 === 'string' && s2.trim()) return s2;
+        return normalizedType;
+      })();
+
       l3Facilities.push({
         id: row.id,
         nodeId: row.node_id,
-        category: row.type as L3Category,
-        subCategory: String((row.attributes as { subCategory?: unknown } | undefined)?.subCategory || 'unknown'),
+        category,
+        subCategory,
         location: {
           floor: row.floor,
           direction: row.direction,
-          // coordinates: ... (if available in row)
+          coordinates: locationCoords || undefined,
         },
         provider: (() => {
-          const p = (row.attributes as { provider?: { type?: string; name?: string; requiresPurchase?: boolean } } | undefined)?.provider
+          const p = (attrs as { provider?: { type?: string; name?: string; requiresPurchase?: boolean } } | undefined)?.provider
           const type: 'public' | 'station' | 'shop' = p?.type === 'station' ? 'station' : p?.type === 'shop' ? 'shop' : 'public'
           return { type, name: p?.name, requiresPurchase: p?.requiresPurchase }
         })(),
-        attributes: row.attributes || {},
+        attributes: attrs,
         openingHours: ((): string | undefined => {
-          const oh = (row.attributes as { openingHours?: unknown } | undefined)?.openingHours
+          const oh = (attrs as { openingHours?: unknown } | undefined)?.openingHours
           return typeof oh === 'string' && oh.trim() ? oh : undefined
         })(),
-        source: row.source_dataset === 'osm' ? 'osm' : 'manual', // Simple mapping
+        source: normalizeSource(row.source_dataset),
         updatedAt: row.updated_at
       });
     }

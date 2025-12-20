@@ -21,7 +21,7 @@ const ATTRIBUTE_SCHEMAS: Record<L3Category, { key: string; label: string; type: 
   ],
   toilet: [
     { key: 'is_free', label: 'Free Use', type: 'boolean' },
-    { key: 'has_accessible', label: 'Wheelchair Accessible', type: 'boolean' },
+    { key: 'has_wheelchair_access', label: 'Wheelchair Accessible', type: 'boolean' },
     { key: 'has_baby_care', label: 'Baby Care', type: 'boolean' },
     { key: 'gender', label: 'Gender', type: 'select', options: ['all', 'male', 'female', 'unisex'] }
   ],

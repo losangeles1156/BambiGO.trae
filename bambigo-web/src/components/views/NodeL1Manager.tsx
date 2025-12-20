@@ -10,11 +10,17 @@ import { clsx } from 'clsx'
 type Props = {
   nodeId: string
   className?: string
+  onSystemAlert?: (input: { severity: 'high' | 'medium' | 'low'; title: string; summary: string; ttlMs?: number; dedupeMs?: number }) => void
+  onClientLog?: (entry: { level: 'error' | 'warn' | 'info'; message: string; data?: Record<string, unknown> }) => void
 }
 
-export default function NodeL1Manager({ nodeId, className }: Props) {
+export default function NodeL1Manager({ nodeId, className, onSystemAlert, onClientLog }: Props) {
   const [tags, setTags] = useState<L1Tag[]>([])
   const [mode, setMode] = useState<'view' | 'edit' | 'add'>('view')
+
+  const notify = (input: { severity: 'high' | 'medium' | 'low'; title: string; summary: string; ttlMs?: number; dedupeMs?: number }) => {
+    onSystemAlert?.(input)
+  }
 
   const loadTags = useCallback(async () => {
     
@@ -43,7 +49,8 @@ export default function NodeL1Manager({ nodeId, className }: Props) {
       await loadTags()
       setMode('view')
     } catch {
-      alert('Failed to add tag')
+      onClientLog?.({ level: 'error', message: 'tagging:l1AddFailed', data: { nodeId } })
+      notify({ severity: 'medium', title: 'Tagging', summary: 'Failed to add tag', dedupeMs: 15000 })
     }
   }
 
@@ -53,7 +60,8 @@ export default function NodeL1Manager({ nodeId, className }: Props) {
       await TaggingService.removeL1Tag(nodeId, tagId)
       await loadTags()
     } catch {
-      alert('Failed to remove tag')
+      onClientLog?.({ level: 'error', message: 'tagging:l1RemoveFailed', data: { nodeId, tagId } })
+      notify({ severity: 'medium', title: 'Tagging', summary: 'Failed to remove tag', dedupeMs: 15000 })
     }
   }
 

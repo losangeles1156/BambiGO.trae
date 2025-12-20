@@ -28,6 +28,17 @@ const mockNodes = [
       supply_tags: ['has_train', 'has_shinkansen', 'has_shopping'],
       suitability_tags: ['business', 'travel', 'shopping'],
     }
+  },
+  {
+    type: 'Feature',
+    geometry: { type: 'Point', coordinates: [139.763965, 35.671989] },
+    properties: {
+      id: 'mock-ginza',
+      name: { ja: '銀座駅', en: 'Ginza Station', zh: '銀座站' },
+      type: 'station',
+      supply_tags: ['has_train', 'has_subway', 'has_shopping'],
+      suitability_tags: ['shopping', 'dining', 'business'],
+    }
   }
 ]
 

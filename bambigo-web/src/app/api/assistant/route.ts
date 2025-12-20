@@ -388,19 +388,50 @@ export const GET = withMonitor(async (req: Request) => {
       const maxRetries = Math.max(0, parseInt(process.env.DIFY_MAX_RETRIES || '3', 10))
       let attempt = 0
       let streamBody: unknown = null
+      let difyError: Error | null = null
+
       while (attempt <= maxRetries) {
         try {
           streamBody = await client.chatMessageStream(payload)
           break
         } catch (e) {
+          difyError = e instanceof Error ? e : new Error(String(e))
           attempt += 1
-          if (attempt > maxRetries) throw e
+          if (attempt > maxRetries) break
           await new Promise((r) => setTimeout(r, 300 * attempt))
         }
       }
 
+      // Graceful Degradation: Fallback if Dify fails
       if (!streamBody) {
-        throw new Error('AI stream unavailable')
+        console.warn('Dify API failed, using graceful degradation fallback:', difyError?.message)
+        const isAuthError = difyError?.message.includes('401')
+        const fallbackMsg = isAuthError 
+          ? "【系統通知】AI 服務授權失效 (401)，請聯絡管理員更新 API Key。目前進入唯讀模式。"
+          : "【系統通知】AI 服務暫時不可用，請稍後再試。您可以繼續瀏覽地圖與站點資訊。"
+        
+        const mockStream = new ReadableStream({
+          start(controller) {
+            const encoder = new TextEncoder()
+            const write = (data: string) => controller.enqueue(encoder.encode(`data: ${data}\n\n`))
+            
+            if (trapAlertsGlobal.length) {
+              write(JSON.stringify({ role: 'ai', type: 'alerts', content: trapAlertsGlobal }))
+            }
+            
+            write(JSON.stringify({ role: 'ai', type: 'message', content: fallbackMsg }))
+            write(JSON.stringify({ role: 'ai', type: 'done' }))
+            controller.close()
+          }
+        })
+
+        return new Response(mockStream, {
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+          },
+        })
       }
       const decoder = new TextDecoder()
       const reader = (streamBody as ReadableStream<Uint8Array>).getReader()
@@ -465,18 +496,27 @@ export const GET = withMonitor(async (req: Request) => {
       })
 
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : String(err)
-      console.error('Dify integration error:', errorMsg)
+      console.error('Dify streaming error:', err)
       return new NextResponse(
-        JSON.stringify({ error: { code: 'INTERNAL_ERROR', message: errorMsg } }),
+        JSON.stringify({ 
+          error: { 
+            code: 'DIFY_STREAM_ERROR', 
+            message: err instanceof Error ? err.message : 'Dify connection failed',
+            details: String(err)
+          } 
+        }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       )
     }
   }
 
-  // Fallback if no valid provider configured
   return new NextResponse(
-    JSON.stringify({ error: { code: 'NOT_IMPLEMENTED', message: `No AI provider configured (${provider})` } }),
-    { status: 501, headers: { 'Content-Type': 'application/json' } }
+    JSON.stringify({
+      error: {
+        code: 'NOT_IMPLEMENTED',
+        message: provider ? `No AI provider configured (${provider})` : 'No AI provider configured',
+      },
+    }),
+    { status: 501, headers: { 'Content-Type': 'application/json', 'X-API-Version': 'v1' } }
   )
 })

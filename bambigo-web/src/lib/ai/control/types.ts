@@ -8,6 +8,7 @@ export type AICommand =
   | { type: 'HIGHLIGHT_NODE'; payload: { id: string } }
   | { type: 'TOGGLE_MENU'; payload: { open: boolean } }
   | { type: 'UPDATE_NAVIGATION'; payload: { steps: NavigationStep[] } }
+  | { type: 'REPORT_HAZARD'; payload: { type?: string } }
 
 export interface AIControlInterface {
   status: 'connected' | 'disconnected' | 'connecting'

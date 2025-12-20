@@ -16,12 +16,17 @@ interface MenuItem {
 interface NavigationMenuProps {
   isOpen: boolean;
   onClose: () => void;
+  onSystemAlert?: (input: { severity: 'high' | 'medium' | 'low'; title: string; summary: string; ttlMs?: number; dedupeMs?: number }) => void;
 }
 
-export default function NavigationMenu({ isOpen, onClose }: NavigationMenuProps) {
+export default function NavigationMenu({ isOpen, onClose, onSystemAlert }: NavigationMenuProps) {
   const { t, locale, setLocale } = useLanguage();
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
   const [darkMode, setDarkMode] = useState(false); // In real app, use a theme context
+
+  const notify = (title: string, summary: string, severity: 'high' | 'medium' | 'low' = 'low') => {
+    onSystemAlert?.({ severity, title, summary, dedupeMs: 15000 });
+  };
 
   const menuItems: MenuItem[] = [
     {
@@ -54,22 +59,22 @@ export default function NavigationMenu({ isOpen, onClose }: NavigationMenuProps)
       id: 'profile',
       label: t('common.profile'),
       icon: <User className="w-5 h-5" />,
-      action: () => alert('Profile clicked')
+      action: () => notify(t('common.profile') || 'Profile', t('common.comingSoon') || '尚未開放')
     },
     {
       id: 'safety',
       label: t('common.safetyCenter'),
       icon: <Shield className="w-5 h-5" />,
       children: [
-        { id: 'sos', label: t('common.emergencyContacts'), action: () => alert('SOS') },
-        { id: 'guide', label: t('common.safetyGuide'), action: () => alert('Guide') },
+        { id: 'sos', label: t('common.emergencyContacts'), action: () => notify(t('common.emergencyContacts') || 'Emergency', t('common.comingSoon') || '尚未開放', 'medium') },
+        { id: 'guide', label: t('common.safetyGuide'), action: () => notify(t('common.safetyGuide') || 'Safety guide', t('common.comingSoon') || '尚未開放') },
       ]
     },
     {
       id: 'help',
       label: t('common.helpSupport'),
       icon: <HelpCircle className="w-5 h-5" />,
-      action: () => alert('Help clicked')
+      action: () => notify(t('common.helpSupport') || 'Help', t('common.comingSoon') || '尚未開放')
     }
   ];
 
@@ -154,7 +159,8 @@ export default function NavigationMenu({ isOpen, onClose }: NavigationMenuProps)
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-400"
+            className="p-3 hover:bg-slate-200 rounded-full transition-colors text-slate-400 -mr-2"
+            aria-label="Close menu"
           >
             <X className="w-6 h-6" />
           </button>
@@ -162,6 +168,24 @@ export default function NavigationMenu({ isOpen, onClose }: NavigationMenuProps)
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
+          {/* Mobile Status Cards (Visible only in menu on mobile) */}
+          <section className="lg:hidden grid grid-cols-2 gap-3">
+            <div className="bg-amber-50 border border-amber-100 p-3 rounded-xl flex flex-col gap-1">
+              <span className="text-[10px] uppercase font-bold text-amber-600 tracking-wider">{t('header.weather')}</span>
+              <div className="flex items-center gap-2 text-amber-900 font-bold text-sm">
+                <Sun className="w-4 h-4" /> {/* Using Sun as generic, implies weather */}
+                <span>{t('header.weatherRain')}</span>
+              </div>
+            </div>
+            <div className="bg-blue-50 border border-blue-100 p-3 rounded-xl flex flex-col gap-1">
+              <span className="text-[10px] uppercase font-bold text-blue-600 tracking-wider">{t('header.route')}</span>
+              <div className="flex items-center gap-2 text-blue-900 font-bold text-sm">
+                <Shield className="w-4 h-4" />
+                <span>{t('header.rainRoute')}</span>
+              </div>
+            </div>
+          </section>
+
           {/* Quick Language Switch (Mobile Optimized) */}
           <section>
             <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3 px-2">
@@ -197,7 +221,7 @@ export default function NavigationMenu({ isOpen, onClose }: NavigationMenuProps)
         <div className="p-4 border-t border-gray-100 bg-gray-50">
           <button 
             className="w-full flex items-center gap-3 p-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
-            onClick={() => alert('Logout')}
+            onClick={() => notify(t('common.signOut') || 'Sign out', t('common.comingSoon') || '尚未開放')}
           >
             <LogOut className="w-5 h-5" />
             <span className="font-medium">{t('common.signOut')}</span>

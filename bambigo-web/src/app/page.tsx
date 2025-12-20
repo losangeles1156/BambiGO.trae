@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import Header, { BreadcrumbItem } from '../components/layout/Header'
 import MapCanvas from '../components/map/MapCanvas'
 import MobileViewport from '../components/layout/MobileViewport'
 import { FABGroup } from '../components/features/controls/FABGroup'
-import { AlertBanner, Alert } from '../components/ui/AlertBanner'
+import { AlertBanner, Alert, SystemAlert } from '../components/ui/AlertBanner'
 import type { FeatureCollection } from 'geojson'
 import SearchBar from '../components/views/SearchBar'
 import NodeDashboard from '../components/views/NodeDashboard'
@@ -47,6 +47,7 @@ export default function Home() {
   const [showAssistant, setShowAssistant] = useState(false)
   const [mapFilter, setMapFilter] = useState<{ tag?: string; status?: string } | undefined>(undefined)
   const [weatherAlerts, setWeatherAlerts] = useState<Alert[]>([])
+  const [systemAlerts, setSystemAlerts] = useState<SystemAlert[]>([])
   const [envStatuses, setEnvStatuses] = useState<{ label: string; tone?: 'yellow' | 'blue' | 'red' | 'green' }[]>([])
   const [disasterZones, setDisasterZones] = useState<DisasterZone[]>([])
   const [mapStyleIndex, setMapStyleIndex] = useState(0)
@@ -54,7 +55,6 @@ export default function Home() {
   const [navigationSteps, setNavigationSteps] = useState<NavigationStep[]>([])
   const [triggerGeolocate, setTriggerGeolocate] = useState(0)
 
-  // Handle Query Params for Testing
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
@@ -67,45 +67,164 @@ export default function Home() {
     }
   }, [])
 
-  const handleLocationError = (error: string) => {
-    if (error === 'OUT_OF_RANGE') {
-      alert(t('common.outOfRange') || '你目前距離服務節點超過 50 公里，已為你自動定位至上野車站。你可以手動選擇其他車站。')
-    } else if (error === 'PERMISSION_DENIED') {
-      alert(t('common.locationDenied') || '無法取得位置權限，請檢查瀏覽器設定。')
-    }
-  }
+  const systemAlertTimersRef = useRef<Map<string, number>>(new Map())
+  const alertDedupeRef = useRef<Map<string, number>>(new Map())
 
-  // Mock nodes for demonstration
+  const recordClientLog = useCallback((entry: { level: 'error' | 'warn' | 'info'; message: string; data?: Record<string, unknown> }) => {
+    if (typeof window === 'undefined') return
+    try {
+      const key = 'bambigo_client_logs'
+      const raw = window.localStorage.getItem(key)
+      const arr = raw ? (JSON.parse(raw) as unknown[]) : []
+      const next = Array.isArray(arr) ? arr.slice(-199) : []
+      next.push({ ts: new Date().toISOString(), ...entry })
+      window.localStorage.setItem(key, JSON.stringify(next))
+    } catch {}
+  }, [])
+
+  const pushSystemAlert = useCallback((input: { severity: SystemAlert['severity']; title: string; summary: string; ttlMs?: number; dedupeMs?: number }) => {
+    const now = Date.now()
+    const key = `${input.severity}:${input.title}:${input.summary}`
+    const dedupeMs = typeof input.dedupeMs === 'number' ? input.dedupeMs : 15000
+    const last = alertDedupeRef.current.get(key) || 0
+    if (now - last < dedupeMs) return
+    alertDedupeRef.current.set(key, now)
+
+    const id = `sys-${now}-${Math.random().toString(16).slice(2)}`
+    const alert: SystemAlert = {
+      id,
+      type: 'system',
+      severity: input.severity,
+      title: input.title,
+      summary: input.summary,
+    }
+
+    setSystemAlerts((prev) => [alert, ...prev].slice(0, 8))
+
+    const ttl = typeof input.ttlMs === 'number'
+      ? input.ttlMs
+      : input.severity === 'high'
+        ? 15000
+        : input.severity === 'medium'
+          ? 10000
+          : 8000
+
+    const timer = window.setTimeout(() => {
+      setSystemAlerts((prev) => prev.filter((a) => a.id !== id))
+      systemAlertTimersRef.current.delete(id)
+    }, ttl)
+    systemAlertTimersRef.current.set(id, timer)
+  }, [])
+
+  useEffect(() => {
+    const timers = systemAlertTimersRef.current
+    return () => {
+      for (const timer of timers.values()) window.clearTimeout(timer)
+      timers.clear()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const onError = (ev: ErrorEvent) => {
+      recordClientLog({
+        level: 'error',
+        message: ev.message || 'Unhandled error',
+        data: {
+          filename: ev.filename,
+          lineno: ev.lineno,
+          colno: ev.colno,
+        },
+      })
+    }
+
+    const onRejection = (ev: PromiseRejectionEvent) => {
+      const reason = ev.reason instanceof Error ? ev.reason.message : String(ev.reason)
+      recordClientLog({ level: 'error', message: reason || 'Unhandled rejection' })
+    }
+
+    window.addEventListener('error', onError)
+    window.addEventListener('unhandledrejection', onRejection)
+    return () => {
+      window.removeEventListener('error', onError)
+      window.removeEventListener('unhandledrejection', onRejection)
+    }
+  }, [recordClientLog])
+
+  const handleLocationError = useCallback((error: string) => {
+    recordClientLog({ level: 'warn', message: `location:${error}` })
+
+    if (error === 'OUT_OF_RANGE') {
+      pushSystemAlert({
+        severity: 'medium',
+        title: t('common.outOfRange') || '超出服務範圍',
+        summary: '你目前距離服務節點超過 50 公里，已為你自動定位至上野車站。你可以手動選擇其他車站。',
+        dedupeMs: 60000,
+      })
+      return
+    }
+
+    if (error === 'PERMISSION_DENIED') {
+      pushSystemAlert({
+        severity: 'medium',
+        title: t('common.locationDenied') || '定位權限被拒絕',
+        summary: '無法取得位置權限，請檢查瀏覽器設定。',
+        dedupeMs: 60000,
+      })
+      return
+    }
+
+    if (error === 'TIMEOUT') {
+      pushSystemAlert({
+        severity: 'low',
+        title: t('common.locationDenied') || '定位逾時',
+        summary: '定位逾時，已使用預設位置。',
+        dedupeMs: 30000,
+      })
+      return
+    }
+
+    if (error === 'POSITION_UNAVAILABLE') {
+      pushSystemAlert({
+        severity: 'low',
+        title: t('common.locationDenied') || '定位不可用',
+        summary: '目前無法取得定位資訊，已使用預設位置。',
+        dedupeMs: 30000,
+      })
+    }
+  }, [pushSystemAlert, recordClientLog, t])
+
   const mockNodes = useMemo((): FeatureCollection => ({
     type: 'FeatureCollection',
     features: [
       {
         type: 'Feature',
-        id: 'tokyo-station',
+        id: 'mock-tokyo',
         geometry: { type: 'Point', coordinates: [139.7671, 35.6812] },
         properties: { 
-          id: 'tokyo-station',
+          id: 'mock-tokyo',
           name: { ja: '東京駅', en: 'Tokyo Station', zh: '東京站' },
           category: 'station'
         }
       },
       {
         type: 'Feature',
-        id: 'ueno-station',
+        id: 'mock-ueno',
         geometry: { type: 'Point', coordinates: [139.7774, 35.7141] },
         properties: { 
-          id: 'ueno-station',
+          id: 'mock-ueno',
           name: { ja: '上野駅', en: 'Ueno Station', zh: '上野站' },
           category: 'station'
         }
       },
       {
         type: 'Feature',
-        id: 'shinjuku-station',
-        geometry: { type: 'Point', coordinates: [139.7003, 35.6895] },
+        id: 'mock-ginza',
+        geometry: { type: 'Point', coordinates: [139.763965, 35.671989] },
         properties: { 
-          id: 'shinjuku-station',
-          name: { ja: '新宿駅', en: 'Shinjuku Station', zh: '新宿站' },
+          id: 'mock-ginza',
+          name: { ja: '銀座駅', en: 'Ginza Station', zh: '銀座站' },
           category: 'station'
         }
       }
@@ -115,9 +234,8 @@ export default function Home() {
   const handleReportHazard = useCallback(() => {
     if (!mapCenter) return
     
-    // Create a mock 100m x 100m hazard zone around map center
     const [lon, lat] = mapCenter
-    const offset = 0.001 // Approx 100m
+    const offset = 0.001
     const newZone: DisasterZone = {
       id: `hazard-${Date.now()}`,
       type: 'closure',
@@ -135,15 +253,22 @@ export default function Home() {
     }
     
     setDisasterZones(prev => [...prev, newZone])
-    alert(t('common.hazardReported') || 'Hazard reported!')
+    pushSystemAlert({
+      severity: 'low',
+      title: t('common.hazardReported') || 'Hazard reported',
+      summary: '已建立一個新的危險區域，導航將自動避開。',
+      dedupeMs: 5000,
+    })
     
-    // If in emergency mode, recalculate route
     if (mode === 'emergency') {
-      // The triggerSOP effect will run due to disasterZones dependency change
     }
-  }, [mapCenter, mode, t])
+  }, [mapCenter, mode, pushSystemAlert, t])
 
-  // AI Control Integration
+  const handleReportHazardRef = useRef(handleReportHazard)
+  useEffect(() => {
+    handleReportHazardRef.current = handleReportHazard
+  }, [handleReportHazard])
+
   const handleAICommand = useCallback((cmd: AICommand) => {
     console.log('🤖 AI Command:', cmd)
     if (cmd.type === 'VIEW_MODE') setView(cmd.payload.mode)
@@ -154,11 +279,12 @@ export default function Home() {
       setView('task')
     }
     if (cmd.type === 'NAVIGATE') {
-      // Handle navigation request
       if (cmd.payload.to) {
-        // Logic to resolve 'to' location would go here
         setView('task')
       }
+    }
+    if (cmd.type === 'REPORT_HAZARD') {
+      handleReportHazardRef.current()
     }
   }, [])
 
@@ -426,16 +552,14 @@ export default function Home() {
         onClick: () => setShowAssistant(true),
         onLongPress: () => {
           if (navigator.vibrate) navigator.vibrate([50, 50, 50])
-          alert('🎙️ AI Voice Mode Activated')
+          pushSystemAlert({
+            severity: 'low',
+            title: 'AI',
+            summary: '語音模式尚未開放',
+            dedupeMs: 5000,
+          })
         },
         variant: 'primary' as const
-      },
-      {
-        id: 'report-hazard',
-        icon: <AlertTriangle className="w-6 h-6" />,
-        label: t('actions.reportHazard') || '通報危險',
-        variant: 'danger' as const,
-        onClick: handleReportHazard,
       }
     ]
 
@@ -447,7 +571,7 @@ export default function Home() {
           icon: <Layers className="w-6 h-6" />,
           label: 'Map Layers',
           onClick: () => setMapStyleIndex(prev => (prev + 1) % 3),
-          onLongPress: () => alert('🗺️ Advanced Map Settings'),
+          onLongPress: () => pushSystemAlert({ severity: 'low', title: 'Map', summary: '進階設定尚未開放', dedupeMs: 5000 }),
           variant: 'secondary' as const
         }
       ]
@@ -473,14 +597,18 @@ export default function Home() {
           icon: <Navigation className="w-6 h-6" />,
           label: 'Navigate',
           onClick: () => setView('task'),
-          onLongPress: () => alert('🚀 Quick Navigate to Home'),
+          onLongPress: () => pushSystemAlert({ severity: 'low', title: 'Navigation', summary: '快速回到首頁尚未開放', dedupeMs: 5000 }),
           variant: 'primary' as const
         }
       ]
     }
 
+    if (view === 'task') {
+      return []
+    }
+
     return common
-  }, [view, handleReportHazard, t])
+  }, [view, t, setTriggerGeolocate, setShowAssistant, pushSystemAlert, setMapStyleIndex])
 
   const secondaryFabActions = useMemo(() => [
     {
@@ -501,10 +629,10 @@ export default function Home() {
       id: 'emergency',
       icon: <AlertTriangle className="w-5 h-5 text-red-500" />,
       label: 'Emergency',
-      onClick: () => alert('SOS Signal Sent'),
+      onClick: () => pushSystemAlert({ severity: 'medium', title: 'SOS', summary: '緊急求救尚未開放', dedupeMs: 5000 }),
       variant: 'danger' as const
     }
-  ], [online])
+  ], [online, pushSystemAlert])
 
   const showInstall = !!installEvt
   const actions = [t('actions.toilet'), t('actions.locker'), t('actions.asakusa'), t('actions.evacuate')]
@@ -537,7 +665,7 @@ export default function Home() {
         locationName={currentLocationName}
       />
       
-      <NavigationMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+      <NavigationMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} onSystemAlert={pushSystemAlert} />
       
       {/* Layer 0: Map Background */}
       <div className="absolute inset-0 z-0">
@@ -587,7 +715,7 @@ export default function Home() {
       {/* Layer 2: Top UI (Alerts, Offline Indicator, Filter) */}
       <div className="absolute top-16 left-0 right-0 z-10 p-2 pointer-events-none">
         <div className="pointer-events-auto flex flex-col gap-2">
-          <AlertBanner alerts={weatherAlerts} />
+          <AlertBanner alerts={[...systemAlerts, ...weatherAlerts]} />
           
           {/* Offline Indicator */}
           {typeof window !== 'undefined' && !online && (
@@ -671,6 +799,8 @@ export default function Home() {
                 filterSuitability={(() => { const q = tagging.buildSuitabilityQuery(tagState.tags, 0.6); return { tag: q.tag, minConfidence: q.minConfidence } })()} 
                 onAction={handleDashboardAction} 
                 onRouteHint={handleRouteHint} 
+                onSystemAlert={pushSystemAlert}
+                onClientLog={recordClientLog}
               />
               <div className="mt-4 pb-20">
                 <TagFilterBar state={tagState} onRemove={(id) => setTagState((s) => tagging.deleteTag(s, id))} />

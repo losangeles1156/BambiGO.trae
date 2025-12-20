@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
-import maplibregl, { AttributionControl, GeolocateControl, Marker, NavigationControl, Popup } from 'maplibre-gl'
+import maplibregl from 'maplibre-gl'
 import type { GeoJSONSource, LayerSpecification, Map as MapLibreMap, MapGeoJSONFeature, MapMouseEvent } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { Zone } from '@/lib/zones/detector'
@@ -61,9 +61,9 @@ const MapCanvas = ({
 }: MapCanvasProps) => {
   const mapContainer = useRef<HTMLDivElement | null>(null)
   const map = useRef<MapLibreMap | null>(null)
-  const markers = useRef<Marker[]>([])
+  const markers = useRef<Array<maplibregl.Marker>>([])
   const onNodeSelectedRef = useRef(onNodeSelected)
-  const geolocateControl = useRef<GeolocateControl | null>(null)
+  const geolocateControl = useRef<maplibregl.GeolocateControl | null>(null)
   const [loaded, setLoaded] = useState(false)
   const activeStyleIndexRef = useRef(styleIndex)
 
@@ -127,10 +127,10 @@ const MapCanvas = ({
     })
     resizeObserver.observe(mapContainer.current)
 
-    mapInstance.addControl(new AttributionControl({ compact: true }), 'bottom-right')
-    mapInstance.addControl(new NavigationControl({ showCompass: true, showZoom: false }), 'bottom-right')
+    mapInstance.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')
+    mapInstance.addControl(new maplibregl.NavigationControl({ showCompass: true, showZoom: false }), 'bottom-right')
     
-    const geolocate = new GeolocateControl({
+    const geolocate = new maplibregl.GeolocateControl({
       positionOptions: { enableHighAccuracy: true },
       trackUserLocation: true,
       showUserLocation: true
@@ -188,7 +188,7 @@ const MapCanvas = ({
       }
     })
 
-    geolocate.on('error', (e) => {
+    geolocate.on('error', (e: unknown) => {
       console.warn('Geolocation error:', e)
       if (onLocationError) onLocationError('PERMISSION_DENIED')
       // Fallback: If geolocation fails, fly to initial center
@@ -338,13 +338,13 @@ const MapCanvas = ({
           el.appendChild(iconEl)
           el.appendChild(labelEl)
           
-          const marker = new Marker({ element: el })
+          const marker = new maplibregl.Marker({ element: el })
             .setLngLat(coords)
             .addTo(mapInstance)
           
           // Add Popup if showPopup is true
           if (showPopup) {
-            const popup = new Popup({ offset: 25 })
+            const popup = new maplibregl.Popup({ offset: 25 })
               .setHTML(`<div class="p-2 font-sans">
                 <div class="font-bold text-gray-900">${nm}</div>
                 <div class="text-xs text-gray-500">點擊查看詳情</div>
@@ -352,7 +352,7 @@ const MapCanvas = ({
             marker.setPopup(popup)
           }
           
-          el.addEventListener('click', (e) => {
+          el.addEventListener('click', (e: MouseEvent) => {
              e.stopPropagation()
              onNodeSelectedRef.current?.(feature as Feature)
           })

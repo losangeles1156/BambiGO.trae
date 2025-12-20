@@ -1,13 +1,13 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import maplibregl from 'maplibre-gl'
-import type { StyleSpecification } from 'maplibre-gl'
+import type { Map as MapLibreMap, StyleSpecification } from 'maplibre-gl'
 import type { FeatureCollection, Feature } from 'geojson'
 import NodeCard from './NodeCard'
 import { Colors, MapFilters } from '../../src/lib/designTokens'
 
 type NodeProps = { id: string; name?: { ja?: string; en?: string; zh?: string }; type?: string; supply_tags?: string[]; suitability_tags?: string[] }
-type ExtMap = maplibregl.Map & { _darkObserver?: MutationObserver; _darkMql?: MediaQueryList }
+type ExtMap = MapLibreMap & { _darkObserver?: MutationObserver; _darkMql?: MediaQueryList }
 
 const UENO_COORDS: [number, number] = [139.7774, 35.7141]
 const MAX_DIST_KM = 50
@@ -67,7 +67,7 @@ type Props = { height?: number | string; onNodeSelected?: (f: Feature) => void; 
 export default function MapCanvas({ height, onNodeSelected, showBus = true, zone = 'core', center, route, accessibility, showPopup = true, filter }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [data, setData] = useState<FeatureCollection | null>(null)
-  const mapRef = useRef<maplibregl.Map | null>(null)
+  const mapRef = useRef<MapLibreMap | null>(null)
   const [styleError, setStyleError] = useState<string | null>(null)
   const [selected, setSelected] = useState<Feature | null>(null)
   const cbRef = useRef<typeof onNodeSelected | null>(null)
@@ -147,7 +147,7 @@ export default function MapCanvas({ height, onNodeSelected, showBus = true, zone
     })
     mapRef.current = map
     let retriedStyle = false
-    map.on('error', (e) => {
+    map.on('error', (e: unknown) => {
       const err = (e as { error?: { message?: unknown; name?: unknown } })?.error
       const msg = typeof err?.message === 'string' ? err.message : ''
       const name = typeof err?.name === 'string' ? err.name : ''
@@ -212,14 +212,14 @@ export default function MapCanvas({ height, onNodeSelected, showBus = true, zone
           },
         })
       
-      map.on('click', 'layer-station', (e) => {
+      map.on('click', 'layer-station', (e: unknown) => {
         const f = (e as unknown as { features?: Feature[] }).features?.[0]
         if (f) {
           setSelected(f)
           cbRef.current?.(f)
         }
       })
-      map.on('click', 'layer-bus', (e) => {
+      map.on('click', 'layer-bus', (e: unknown) => {
         const f = (e as unknown as { features?: Feature[] }).features?.[0]
         if (f) {
           setSelected(f)

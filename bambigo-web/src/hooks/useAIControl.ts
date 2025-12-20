@@ -4,22 +4,29 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { AICommand, AIControlInterface } from '@/lib/ai/control/types'
 import { aiClient, AIMessage } from '@/lib/ai/AIClient'
 
-export function useAIControl(onCommand?: (cmd: AICommand) => void): AIControlInterface {
-  const [status, setStatus] = useState<'connected' | 'disconnected' | 'connecting'>('disconnected')
+type UseAIControlOptions = {
+  enabled?: boolean
+}
+
+export function useAIControl(onCommand?: (cmd: AICommand) => void, options?: UseAIControlOptions): AIControlInterface {
+  const [internalStatus, setInternalStatus] = useState<'connected' | 'disconnected' | 'connecting'>('disconnected')
   const [lastCommand, setLastCommand] = useState<AICommand | null>(null)
   const onCommandRef = useRef(onCommand)
+  const enabled = options?.enabled ?? true
 
   useEffect(() => {
     onCommandRef.current = onCommand
   }, [onCommand])
 
   useEffect(() => {
+    if (!enabled) return
+
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setStatus('connecting')
+    setInternalStatus('connecting')
     aiClient.connect()
 
     const handleStatus = (_: string, s: string) => {
-      setStatus(s === 'connected' ? 'connected' : 'disconnected')
+      setInternalStatus(s === 'connected' ? 'connected' : 'disconnected')
     }
 
     const handleMessage = (_: string, msg: AIMessage) => {
@@ -36,7 +43,7 @@ export function useAIControl(onCommand?: (cmd: AICommand) => void): AIControlInt
       unsubStatus()
       unsubMessage()
     }
-  }, [])
+  }, [enabled])
 
   const sendCommand = useCallback((cmd: AICommand) => {
     console.log('[Matrix AI] Sending Command:', cmd)
@@ -44,6 +51,8 @@ export function useAIControl(onCommand?: (cmd: AICommand) => void): AIControlInt
     // Here we wrap it in a text message for the chat-based mock backend
     aiClient.send(`EXECUTE: ${JSON.stringify(cmd)}`)
   }, [])
+
+  const status = enabled ? internalStatus : 'disconnected'
 
   return {
     status,

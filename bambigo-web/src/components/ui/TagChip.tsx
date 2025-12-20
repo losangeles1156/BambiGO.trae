@@ -43,7 +43,6 @@ export default function TagChip({ label, layer, icon: Icon, className = '', onCl
     >
       {Icon && (
         <span className="shrink-0 opacity-70 flex items-center justify-center">
-          {/* Handle both functional components and forwardRef components (objects with render) */}
           {(typeof Icon === 'function' || (typeof Icon === 'object' && Icon !== null && 'render' in Icon)) ? (
             React.createElement(Icon as React.ComponentType<{ size?: number }>, { size: 14 })
           ) : (

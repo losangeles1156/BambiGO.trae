@@ -12,7 +12,13 @@ type Props = {
 
 export default function BottomSheet({ mode = 'collapsed', onModeChange, collapsedContent, halfContent, fullContent }: Props) {
   const [current, setCurrent] = useState<Mode>(mode)
-  useEffect(() => { setCurrent(mode) }, [mode])
+  const [prevMode, setPrevMode] = useState<Mode>(mode)
+
+  if (mode !== prevMode) {
+    setPrevMode(mode)
+    setCurrent(mode)
+  }
+
   const containerRef = useRef<HTMLDivElement | null>(null)
   const rafRef = useRef<number | null>(null)
   const pendingPercentRef = useRef<number | null>(null)
@@ -25,6 +31,13 @@ export default function BottomSheet({ mode = 'collapsed', onModeChange, collapse
     if (!el) return
     el.style.transform = `translateY(${Math.round(percent)}%)`
   }
+
+  useEffect(() => {
+    const percent = Math.round((1 - heights[mode]) * 100)
+    const el = containerRef.current
+    if (el && !draggingRef.current) el.style.transition = 'transform 180ms ease-out'
+    applyTransform(percent)
+  }, [mode, heights])
   const setMode = (m: Mode) => {
     setCurrent(m)
     onModeChange?.(m)

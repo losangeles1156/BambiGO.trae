@@ -53,6 +53,13 @@ export default function Header({ onMenuClick, breadcrumbs = [], locationName }: 
                     >
                       {item.label}
                     </Link>
+                  ) : item.onClick ? (
+                    <button 
+                      onClick={item.onClick}
+                      className={`hover:text-blue-600 transition-colors text-left ${item.active ? 'ui-breadcrumb__item--active' : ''}`}
+                    >
+                      {item.label}
+                    </button>
                   ) : (
                     <span className={item.active ? 'ui-breadcrumb__item--active' : ''}>
                       {item.label}

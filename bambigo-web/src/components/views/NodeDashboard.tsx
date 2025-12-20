@@ -8,10 +8,12 @@ import { useAuth } from '../auth/AuthContext'
 import { derivePersonaFromFacilities } from '../../lib/tagging'
 import { supabase } from '../../lib/supabase'
 import { L1_CATEGORIES_DATA } from '../tagging/constants'
-import { L3ServiceFacility, L4ActionCard } from '../../types/tagging'
+import { L3ServiceFacility, L4ActionCard, L4CardType } from '../../types/tagging'
 import { adaptFacilityItem } from '../../lib/adapters/facilities'
 import { FacilityItem } from '../../app/api/facilities/route'
 import NodeDetailCard from '../cards/NodeDetailCard'
+import { WeatherAlert } from '../../lib/weather/jma_rss'
+import type { CategoryCounts } from '../node/FacilityProfile'
 
 type Name = { ja?: string; en?: string; zh?: string }
 type Status = { label: string; tone?: 'yellow' | 'blue' | 'red' | 'green' }
@@ -41,8 +43,54 @@ export default function NodeDashboard({ nodeId, name, statuses, onAction, onRout
   const [isEditingFacilities, setIsEditingFacilities] = useState(false)
   const [isLineBound, setIsLineBound] = useState(false)
   const [isTripGuardActive, setIsTripGuardActive] = useState(false)
-  const [facilityCounts, setFacilityCounts] = useState<Record<string, number> | null>(null)
+  const [facilityCounts, setFacilityCounts] = useState<CategoryCounts | null>(null)
   const [vibeTags, setVibeTags] = useState<string[]>([])
+  const [weatherAlerts, setWeatherAlerts] = useState<WeatherAlert[]>([])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    let ignore = false
+
+    ;(async () => {
+      try {
+        const wRes = await fetch('/api/weather/alerts', { signal: controller.signal })
+        if (wRes.ok) {
+          const wData = await wRes.json()
+          if (!ignore && Array.isArray(wData?.alerts)) setWeatherAlerts(wData.alerts)
+        }
+      } catch (e) {
+        if ((e as Error).name !== 'AbortError') console.warn('Weather alerts fetch failed')
+      }
+    })()
+
+    return () => {
+      ignore = true
+      controller.abort()
+    }
+  }, [])
+
+  const normalizeCategoryCounts = (value: unknown): CategoryCounts | null => {
+    const v = (value ?? {}) as Record<string, unknown>
+    const keys: Array<keyof CategoryCounts> = ['shopping', 'dining', 'medical', 'education', 'leisure', 'finance']
+    const result = {
+      shopping: 0,
+      dining: 0,
+      medical: 0,
+      education: 0,
+      leisure: 0,
+      finance: 0
+    } satisfies CategoryCounts
+
+    let hasAny = false
+    for (const k of keys) {
+      const n = Number(v[k])
+      if (Number.isFinite(n)) {
+        result[k] = n
+        if (n !== 0) hasAny = true
+      }
+    }
+    return hasAny ? result : null
+  }
 
   // Derive Persona when dependencies change
   const persona = useMemo(() => {
@@ -83,8 +131,10 @@ export default function NodeDashboard({ nodeId, name, statuses, onAction, onRout
 
       try {
         // 1. Fetch Node Type & L1 Profile
+        let resolvedNodeType = nodeType
         if (!nodeId.startsWith('mock-')) {
           const { data: nodeData } = await supabase.from('nodes').select('type, zone').eq('id', nodeId).single()
+          resolvedNodeType = String(nodeData?.type || resolvedNodeType || '')
           if (!ignore && nodeData?.type) setNodeType(nodeData.type)
           if (!ignore && nodeData?.zone) setNodeZone(nodeData.zone as 'core' | 'buffer' | 'outer')
 
@@ -95,10 +145,11 @@ export default function NodeDashboard({ nodeId, name, statuses, onAction, onRout
             .single()
           
           if (!ignore && profileData) {
-            setFacilityCounts(profileData.category_counts)
+            setFacilityCounts(normalizeCategoryCounts(profileData.category_counts))
             setVibeTags(profileData.vibe_tags || [])
           }
         } else {
+          resolvedNodeType = 'station'
           if (!ignore) setNodeType('station')
         }
 
@@ -117,6 +168,23 @@ export default function NodeDashboard({ nodeId, name, statuses, onAction, onRout
         const tStatus = j?.live?.transit?.status
         const delay = j?.live?.transit?.delay_minutes
 
+        const l1 = L1_CATEGORIES_DATA.find(c => c.id === resolvedNodeType || c.subCategories.some(s => s.id === resolvedNodeType))
+        const personaLabels = derivePersonaFromFacilities(
+          adaptedItems.map(f => {
+            const attrs = f.attributes as Record<string, unknown>
+            return {
+              type: f.subCategory,
+              has_wheelchair_access: !!attrs.has_wheelchair_access,
+              has_baby_care: !!attrs.has_baby_care
+            }
+          }),
+          {
+            l1MainCategory: l1?.id,
+            l1SubCategory: resolvedNodeType,
+            transit: { status: tStatus }
+          }
+        )
+
         // 3. Fetch AI Strategy
         let strategyCards: L4ActionCard[] = []
         try {
@@ -125,7 +193,7 @@ export default function NodeDashboard({ nodeId, name, statuses, onAction, onRout
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               time: new Date().toISOString(),
-              personaLabels: Array.isArray(persona) ? persona : [],
+              personaLabels,
               transitStatus: tStatus
             }),
             signal: controller.signal
@@ -184,7 +252,7 @@ export default function NodeDashboard({ nodeId, name, statuses, onAction, onRout
       ignore = true
       controller.abort()
     }
-  }, [nodeId, filterSuitability?.tag, filterSuitability?.minConfidence, persona, t])
+  }, [nodeId, filterSuitability?.tag, filterSuitability?.minConfidence, t])
 
   const getL1Breadcrumb = () => {
     if (!nodeType) return null
@@ -283,7 +351,7 @@ export default function NodeDashboard({ nodeId, name, statuses, onAction, onRout
           const toL4 = (c: unknown): L4ActionCard => {
             const item = (c ?? {}) as Record<string, unknown>
             const rawType = String(item.type || 'secondary')
-            const type = (rawType === 'primary' || rawType === 'alert' ? rawType : 'secondary') as L4CardType
+            const type: L4CardType = rawType === 'primary' || rawType === 'secondary' || rawType === 'alert' ? rawType : 'secondary'
             const tags = Array.isArray(item.tags) ? (item.tags as unknown[]).map((t) => String(t)) : []
             const actions = Array.isArray(item.actions)
               ? (item.actions as unknown[]).map((a) => {
@@ -322,12 +390,10 @@ export default function NodeDashboard({ nodeId, name, statuses, onAction, onRout
           name={name}
           zone={nodeZone}
           l1Summary={l1Info?.label}
-          l1Tags={persona.map(p => ({ label: p, tone: 'purple' }))}
-          l2Status={statuses.filter(s => s.tone !== 'yellow' && s.tone !== 'red').map(s => ({ label: s.label, tone: 'blue' }))}
           facilities={facilities.slice(0, 6).map(f => ({
             id: f.id,
-            name: f.attributes?.zh || f.attributes?.ja || f.id,
-            type: f.category === 'shop' ? 'shop' : f.category === 'office' ? 'office' : 'service',
+            name: String(f.provider?.name || f.subCategory || f.category || f.id),
+            type: 'service',
             icon: null
           }))}
           traffic={transitStatus ? [{
@@ -337,9 +403,10 @@ export default function NodeDashboard({ nodeId, name, statuses, onAction, onRout
           }] : []}
           crowdLevel="medium"
           crowdTrend="stable"
-          facilityCounts={facilityCounts}
+          facilityCounts={facilityCounts ?? undefined}
           vibeTags={vibeTags}
           persona={Array.isArray(persona) ? persona.join('、') : persona}
+          weatherAlerts={weatherAlerts}
         />
 
         {/* Trip Guard / Line Integration (Member Exclusive) */}

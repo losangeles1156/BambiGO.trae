@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react'
 import { dictionary, Locale, Dictionary } from '../i18n/dictionary'
 
 interface LanguageContextType {
@@ -37,13 +37,13 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const setLocale = (newLocale: Locale) => {
+  const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale)
     localStorage.setItem('appLang', newLocale)
     document.documentElement.lang = newLocale === 'zh-TW' ? 'zh-TW' : newLocale
-  }
+  }, [])
 
-  const t = (path: string): string => {
+  const t = useCallback((path: string): string => {
     const keys = path.split('.')
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let current: any = dictionary[locale]
@@ -52,7 +52,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       current = current[key]
     }
     return current as string
-  }
+  }, [locale])
+
+  const value = useMemo(() => ({ locale, setLocale, t, dict: dictionary[locale] }), [locale, setLocale, t])
 
   if (!mounted) {
      // Return null or initial state to prevent hydration mismatch if needed, 
@@ -62,7 +64,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <LanguageContext.Provider value={{ locale, setLocale, t, dict: dictionary[locale] }}>
+    <LanguageContext.Provider value={value}>
       {children}
     </LanguageContext.Provider>
   )

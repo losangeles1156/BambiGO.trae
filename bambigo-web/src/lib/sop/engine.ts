@@ -1,5 +1,5 @@
 import { L3ServiceFacility } from '../../types/tagging';
-import { Feature, FeatureCollection, LineString, Polygon } from 'geojson';
+import { Feature, FeatureCollection, LineString, Polygon, Position } from 'geojson';
 import { ab } from '../utils/ab-testing';
 
 // --- Types ---
@@ -271,19 +271,25 @@ function mapManeuverType(type: string, modifier?: string): string {
 /**
  * Enhanced safety check for route: checks if any segment intersects with hazardous zones
  */
-export function checkRouteSafety(path: [number, number][], zones: DisasterZone[]): boolean {
+export function checkRouteSafety(path: Position[], zones: DisasterZone[]): boolean {
+  if (!zones || zones.length === 0) return false;
+  const points: [number, number][] = []
+  for (const p of path) {
+    if (Array.isArray(p) && typeof p[0] === 'number' && typeof p[1] === 'number') points.push([p[0], p[1]])
+  }
+
   for (const zone of zones) {
     const polygon = zone.geometry.coordinates[0]; // Outer ring
     
     // 1. Check if any point is inside
-    for (const point of path) {
+    for (const point of points) {
       if (isPointInPolygon(point, polygon as [number, number][])) return true;
     }
 
     // 2. Check if any segment intersects polygon boundaries
-    for (let i = 0; i < path.length - 1; i++) {
-      const p1 = path[i];
-      const p2 = path[i + 1];
+    for (let i = 0; i < points.length - 1; i++) {
+      const p1 = points[i];
+      const p2 = points[i + 1];
       
       for (let j = 0; j < polygon.length - 1; j++) {
         const v1 = polygon[j];

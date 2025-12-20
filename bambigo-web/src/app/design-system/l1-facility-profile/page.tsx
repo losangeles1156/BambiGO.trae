@@ -24,7 +24,6 @@ export default function L1FacilityProfileDemo() {
           <p className="text-gray-600 mt-2">基於 L1_FACILITY_TAGS.md 與 UI_SPEC.md 規範實作</p>
         </header>
 
-        {/* Section 1: Facility Profile Component */}
         <section className="space-y-4">
           <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">1. FacilityProfile Component (Standalone)</h2>
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
@@ -33,11 +32,9 @@ export default function L1FacilityProfileDemo() {
           </div>
         </section>
 
-        {/* Section 2: NodeDetailCard Zones */}
         <section className="space-y-8">
           <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">2. NodeDetailCard Three-Zone Strategy</h2>
 
-          {/* Core Zone */}
           <div className="space-y-3">
             <h3 className="inline-block px-3 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full uppercase tracking-wider">
               Core Zone (核心圈)
@@ -48,21 +45,19 @@ export default function L1FacilityProfileDemo() {
                 name={{ zh: "上野站", en: "Ueno Station", ja: "上野駅" }}
                 zone="core"
                 l1Summary="購物與餐飲中心"
-                l1Tags={[{ label: "交通樞紐", tone: "purple" }, { label: "觀光熱點", tone: "purple" }]}
                 facilityCounts={mockCounts}
                 vibeTags={mockVibeTags}
                 crowdLevel="medium"
                 crowdTrend="stable"
                 facilities={[
-                  { id: 'f1', name: 'Atre Ueno', type: 'shop' },
-                  { id: 'f2', name: 'Ichiran Ramen', type: 'service' },
-                  { id: 'f3', name: 'FamilyMart', type: 'shop' }
+                  { id: 'f1', name: 'Atre Ueno', type: 'shop', icon: null },
+                  { id: 'f2', name: 'Ichiran Ramen', type: 'service', icon: null },
+                  { id: 'f3', name: 'FamilyMart', type: 'shop', icon: null }
                 ]}
               />
             </div>
           </div>
 
-          {/* Buffer Zone */}
           <div className="space-y-3">
             <h3 className="inline-block px-3 py-1 bg-gray-200 text-gray-700 text-xs font-bold rounded-full uppercase tracking-wider">
               Buffer Zone (緩衝圈)
@@ -73,13 +68,12 @@ export default function L1FacilityProfileDemo() {
                 name={{ zh: "入谷站", en: "Iriya Station", ja: "入谷駅" }}
                 zone="buffer"
                 l1Summary="住宅區機能"
-                facilityCounts={{ shopping: 5, dining: 3 }}
+                facilityCounts={{ shopping: 5, dining: 3, medical: 0, education: 0, leisure: 0, finance: 0 }}
                 vibeTags={['安靜住宅']}
               />
             </div>
           </div>
 
-          {/* Outer Zone */}
           <div className="space-y-3">
             <h3 className="inline-block px-3 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full uppercase tracking-wider">
               Outer Zone (外圍圈)
@@ -94,17 +88,16 @@ export default function L1FacilityProfileDemo() {
           </div>
         </section>
 
-        {/* Section 3: Data States */}
         <section className="space-y-4">
           <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">3. Data Edge Cases</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
               <h3 className="text-sm font-medium text-gray-500 mb-4">無資料狀態 (Empty Stats)</h3>
-              <FacilityProfile counts={{}} vibeTags={[]} />
+              <FacilityProfile counts={{ shopping: 0, dining: 0, medical: 0, education: 0, leisure: 0, finance: 0 }} vibeTags={[]} />
             </div>
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
               <h3 className="text-sm font-medium text-gray-500 mb-4">單一類別 (Shopping Only)</h3>
-              <FacilityProfile counts={{ shopping: 50 }} vibeTags={['購物狂天堂']} />
+              <FacilityProfile counts={{ shopping: 50, dining: 0, medical: 0, education: 0, leisure: 0, finance: 0 }} vibeTags={['購物狂天堂']} />
             </div>
           </div>
         </section>

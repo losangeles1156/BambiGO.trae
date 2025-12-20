@@ -1,6 +1,17 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('AI Assistant E2E', () => {
+  test.beforeEach(async ({ page }) => {
+    page.on('console', msg => {
+      console.log('BROWSER CONSOLE:', msg.type(), msg.text());
+    });
+    page.on('request', request => {
+      console.log('BROWSER REQUEST:', request.method(), request.url());
+    });
+    page.on('response', response => {
+      console.log('BROWSER RESPONSE:', response.status(), response.url());
+    });
+  });
   test('should open assistant, send quick question, and receive response', async ({ page }) => {
     // 1. Mock the SSE endpoint
     await page.route('/api/assistant*', async route => {
@@ -17,15 +28,9 @@ test.describe('AI Assistant E2E', () => {
       });
     });
 
-    // 2. Go to home page
     await page.goto('/');
 
-    // 3. Open Assistant (Assuming there's a button with specific aria-label or text)
-    // The FAB might be identified by its icon or label.
-    // Based on code: label: 'AI Assistant'
     const fabButton = page.getByRole('button', { name: 'AI Assistant' });
-    // If FAB is hidden in a menu or not visible, we might need to click a parent FAB first.
-    // But in page.tsx it seems to be in `fabActions`.
     
     // Wait for map to load roughly (or just check if FAB is there)
     await expect(fabButton).toBeVisible({ timeout: 10000 });
@@ -35,7 +40,6 @@ test.describe('AI Assistant E2E', () => {
     await expect(page.getByRole('heading', { name: '城市 AI 助理' })).toBeVisible();
     await expect(page.getByText('你好！我是你的城市 AI 助理')).toBeVisible();
 
-    // 5. Click "我要回家" Quick Question
     const homeButton = page.getByRole('button', { name: '我要回家' });
     await expect(homeButton).toBeVisible();
     await homeButton.click();

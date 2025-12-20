@@ -112,11 +112,15 @@ class AIClient {
     const delay = Math.min(1000 * Math.pow(2, this.retryCount), 10000)
     console.log(`[AIClient] Attempting reconnect in ${delay}ms... (Attempt ${this.retryCount}/${this.maxRetries})`)
     
-    clearTimeout(this.reconnectTimer)
+    if (this.reconnectTimer) clearTimeout(this.reconnectTimer)
     this.reconnectTimer = setTimeout(() => this.connect(), delay)
   }
 
   disconnect() {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
     if (this.socket) {
       this.socket.close()
       this.socket = null

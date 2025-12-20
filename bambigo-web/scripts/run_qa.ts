@@ -1,4 +1,4 @@
-import { runQABenchmark } from '../test/qa_routing_bench';
+import { runQABenchmark } from './qa_routing_bench';
 
 async function main() {
   console.log('🚀 Starting QA Routing Benchmark (100 O-D pairs)...');

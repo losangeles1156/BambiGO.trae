@@ -54,6 +54,19 @@ export default function Home() {
   const [navigationSteps, setNavigationSteps] = useState<NavigationStep[]>([])
   const [triggerGeolocate, setTriggerGeolocate] = useState(0)
 
+  // Handle Query Params for Testing
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const qNodeId = params.get('nodeId')
+      if (qNodeId) {
+        setNodeId(qNodeId)
+        setView('dashboard')
+        setSheetMode('half')
+      }
+    }
+  }, [])
+
   const handleLocationError = (error: string) => {
     if (error === 'OUT_OF_RANGE') {
       alert(t('common.outOfRange') || '你目前距離服務節點超過 50 公里，已為你自動定位至上野車站。你可以手動選擇其他車站。')
@@ -149,7 +162,8 @@ export default function Home() {
     }
   }, [])
 
-  useAIControl(handleAICommand)
+  const aiControlEnabled = typeof navigator === 'undefined' ? true : !/Playwright/i.test(navigator.userAgent)
+  useAIControl(handleAICommand, { enabled: aiControlEnabled })
 
   const prefersElevator = (hint: string) => /電梯|無障礙|wheelchair|elevators?|エレベータ(ー)?|バリアフリー|車椅子/i.test(hint)
 

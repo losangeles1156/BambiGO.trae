@@ -77,6 +77,16 @@ export async function fetchJmaAlerts(): Promise<WeatherAlert[]> {
             const isEarthquake = title.includes('地震') || title.includes('震度') || title.includes('震源');
             if (severity === 'low' && !isEarthquake) return null; 
 
+            // 3. Assign Suggested Tags (L4 Action)
+            const tags: WeatherAlert['tags'] = {};
+            if (severity === 'high') {
+                tags.l4 = 'seek_shelter';
+            } else if (title.includes('大雨') || title.includes('暴風')) {
+                tags.l4 = 'avoid_underground';
+            } else if (title.includes('雨')) {
+                tags.l4 = 'bring_umbrella';
+            }
+
             return {
               id: entry.id,
               title: title,
@@ -84,7 +94,8 @@ export async function fetchJmaAlerts(): Promise<WeatherAlert[]> {
               link: entry.link?.['@_href'] || '',
               summary: content.substring(0, 200) + '...', // Truncate for safety
               type: feed.type,
-              severity
+              severity,
+              tags
             } as WeatherAlert;
         }).filter(Boolean) as WeatherAlert[];
 

@@ -5,6 +5,9 @@ import { Building2, Activity, Coffee, Sparkles, MapPin, Users, Train, Store, Bri
 import { clsx } from 'clsx'
 import FacilityProfile, { CategoryCounts } from '../node/FacilityProfile'
 import StatusPill from '../ui/StatusPill'
+import { WeatherAlert } from '../../lib/weather/jma_rss'
+import { useLanguage } from '../../contexts/LanguageContext'
+import { CloudRain, AlertTriangle, Zap } from 'lucide-react'
 
 type Name = { ja?: string; en?: string; zh?: string }
 type Tag = { label: string; tone?: 'purple' | 'yellow' | 'gray' | 'blue' | 'green' | 'red' }
@@ -34,6 +37,7 @@ type Props = {
   facilityCounts?: CategoryCounts
   vibeTags?: string[]
   persona?: string
+  weatherAlerts?: WeatherAlert[]
 }
 
 export default function NodeDetailCard({ 
@@ -46,8 +50,10 @@ export default function NodeDetailCard({
   crowdTrend = 'stable',
   facilityCounts,
   vibeTags = [],
-  persona = ''
+  persona = '',
+  weatherAlerts = []
 }: Props) {
+  const { t } = useLanguage()
   const locale = typeof navigator !== 'undefined' ? navigator.language : 'zh-TW'
 
   if (zone === 'outer') {
@@ -72,10 +78,13 @@ export default function NodeDetailCard({
   const isBuffer = zone === 'buffer'
 
   return (
-    <div className={clsx(
-      "ui-card bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden transition-all",
-      isBuffer && "opacity-90 grayscale-[0.3]"
-    )}>
+    <div 
+      data-testid="node-detail-card"
+      className={clsx(
+        "ui-card bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden transition-all",
+        isBuffer && "opacity-90 grayscale-[0.3]"
+      )}
+    >
       {/* Header Section */}
       <div className="p-5 border-b border-gray-50 bg-gradient-to-b from-gray-50/50 to-white">
         <div className="flex items-start justify-between">
@@ -121,6 +130,55 @@ export default function NodeDetailCard({
               <p className="text-sm text-gray-600 leading-relaxed font-medium">
                 {persona}
               </p>
+            </div>
+          </section>
+        )}
+
+        {/* Weather Alerts (L2 - P1) */}
+        {weatherAlerts.length > 0 && (
+          <section className="animate-in fade-in slide-in-from-top-2 duration-500" data-testid="weather-alerts-section">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-1 h-4 bg-red-500 rounded-full" />
+              <h3 className="text-sm font-bold text-gray-800">{t('alert.type.weather')}警報</h3>
+            </div>
+            <div className="space-y-2">
+              {weatherAlerts.map((alert) => (
+                <div 
+                  key={alert.id} 
+                  className={clsx(
+                    "flex flex-col p-3 rounded-xl border transition-all",
+                    alert.severity === 'high' 
+                      ? "bg-red-50 border-red-100 text-red-900" 
+                      : "bg-yellow-50 border-yellow-100 text-yellow-900"
+                  )}
+                  role="alert"
+                  aria-live="assertive"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    {alert.type === 'earthquake' ? (
+                      <Zap size={16} className="text-red-600 animate-pulse" />
+                    ) : alert.severity === 'high' ? (
+                      <AlertTriangle size={16} className="text-red-600" />
+                    ) : (
+                      <CloudRain size={16} className="text-yellow-600" />
+                    )}
+                    <span className="font-bold text-sm" data-testid="alert-title">{alert.title}</span>
+                  </div>
+                  <p className="text-xs opacity-80 leading-relaxed" data-testid="alert-summary">
+                    {alert.summary.replace('...', '')}
+                  </p>
+                  {alert.tags?.l4 && (
+                    <div className="mt-2">
+                      <span className={clsx(
+                        "text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md",
+                        alert.severity === 'high' ? "bg-red-600 text-white" : "bg-yellow-500 text-white"
+                      )}>
+                        {t(`alert.l4.${alert.tags.l4}`)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </section>
         )}
@@ -176,7 +234,6 @@ export default function NodeDetailCard({
                   <span className="text-sm">{crowdTrend === 'up' ? '上升中' : crowdTrend === 'down' ? '緩解中' : '持平'}</span>
                 </div>
               </div>
-              {/* Decorative pulse */}
               <div className="absolute top-1/2 left-0 -translate-y-1/2 w-1 h-8 bg-orange-500/20 rounded-full" />
             </div>
           </section>

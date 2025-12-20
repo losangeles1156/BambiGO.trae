@@ -5,7 +5,7 @@ import Header, { BreadcrumbItem } from '../components/layout/Header'
 import MapCanvas from '../components/map/MapCanvas'
 import MobileViewport from '../components/layout/MobileViewport'
 import { FABGroup } from '../components/features/controls/FABGroup'
-import { AlertBanner, Alert, SystemAlert } from '../components/ui/AlertBanner'
+import { AlertBanner, SystemAlert } from '../components/ui/AlertBanner'
 import type { FeatureCollection } from 'geojson'
 import SearchBar from '../components/views/SearchBar'
 import NodeDashboard from '../components/views/NodeDashboard'
@@ -27,6 +27,7 @@ import { Bot, Navigation, Share2, X, AlertTriangle, Layers, Wifi } from 'lucide-
 import { useSOP } from '../contexts/SOPContext'
 import { findNearestFacility, fetchWalkingRoute, DisasterZone } from '../lib/sop/engine'
 import { L3ServiceFacility } from '../types/tagging'
+import type { WeatherAlert } from '../lib/weather/jma_rss'
 
 export default function Home() {
   const { t, locale } = useLanguage()
@@ -46,7 +47,7 @@ export default function Home() {
   const [sheetMode, setSheetMode] = useState<'collapsed' | 'half' | 'full'>('collapsed')
   const [showAssistant, setShowAssistant] = useState(false)
   const [mapFilter, setMapFilter] = useState<{ tag?: string; status?: string } | undefined>(undefined)
-  const [weatherAlerts, setWeatherAlerts] = useState<Alert[]>([])
+  const [weatherAlerts, setWeatherAlerts] = useState<WeatherAlert[]>([])
   const [systemAlerts, setSystemAlerts] = useState<SystemAlert[]>([])
   const [envStatuses, setEnvStatuses] = useState<{ label: string; tone?: 'yellow' | 'blue' | 'red' | 'green' }[]>([])
   const [disasterZones, setDisasterZones] = useState<DisasterZone[]>([])
@@ -386,12 +387,16 @@ export default function Home() {
   }, [mode, targetCategory, mapCenter, lastCoords, disasterZones])
 
   useEffect(() => {
+    let ignore = false
     fetch('/api/weather/alerts')
-      .then(r => r.json())
-      .then(data => {
-        if (data.alerts && Array.isArray(data.alerts)) setWeatherAlerts(data.alerts)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!ignore && Array.isArray(data?.alerts)) setWeatherAlerts(data.alerts)
       })
-      .catch(err => console.error('Failed to fetch alerts:', err))
+      .catch(() => {})
+    return () => {
+      ignore = true
+    }
   }, [])
 
   // Online/Offline & PWA Install
@@ -412,20 +417,7 @@ export default function Home() {
     }
   }, [])
 
-  // Supabase Check
-  useEffect(() => {
-    const testSupabase = async () => {
-      try {
-        const { data, error } = await supabase.from('facilities').select('count', { count: 'exact', head: true })
-        if (error) console.error('❌ Supabase Connection Failed:', error.message)
-        else console.log('✅ Supabase Connection Successful! Facility Count:', data)
-      } catch (err) {
-        console.error('❌ Supabase Connection Exception:', err)
-      }
-    }
-    testSupabase()
-  }, [])
-
+  
   // Weather/Env Status
   useEffect(() => {
     const base: { label: string; tone?: 'yellow' | 'blue' | 'red' | 'green' }[] = [
@@ -796,6 +788,7 @@ export default function Home() {
                 name={nodeName} 
                 statuses={envStatuses} 
                 actions={actions} 
+                weatherAlerts={weatherAlerts}
                 filterSuitability={(() => { const q = tagging.buildSuitabilityQuery(tagState.tags, 0.6); return { tag: q.tag, minConfidence: q.minConfidence } })()} 
                 onAction={handleDashboardAction} 
                 onRouteHint={handleRouteHint} 

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import maplibregl from 'maplibre-gl'
-import type { GeoJSONSource, LayerSpecification, Map as MapLibreMap, MapGeoJSONFeature, MapMouseEvent } from 'maplibre-gl'
+import type { GeoJSONSource, LayerSpecification, Map as MapLibreMap, MapGeoJSONFeature, MapMouseEvent, StyleSpecification } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { Zone } from '@/lib/zones/detector'
 import { FeatureCollection, Feature } from 'geojson'
@@ -39,11 +39,20 @@ interface MapCanvasProps {
   triggerGeolocate?: number // Incremental value to trigger geolocate
 }
 
-const MAP_STYLES = [
-  'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
-  'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
-  'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
-]
+const FALLBACK_STYLE: StyleSpecification = {
+  version: 8,
+  name: 'BambiGO Minimal',
+  sources: {},
+  layers: [
+    {
+      id: 'background',
+      type: 'background',
+      paint: { 'background-color': '#ffffff' },
+    },
+  ],
+}
+
+const MAP_STYLES: Array<string | StyleSpecification> = [FALLBACK_STYLE]
 
 const MapCanvas = ({
   height,
@@ -101,16 +110,7 @@ const MapCanvas = ({
       })
 
       mapInstance.on('error', (e: { error?: { message?: string; status?: number } }) => {
-        if (e.error?.message?.includes('tile') || e.error?.status === 404) {
-          console.warn(`Map Tile error detected on style ${sIndex}:`, e.error)
-          
-          if (sIndex < MAP_STYLES.length - 1) {
-            console.info('Switching to fallback map style...')
-            mapInstance.remove()
-            const next = initMap(sIndex + 1)
-            if (next) map.current = next
-          }
-        }
+        void e
       })
 
       return mapInstance

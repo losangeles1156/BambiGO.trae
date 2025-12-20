@@ -28,6 +28,7 @@ type Props = {
   name: Name
   statuses: Status[]
   actions: string[]
+  weatherAlerts?: WeatherAlert[]
   onAction: (a: string) => void
   onRouteHint?: (hint: string) => void
   filterSuitability?: { tag?: string; minConfidence?: number }
@@ -37,7 +38,7 @@ type Props = {
 
 import { useLanguage } from '../../contexts/LanguageContext'
 
-export default function NodeDashboard({ nodeId, name, onAction, onRouteHint, filterSuitability, onSystemAlert, onClientLog }: Props) {
+export default function NodeDashboard({ nodeId, name, weatherAlerts = [], onAction, onRouteHint, filterSuitability, onSystemAlert, onClientLog }: Props) {
   const { t } = useLanguage()
   const { user, session } = useAuth()
   const [text, setText] = useState('')
@@ -55,33 +56,10 @@ export default function NodeDashboard({ nodeId, name, onAction, onRouteHint, fil
   const [isTripGuardActive, setIsTripGuardActive] = useState(false)
   const [facilityCounts, setFacilityCounts] = useState<CategoryCounts | null>(null)
   const [vibeTags, setVibeTags] = useState<string[]>([])
-  const [weatherAlerts, setWeatherAlerts] = useState<WeatherAlert[]>([])
 
   const notify = (input: { severity: 'high' | 'medium' | 'low'; title: string; summary: string; ttlMs?: number; dedupeMs?: number }) => {
     onSystemAlert?.(input)
   }
-
-  useEffect(() => {
-    const controller = new AbortController()
-    let ignore = false
-
-    ;(async () => {
-      try {
-        const wRes = await fetch('/api/weather/alerts', { signal: controller.signal })
-        if (wRes.ok) {
-          const wData = await wRes.json()
-          if (!ignore && Array.isArray(wData?.alerts)) setWeatherAlerts(wData.alerts)
-        }
-      } catch (e) {
-        if ((e as Error).name !== 'AbortError') console.warn('Weather alerts fetch failed')
-      }
-    })()
-
-    return () => {
-      ignore = true
-      controller.abort()
-    }
-  }, [])
 
   const normalizeCategoryCounts = (value: unknown): CategoryCounts | null => {
     const v = (value ?? {}) as Record<string, unknown>
@@ -136,7 +114,6 @@ export default function NodeDashboard({ nodeId, name, onAction, onRouteHint, fil
   }, [])
 
   useEffect(() => {
-    const controller = new AbortController()
     let ignore = false
 
     async function fetchData() {
@@ -172,7 +149,7 @@ export default function NodeDashboard({ nodeId, name, onAction, onRouteHint, fil
         if (filterSuitability?.tag) params.set('suitability', filterSuitability.tag)
         if (typeof filterSuitability?.minConfidence === 'number') params.set('min_confidence', String(filterSuitability.minConfidence))
         
-        const r = await fetch(`/api/nodes/live/facilities?${params.toString()}`, { signal: controller.signal })
+        const r = await fetch(`/api/nodes/live/facilities?${params.toString()}`)
         if (!r.ok) throw new Error('Live data fetch failed')
         
         const j = await r.json()
@@ -209,15 +186,14 @@ export default function NodeDashboard({ nodeId, name, onAction, onRouteHint, fil
               time: new Date().toISOString(),
               personaLabels,
               transitStatus: tStatus
-            }),
-            signal: controller.signal
+            })
           })
           if (sRes.ok) {
             const sData = await sRes.json()
             if (Array.isArray(sData)) strategyCards = sData
           }
         } catch {
-          console.error('Strategy fetch aborted or failed')
+          onClientLog?.({ level: 'warn', message: 'strategy:fetchFailed', data: { nodeId } })
         }
 
         if (!ignore) {
@@ -255,8 +231,11 @@ export default function NodeDashboard({ nodeId, name, onAction, onRouteHint, fil
           setLoading(false)
         }
       } catch (e) {
-        if ((e as Error).name === 'AbortError') return
-        console.error('Fetch error:', e)
+        onClientLog?.({
+          level: 'error',
+          message: 'dashboard:fetchFailed',
+          data: { nodeId, error: e instanceof Error ? e.message : String(e) },
+        })
         if (!ignore) setLoading(false)
       }
     }
@@ -264,9 +243,8 @@ export default function NodeDashboard({ nodeId, name, onAction, onRouteHint, fil
     fetchData()
     return () => {
       ignore = true
-      controller.abort()
     }
-  }, [nodeId, filterSuitability?.tag, filterSuitability?.minConfidence, t])
+  }, [nodeId, filterSuitability?.tag, filterSuitability?.minConfidence, t, onClientLog])
 
   const getL1Breadcrumb = () => {
     if (!nodeType) return null

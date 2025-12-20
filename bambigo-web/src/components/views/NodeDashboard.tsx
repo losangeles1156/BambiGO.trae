@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { Edit2, MessageSquare, ChevronRight, Bell, ShieldCheck } from 'lucide-react'
+import Image from 'next/image'
 import ActionCarousel from '../cards/ActionCarousel'
 import FacilityList from '../lists/FacilityList'
 import NodeFacilityManager from './NodeFacilityManager'
@@ -27,7 +28,7 @@ type Props = { nodeId?: string; name: Name; statuses: Status[]; actions: string[
 
 import { useLanguage } from '../../contexts/LanguageContext'
 
-export default function NodeDashboard({ nodeId, name, statuses, onAction, onRouteHint, filterSuitability }: Props) {
+export default function NodeDashboard({ nodeId, name, onAction, onRouteHint, filterSuitability }: Props) {
   const { t } = useLanguage()
   const { user, session } = useAuth()
   const [text, setText] = useState('')
@@ -46,6 +47,7 @@ export default function NodeDashboard({ nodeId, name, statuses, onAction, onRout
   const [facilityCounts, setFacilityCounts] = useState<CategoryCounts | null>(null)
   const [vibeTags, setVibeTags] = useState<string[]>([])
   const [weatherAlerts, setWeatherAlerts] = useState<WeatherAlert[]>([])
+  const [showLineIcon, setShowLineIcon] = useState(true)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -131,7 +133,7 @@ export default function NodeDashboard({ nodeId, name, statuses, onAction, onRout
 
       try {
         // 1. Fetch Node Type & L1 Profile
-        let resolvedNodeType = nodeType
+        let resolvedNodeType = ''
         if (!nodeId.startsWith('mock-')) {
           const { data: nodeData } = await supabase.from('nodes').select('type, zone').eq('id', nodeId).single()
           resolvedNodeType = String(nodeData?.type || resolvedNodeType || '')
@@ -202,7 +204,7 @@ export default function NodeDashboard({ nodeId, name, statuses, onAction, onRout
             const sData = await sRes.json()
             if (Array.isArray(sData)) strategyCards = sData
           }
-        } catch (e) {
+        } catch {
           console.error('Strategy fetch aborted or failed')
         }
 
@@ -444,7 +446,17 @@ export default function NodeDashboard({ nodeId, name, statuses, onAction, onRout
                 }}
                 className="w-full bg-white text-green-600 font-bold py-3 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-md"
               >
-                <img src="/line-icon.png" alt="LINE" className="w-5 h-5" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                {showLineIcon && (
+                  <Image
+                    src="/line-icon.png"
+                    alt="LINE"
+                    width={20}
+                    height={20}
+                    className="w-5 h-5"
+                    onError={() => setShowLineIcon(false)}
+                    unoptimized
+                  />
+                )}
                 {t('dashboard.tripGuardEnroll')}
                 <ChevronRight size={16} />
               </button>

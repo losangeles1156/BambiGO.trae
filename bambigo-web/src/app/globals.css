@@ -51,94 +51,89 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* UI Components Layer */
+@layer components {
+  .ui-header {
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--text-tertiary);
+    height: var(--header-height);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+  }
 
-/* Header */
-.ui-header {
-  background: var(--bg-surface);
-  border-bottom: 1px solid var(--text-tertiary);
-  height: var(--header-height);
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  transition: background-color 0.3s ease, border-color 0.3s ease;
+  .ui-header__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 100%;
+    padding: 0 1rem;
+  }
+
+  .ui-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+  }
+
+  .ui-breadcrumb__item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .ui-breadcrumb__item--active {
+    color: var(--primary-600);
+    font-weight: 600;
+  }
+
+  .ui-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--touch-target);
+    min-height: var(--touch-target);
+    padding: 0.5rem;
+    border-radius: 0.75rem;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+  }
+
+  .ui-btn:active {
+    transform: scale(0.96);
+  }
+
+  .ui-btn:focus-visible {
+    outline: 2px solid var(--primary-500);
+    outline-offset: 2px;
+  }
+
+  .ui-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--text-tertiary);
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .ui-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  }
+
+  .ui-chip {
+    display: inline-flex;
+    align-items: center;
+    height: 2rem;
+    padding: 0 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .ui-chip--yellow { background: var(--status-warning-bg); color: var(--status-warning-text); }
+  .ui-chip--blue { background: var(--status-info-bg); color: var(--status-info-text); }
+  .ui-chip--green { background: var(--status-success-bg); color: var(--status-success-text); }
 }
-
-.ui-header__row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 100%;
-  padding: 0 1rem;
-}
-
-/* Breadcrumbs */
-.ui-breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-}
-
-.ui-breadcrumb__item {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.ui-breadcrumb__item--active {
-  color: var(--primary-600);
-  font-weight: 600;
-}
-
-/* Interactive Elements (Touch Target Optimization) */
-.ui-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: var(--touch-target);
-  min-height: var(--touch-target);
-  padding: 0.5rem;
-  border-radius: 0.75rem;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
-}
-
-.ui-btn:active {
-  transform: scale(0.96);
-}
-
-.ui-btn:focus-visible {
-  outline: 2px solid var(--primary-500);
-  outline-offset: 2px;
-}
-
-/* Card Styles */
-.ui-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--text-tertiary);
-  border-radius: 1rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.ui-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-}
-
-/* Chip Styles */
-.ui-chip {
-  display: inline-flex;
-  align-items: center;
-  height: 2rem; /* 32px */
-  padding: 0 0.75rem;
-  border-radius: 9999px;
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-.ui-chip--yellow { background: var(--status-warning-bg); color: var(--status-warning-text); }
-.ui-chip--blue { background: var(--status-info-bg); color: var(--status-info-text); }
-.ui-chip--green { background: var(--status-success-bg); color: var(--status-success-text); }

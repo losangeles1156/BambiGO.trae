@@ -36,7 +36,7 @@ describe('seedPersonas', () => {
         complexity_score: 50,
         archetype: 'The Tester',
         trap_warnings: ['Trap1'],
-        system_prompt: 'You are a test.'
+        system_prompt: '[CONTEXT]\nComplexity Level: 50/100.\n'
       }
     ]))
 
@@ -47,6 +47,21 @@ describe('seedPersonas', () => {
     const queryMock = vi.fn()
       .mockResolvedValueOnce({ rowCount: 0 }) // Check column -> not found
       .mockResolvedValueOnce({}) // Alter table
+      .mockResolvedValueOnce({ rows: [{ regclass: 'node_facility_profiles' }] }) // Profiles table exists
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            category_counts: {
+              shopping: 25,
+              dining: 9,
+              medical: 0,
+              education: 0,
+              leisure: 0,
+              finance: 0
+            }
+          }
+        ]
+      }) // Profile lookup
       .mockResolvedValueOnce({ rowCount: 1 }) // Update
 
     const clientMock = {
@@ -63,17 +78,23 @@ describe('seedPersonas', () => {
     
     // 2. Alter table because we returned rowCount 0
     expect(queryMock).toHaveBeenNthCalledWith(2, expect.stringContaining("ALTER TABLE nodes ADD COLUMN"))
+
+    // 3. Facility profile table check
+    expect(queryMock).toHaveBeenNthCalledWith(3, expect.stringContaining("to_regclass('public.node_facility_profiles')"))
+
+    // 4. Profile lookup
+    expect(queryMock).toHaveBeenNthCalledWith(4, expect.stringContaining('FROM nodes n'), ['TestStation'])
     
     // 3. Update query
-    const updateCall = queryMock.mock.calls[2]
+    const updateCall = queryMock.mock.calls[4]
     expect(updateCall[0]).toContain('UPDATE nodes')
     const params = updateCall[1]
-    expect(params[0]).toBe('You are a test.') // system_prompt
+    expect(params[0]).toBe('[CONTEXT]\nComplexity Level: 66/100.\n') // system_prompt
     expect(params[2]).toBe('TestStation') // name
     
     const metadata = JSON.parse(params[1])
     expect(metadata.persona_archetype).toBe('The Tester')
-    expect(metadata.complexity_score).toBe(50)
+    expect(metadata.complexity_score).toBe(66)
   })
 
   it('skips alter table if column exists', async () => {

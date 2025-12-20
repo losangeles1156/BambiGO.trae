@@ -10,7 +10,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "lint:ci": "eslint . --ignore-pattern 'coverage/**' --quiet",
+    "lint:ci": "eslint . --ignore-pattern 'coverage/**' --quiet --max-warnings=0",
     "init:schema": "tsx scripts/init_schema.ts",
     "schema:v4.1": "tsx scripts/setup_v4_1_schema.ts",
     "fetch:odpt": "tsx scripts/fetch_tokyo_odpt.ts",

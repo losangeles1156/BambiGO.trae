@@ -1,5 +1,52 @@
 import { test, expect } from '@playwright/test';
 
+async function installMockEventSource(
+  page: any,
+  config: {
+    messages?: Array<{ type: string; content?: string }>
+    error?: boolean
+    delayMs?: number
+  }
+) {
+  await page.addInitScript(
+    ({ messages, error, delayMs }: { messages?: Array<{ type: string; content?: string }>; error?: boolean; delayMs?: number }) => {
+      class MockEventSource {
+        url: string
+        readyState: number
+        onmessage: ((event: any) => void) | null
+        onerror: ((event: any) => void) | null
+
+        constructor(url: string) {
+          this.url = url
+          this.readyState = 0
+          this.onmessage = null
+          this.onerror = null
+
+          const ms = typeof delayMs === 'number' ? delayMs : 10
+          setTimeout(() => {
+            if (error) {
+              this.readyState = 2
+              this.onerror?.(new Event('error'))
+              return
+            }
+
+            for (const msg of messages || []) {
+              this.onmessage?.({ data: JSON.stringify(msg) })
+            }
+          }, ms)
+        }
+
+        close() {
+          this.readyState = 2
+        }
+      }
+
+      ;(window as any).EventSource = MockEventSource
+    },
+    config
+  )
+}
+
 test.describe('AI Assistant E2E', () => {
   test.beforeEach(async ({ page }) => {
     page.on('console', msg => {
@@ -13,20 +60,13 @@ test.describe('AI Assistant E2E', () => {
     });
   });
   test('should open assistant, send quick question, and receive response', async ({ page }) => {
-    // 1. Mock the SSE endpoint
-    await page.route('/api/assistant*', async route => {
-      const responseBody = [
-        'data: {"type": "message", "content": "好的，"}',
-        'data: {"type": "message", "content": "我幫您查找回家的路線。"}',
-        'data: {"type": "done"}'
-      ].join('\n\n');
-
-      await route.fulfill({
-        status: 200,
-        contentType: 'text/event-stream',
-        body: responseBody
-      });
-    });
+    await installMockEventSource(page, {
+      messages: [
+        { type: 'message', content: '好的，' },
+        { type: 'message', content: '我幫您查找回家的路線。' },
+        { type: 'done' },
+      ],
+    })
 
     await page.goto('/');
 
@@ -36,11 +76,13 @@ test.describe('AI Assistant E2E', () => {
     await expect(fabButton).toBeVisible({ timeout: 10000 });
     await fabButton.click();
 
-    // 4. Verify Assistant Modal is Open
-    await expect(page.getByRole('heading', { name: '城市 AI 助理' })).toBeVisible();
-    await expect(page.getByText('你好！我是你的城市 AI 助理')).toBeVisible();
+    const dialog = page.getByRole('dialog', { name: 'AI Assistant' });
 
-    const homeButton = page.getByRole('button', { name: '我要回家' });
+    // 4. Verify Assistant Modal is Open
+    await expect(dialog.getByRole('heading', { level: 3, name: /AI (Guide|嚮導)|城市 AI 助理/ })).toBeVisible();
+    await expect(dialog.getByText(/How can I help you\?|有什麼我可以幫你的嗎？/)).toBeVisible();
+
+    const homeButton = dialog.getByRole('button', { name: /Home|我要回家/ });
     await expect(homeButton).toBeVisible();
     await homeButton.click();
 
@@ -54,17 +96,16 @@ test.describe('AI Assistant E2E', () => {
   });
 
   test('should handle network errors gracefully', async ({ page }) => {
-    // 1. Mock Error
-    await page.route('/api/assistant*', async route => {
-      await route.abort('failed');
-    });
+    await installMockEventSource(page, { error: true })
 
     await page.goto('/');
     await page.getByRole('button', { name: 'AI Assistant' }).click();
+
+    const dialog = page.getByRole('dialog', { name: 'AI Assistant' });
     
     // Send a message manually
-    await page.getByPlaceholder('你可以問我...').fill('Hello');
-    await page.getByRole('button', { name: 'Send Message' }).click();
+    await dialog.getByLabel('Assistant Input').fill('Hello');
+    await dialog.getByRole('button', { name: 'Send Message' }).click();
 
     // Wait for error message
     // In FullScreenAssistant.tsx: setError('連線中斷，請稍後重試') or '無法連接到 AI 服務'

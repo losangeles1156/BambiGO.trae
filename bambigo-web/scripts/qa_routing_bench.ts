@@ -1,4 +1,4 @@
-import { fetchWalkingRoute, DisasterZone } from '../src/lib/sop/engine';
+import { fetchWalkingRoute } from '../src/lib/sop/engine';
 
 /**
  * QA Test Suite for Routing
@@ -77,7 +77,7 @@ export async function runQABenchmark() {
           results.compromisedCount++;
         }
         return latency;
-      } catch (e) {
+      } catch {
         results.failed++;
         return 0;
       }

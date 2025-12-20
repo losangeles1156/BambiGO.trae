@@ -31,7 +31,7 @@ export const CATEGORY_CONFIG = {
 export default function FacilityProfile({ counts, vibeTags, showZero = false, className }: FacilityProfileProps) {
   // Sort categories by count, showing top 5 (or non-zero ones)
   const sortedCategories = Object.entries(counts)
-    .filter(([_, count]) => showZero || (count as number) > 0)
+    .filter((entry) => showZero || (entry[1] as number) > 0)
     .sort(([, a], [, b]) => (b as number) - (a as number))
     .slice(0, 5)
 

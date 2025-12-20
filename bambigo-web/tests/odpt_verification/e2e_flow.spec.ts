@@ -1,16 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { OdptClient } from '../../src/lib/odptClient'
 
-// Re-using types from data_transformation
-interface ODPTStation {
-  'owl:sameAs': string
-  'odpt:stationTitle': { en: string; ja: string }
-  'odpt:operator': string
-  'odpt:railway': string
-  'geo:lat': number
-  'geo:long': number
-}
-
 import os from 'os'
 import path from 'path'
 import fs from 'fs'

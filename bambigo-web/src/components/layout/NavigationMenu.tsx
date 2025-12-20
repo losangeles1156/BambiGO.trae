@@ -23,12 +23,6 @@ export default function NavigationMenu({ isOpen, onClose }: NavigationMenuProps)
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
   const [darkMode, setDarkMode] = useState(false); // In real app, use a theme context
 
-  // Toggle Theme Mock
-  const toggleTheme = () => {
-    setDarkMode(!darkMode);
-    // document.documentElement.classList.toggle('dark');
-  };
-
   const menuItems: MenuItem[] = [
     {
       id: 'settings',

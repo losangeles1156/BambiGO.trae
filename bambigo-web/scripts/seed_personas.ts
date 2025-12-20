@@ -17,6 +17,57 @@ interface Persona {
   system_prompt: string
 }
 
+type CategoryCounts = {
+  shopping: number
+  dining: number
+  medical: number
+  education: number
+  leisure: number
+  finance: number
+}
+
+function clampNumber(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value))
+}
+
+function normalizeCategoryCounts(value: unknown): CategoryCounts | null {
+  const v = (value ?? {}) as Record<string, unknown>
+  const keys: Array<keyof CategoryCounts> = ['shopping', 'dining', 'medical', 'education', 'leisure', 'finance']
+  const result: CategoryCounts = {
+    shopping: 0,
+    dining: 0,
+    medical: 0,
+    education: 0,
+    leisure: 0,
+    finance: 0
+  }
+
+  let hasAny = false
+  for (const k of keys) {
+    const n = Number(v[k])
+    if (Number.isFinite(n)) {
+      result[k] = n
+      if (n !== 0) hasAny = true
+    }
+  }
+  return hasAny ? result : null
+}
+
+function computeL1ComplexityBoost(counts: CategoryCounts | null): number {
+  if (!counts) return 0
+  const values = Object.values(counts)
+  const total = values.reduce((sum, n) => sum + n, 0)
+  const diversity = values.filter((n) => n >= 5).length
+  const boost = Math.round(Math.sqrt(total) * 2 + diversity * 2)
+  return clampNumber(boost, 0, 25)
+}
+
+function patchPromptComplexity(prompt: string, complexity: number): string {
+  return prompt
+    .replace(/Complexity Level:\s*\d+\/100\./g, `Complexity Level: ${complexity}/100.`)
+    .replace(/Complexity:\s*\d+\/100\./g, `Complexity: ${complexity}/100.`)
+}
+
 export async function seedPersonas(customClient?: Client) {
   if (!fs.existsSync(DATA_PATH)) {
     console.error(`❌ Persona file not found at ${DATA_PATH}`)
@@ -60,6 +111,19 @@ export async function seedPersonas(customClient?: Client) {
       }
     }
 
+    const shouldCheckProfiles = personas.length > 0
+    let hasFacilityProfiles = false
+    if (shouldCheckProfiles) {
+      try {
+        const tableCheck = await client.query(
+          `SELECT to_regclass('public.node_facility_profiles') AS regclass;`
+        )
+        hasFacilityProfiles = Boolean(tableCheck.rows?.[0]?.regclass)
+      } catch {
+        hasFacilityProfiles = false
+      }
+    }
+
     let updatedTotal = 0
     let skippedTotal = 0
 
@@ -71,12 +135,38 @@ export async function seedPersonas(customClient?: Client) {
       // We also update the metadata to include archetype and complexity.
       // Note: We use jsonb_set or || operator to merge metadata.
       
+      let adjustedComplexity = p.complexity_score
+      if (hasFacilityProfiles) {
+        try {
+          const profileRes = await client.query(
+            `
+              SELECT p.category_counts
+              FROM nodes n
+              LEFT JOIN node_facility_profiles p ON p.node_id = n.id
+              WHERE n.name->>'en' = $1
+              LIMIT 1;
+            `,
+            [p.name]
+          )
+          const counts = normalizeCategoryCounts(profileRes.rows?.[0]?.category_counts)
+          const boost = computeL1ComplexityBoost(counts)
+          adjustedComplexity = clampNumber(p.complexity_score + boost, 0, 100)
+        } catch {
+          adjustedComplexity = p.complexity_score
+        }
+      }
+
       const metadataPatch = {
         persona_archetype: p.archetype,
-        complexity_score: p.complexity_score,
+        complexity_score: adjustedComplexity,
         trap_warnings: p.trap_warnings,
         operators: p.operators
       }
+
+      const finalPrompt =
+        adjustedComplexity === p.complexity_score
+          ? p.system_prompt
+          : patchPromptComplexity(p.system_prompt, adjustedComplexity)
 
       const query = `
         UPDATE nodes 
@@ -90,7 +180,7 @@ export async function seedPersonas(customClient?: Client) {
       `
 
       const res = await client.query(query, [
-        p.system_prompt,
+        finalPrompt,
         JSON.stringify(metadataPatch),
         p.name
       ])

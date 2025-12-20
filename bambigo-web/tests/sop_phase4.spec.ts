@@ -10,6 +10,46 @@ describe('SOP Phase 4: Production Readiness & Obstacle Avoidance', () => {
       getItem: vi.fn().mockReturnValue(null),
       setItem: vi.fn(),
     })
+
+    const mockOSRM = {
+      code: 'Ok',
+      routes: [
+        {
+          distance: 100,
+          duration: 60,
+          geometry: {
+            type: 'LineString',
+            coordinates: [
+              [139.777, 35.713],
+              [139.78, 35.7095],
+              [139.783, 35.706]
+            ]
+          },
+          legs: [
+            {
+              steps: [
+                {
+                  distance: 10,
+                  duration: 5,
+                  maneuver: {
+                    instruction: 'start',
+                    type: 'depart',
+                    location: [139.777, 35.713]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        json: vi.fn().mockResolvedValue(mockOSRM)
+      }) as unknown as typeof fetch
+    )
   })
 
   describe('Route Caching Mechanism', () => {

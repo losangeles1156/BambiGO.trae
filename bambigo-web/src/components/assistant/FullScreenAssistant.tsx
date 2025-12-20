@@ -1,8 +1,9 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
-import { X, Send, Navigation, Bell, MessageSquare, ShieldCheck } from 'lucide-react'
+import { X, Send, Navigation, MessageSquare, ShieldCheck } from 'lucide-react'
 import { clsx } from 'clsx'
+import Image from 'next/image'
 import { useLanguage } from '../../contexts/LanguageContext'
 
 type Props = {
@@ -17,13 +18,6 @@ type Message = {
   timestamp: number
 }
 
-const QUICK_QUESTIONS = [
-  { id: 'trip_guard', label: '行程守護 (Line)', prompt: '我想要啟用行程守護功能，監控我下午從上野到羽田機場的路線。' },
-  { id: 'home', label: '我要回家', prompt: '我想回家，請告訴我最近的車站或交通方式' },
-  { id: 'shop', label: '我想逛街/吃飯', prompt: '這附近有什麼推薦的餐廳或逛街景點？' },
-  { id: 'access', label: '我需要無障礙路線', prompt: '我需要無障礙設施（電梯、坡道），請協助規劃路線' }
-]
-
 type TripGuardStatus = 'inactive' | 'active' | 'alert'
 
 export default function FullScreenAssistant({ open, onClose, nodeId }: Props) {
@@ -34,6 +28,7 @@ export default function FullScreenAssistant({ open, onClose, nodeId }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [showLinePrompt, setShowLinePrompt] = useState(false)
   const [tripGuardStatus, setTripGuardStatus] = useState<TripGuardStatus>('inactive')
+  const [showLineIcon, setShowLineIcon] = useState(true)
   
   const esRef = useRef<EventSource | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -173,7 +168,12 @@ export default function FullScreenAssistant({ open, onClose, nodeId }: Props) {
 
   return (
     <div className="fixed inset-0 z-[50] flex items-center justify-center bg-black/20 backdrop-blur-sm md:inset-auto md:bottom-24 md:right-6 md:h-[600px] md:w-[400px] md:bg-transparent md:backdrop-blur-none pointer-events-none">
-      <div className="pointer-events-auto flex h-full w-full flex-col bg-white shadow-2xl md:rounded-2xl overflow-hidden animate-in slide-in-from-bottom-10 fade-in duration-300">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="AI Assistant"
+        className="pointer-events-auto flex h-full w-full flex-col bg-white shadow-2xl md:rounded-2xl overflow-hidden animate-in slide-in-from-bottom-10 fade-in duration-300"
+      >
         
         {/* Header */}
         <div className="flex items-center justify-between border-b bg-white px-4 py-4 shadow-sm">
@@ -255,7 +255,17 @@ export default function FullScreenAssistant({ open, onClose, nodeId }: Props) {
                   {t('dashboard.tripGuardDesc')}
                 </p>
                 <button className="w-full bg-white text-green-600 font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-md">
-                  <img src="/line-icon.png" alt="LINE" className="w-4 h-4" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                  {showLineIcon && (
+                    <Image
+                      src="/line-icon.png"
+                      alt="LINE"
+                      width={16}
+                      height={16}
+                      className="w-4 h-4"
+                      onError={() => setShowLineIcon(false)}
+                      unoptimized
+                    />
+                  )}
                   立即加入 LINE 守護
                 </button>
               </div>
@@ -296,6 +306,7 @@ export default function FullScreenAssistant({ open, onClose, nodeId }: Props) {
                 onChange={(e) => setText(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder={t('common.inputPlaceholder')}
+                aria-label="Assistant Input"
                 className="w-full bg-gray-50 text-gray-900 text-sm rounded-2xl pl-4 pr-10 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/20 border border-gray-100 group-hover:border-gray-200 transition-all"
                 disabled={loading}
               />

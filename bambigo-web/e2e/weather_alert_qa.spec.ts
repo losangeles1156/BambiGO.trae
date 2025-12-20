@@ -94,9 +94,9 @@ test.describe('Weather Alert QA', () => {
   test('Responsive design - Mobile View', async ({ page }) => {
     // Set viewport to mobile
     await page.setViewportSize({ width: 375, height: 667 });
-    
-    // Reload to ensure layout adjusts
-    await page.reload();
+
+    await page.goto('/?nodeId=mock-ueno-station');
+    await page.waitForSelector('[data-testid="weather-alerts-section"]', { timeout: 15000 });
     
     const alert = page.locator('div[role="alert"]').first();
     await expect(alert).toBeVisible();

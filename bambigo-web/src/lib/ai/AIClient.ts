@@ -17,6 +17,7 @@ class AIClient {
   private url: string = process.env.NEXT_PUBLIC_AI_WS_URL || 'wss://api.bambigo.com/v1/ai/stream'
   private mockMode: boolean = !process.env.NEXT_PUBLIC_AI_WS_URL
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
+  private mockTimers: Array<ReturnType<typeof setTimeout>> = []
   private maxRetries: number = 5
   private retryCount: number = 0
 
@@ -33,22 +34,43 @@ class AIClient {
     return AIClient.instance
   }
 
+  private clearMockTimers() {
+    for (const t of this.mockTimers) clearTimeout(t)
+    this.mockTimers = []
+  }
+
+  private shouldAutoEmitMockCommands(): boolean {
+    const env = process.env.NEXT_PUBLIC_AI_MOCK_AUTO_COMMANDS
+    if (env === '1' || env === 'true') return true
+    if (typeof window === 'undefined') return false
+    try {
+      const params = new URLSearchParams(window.location.search)
+      const v = params.get('aiMockAuto')
+      return v === '1' || v === 'true'
+    } catch {
+      return false
+    }
+  }
+
   connect() {
     if (typeof window === 'undefined') return
     if (this.socket?.readyState === WebSocket.OPEN || this.socket?.readyState === WebSocket.CONNECTING) return
 
     if (this.mockMode) {
+      this.clearMockTimers()
       this.emit('status', 'connected')
-      // Simulate incoming command after connection
-      setTimeout(() => {
+      const t1 = setTimeout(() => {
         this.emit<AIMessage>('message', {
           role: 'assistant',
           content: '系統已連線。隨時準備導航。',
           timestamp: Date.now()
         })
-        
-        // Demo: Simulate AI triggering a route after 3 seconds
-        setTimeout(() => {
+      }, 800)
+
+      this.mockTimers.push(t1)
+
+      if (this.shouldAutoEmitMockCommands()) {
+        const t2 = setTimeout(() => {
           this.emit<AIMessage>('message', {
             role: 'assistant',
             content: '為您規劃前往東京塔的路線。',
@@ -65,8 +87,10 @@ class AIClient {
             },
             timestamp: Date.now()
           })
-        }, 3000)
-      }, 800)
+        }, 3800)
+        this.mockTimers.push(t2)
+      }
+
       return
     }
 
@@ -84,7 +108,7 @@ class AIClient {
         try {
           const data = JSON.parse(event.data)
           this.emit('message', data)
-        } catch (e) {
+        } catch {
           console.warn('[AIClient] Failed to parse message:', event.data)
         }
       }
@@ -117,6 +141,7 @@ class AIClient {
   }
 
   disconnect() {
+    this.clearMockTimers()
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)
       this.reconnectTimer = null

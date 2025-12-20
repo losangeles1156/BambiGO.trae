@@ -112,7 +112,7 @@ export default function Home() {
     ]
   }), [])
 
-  const handleReportHazard = () => {
+  const handleReportHazard = useCallback(() => {
     if (!mapCenter) return
     
     // Create a mock 100m x 100m hazard zone around map center
@@ -141,7 +141,7 @@ export default function Home() {
     if (mode === 'emergency') {
       // The triggerSOP effect will run due to disasterZones dependency change
     }
-  }
+  }, [mapCenter, mode, t])
 
   // AI Control Integration
   const handleAICommand = useCallback((cmd: AICommand) => {
@@ -302,7 +302,6 @@ export default function Home() {
 
   // Weather/Env Status
   useEffect(() => {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
     const base: { label: string; tone?: 'yellow' | 'blue' | 'red' | 'green' }[] = [
       { label: `${t('common.version')}：v1.2.0`, tone: 'blue' },
     ]
@@ -336,7 +335,7 @@ export default function Home() {
     } else {
       updateWithWeather(fallback[1], fallback[0])
     }
-  }, [lastCoords, mapCenter])
+  }, [lastCoords, mapCenter, t])
 
   // -- Handlers --
 
@@ -481,7 +480,7 @@ export default function Home() {
     }
 
     return common
-  }, [view])
+  }, [view, handleReportHazard, t])
 
   const secondaryFabActions = useMemo(() => [
     {
@@ -535,7 +534,7 @@ export default function Home() {
       <Header 
         breadcrumbs={breadcrumbs} 
         onMenuClick={() => setIsMenuOpen(true)} 
-        locationName={nodeName[locale as 'ja'|'en'|'zh'] || nodeName.zh}
+        locationName={currentLocationName}
       />
       
       <NavigationMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />

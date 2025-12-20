@@ -41,7 +41,7 @@ function saveToCache(key: string, data: FeatureCollection) {
     const existing = JSON.parse(localStorage.getItem(ROUTE_CACHE_KEY) || '{}');
     existing[key] = entry;
     localStorage.setItem(ROUTE_CACHE_KEY, JSON.stringify(existing));
-  } catch (e) {
+  } catch {
     // Ignore storage errors (e.g. quota exceeded)
   }
 }
@@ -64,7 +64,7 @@ function getFromCache(key: string): FeatureCollection | null {
       memoryCache.set(key, entry);
       return entry.data;
     }
-  } catch (e) {}
+  } catch {}
 
   return null;
 }

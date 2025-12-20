@@ -1,10 +1,8 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { Menu, Search, User, Sparkles, ChevronDown, Globe, ChevronRight, Home } from 'lucide-react';
+import { Menu, Search, User, Sparkles, ChevronDown, ChevronRight, Home } from 'lucide-react';
 import Link from 'next/link';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { Locale } from '../../i18n/dictionary';
 import { LanguageSelector } from './LanguageSelector';
 
 export interface BreadcrumbItem {
@@ -21,8 +19,7 @@ interface HeaderProps {
 }
 
 export default function Header({ onMenuClick, breadcrumbs = [], locationName }: HeaderProps) {
-  const [elderlyMode] = useState(false);
-  const { locale, setLocale, t } = useLanguage();
+  const { t } = useLanguage();
 
   return (
     <header className="ui-header">

@@ -2,7 +2,6 @@
 
 import React from 'react'
 import { clsx } from 'clsx'
-import { Colors } from '../../lib/designTokens'
 
 export type StatusSeverity = 'info' | 'warning' | 'error' | 'success'
 

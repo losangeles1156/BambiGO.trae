@@ -1,7 +1,7 @@
 'use client'
 import { getLocalizedName } from '../../../lib/utils/i18n'
 import TagChip from '../ui/TagChip'
-import { Building2, Activity, Coffee, Sparkles, MapPin, Users, Train, Store, Briefcase, Info, Quote, ChevronRight } from 'lucide-react'
+import { Building2, Activity, MapPin, Train, Store, Briefcase, Info, Quote, ChevronRight } from 'lucide-react'
 import { clsx } from 'clsx'
 import FacilityProfile, { CategoryCounts } from '../node/FacilityProfile'
 import StatusPill from '../ui/StatusPill'
@@ -10,7 +10,6 @@ import { useLanguage } from '../../contexts/LanguageContext'
 import { CloudRain, AlertTriangle, Zap } from 'lucide-react'
 
 type Name = { ja?: string; en?: string; zh?: string }
-type Tag = { label: string; tone?: 'purple' | 'yellow' | 'gray' | 'blue' | 'green' | 'red' }
 
 interface Facility {
   id: string

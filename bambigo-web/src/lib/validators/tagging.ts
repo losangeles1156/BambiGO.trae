@@ -8,7 +8,21 @@ export const LocalizedStringSchema = z.object({
 })
 
 // --- L1 ---
-export const L1CategorySchema = z.enum(['medical', 'shopping', 'dining', 'leisure', 'education', 'finance'])
+export const L1CategorySchema = z.enum([
+  'dining',
+  'shopping',
+  'medical',
+  'leisure',
+  'education',
+  'finance',
+  'accommodation',
+  'business',
+  'religion',
+  'public',
+  'transport',
+  'nature',
+  'residential'
+])
 
 export const L1TagSchema = z.object({
   id: z.string(),
@@ -52,7 +66,17 @@ export const L2LiveStatusSchema = z.object({
 })
 
 // --- L3 ---
-export const L3CategorySchema = z.enum(['toilet', 'charging', 'wifi', 'locker', 'accessibility', 'rest_area', 'other'])
+export const L3CategorySchema = z.enum([
+  'toilet',
+  'charging',
+  'wifi',
+  'locker',
+  'accessibility',
+  'rest_area',
+  'shelter',
+  'medical_aid',
+  'other'
+])
 
 export const L3ProviderTypeSchema = z.enum(['public', 'station', 'shop'])
 
@@ -82,7 +106,7 @@ export const L3ServiceFacilitySchema = z.object({
 })
 
 // --- L4 ---
-export const L4CardTypeSchema = z.enum(['primary', 'secondary'])
+export const L4CardTypeSchema = z.enum(['primary', 'secondary', 'alert'])
 
 export const L4ActionCardSchema = z.object({
   type: L4CardTypeSchema,

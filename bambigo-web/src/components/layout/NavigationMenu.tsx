@@ -213,6 +213,6 @@ export default function NavigationMenu({ isOpen, onClose }: NavigationMenuProps)
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

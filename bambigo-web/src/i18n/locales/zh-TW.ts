@@ -92,6 +92,13 @@ export const zhTW: Dictionary = {
     evacuate: '避難',
     reportHazard: '通報危險'
   },
+  shelters: {
+    emergency: '緊急避難所',
+    tsunami: '海嘯避難大樓',
+    flood: '洪水避難所',
+    fire: '廣域避難場所',
+    medical: '救護站'
+  },
   navigation: {
     title: '路徑導航',
     next: '下一步',

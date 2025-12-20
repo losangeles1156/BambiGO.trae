@@ -92,6 +92,13 @@ export const en: Dictionary = {
     evacuate: 'Evacuate',
     reportHazard: 'Report Hazard'
   },
+  shelters: {
+    emergency: 'Emergency Shelter',
+    tsunami: 'Tsunami Evacuation Building',
+    flood: 'Flood Shelter',
+    fire: 'Wide-area Evacuation Site',
+    medical: 'First Aid Station'
+  },
   navigation: {
     title: 'Route Navigation',
     next: 'Next',

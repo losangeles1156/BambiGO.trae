@@ -1,0 +1,6 @@
+{
+  "rootDirectory": "bambigo-web",
+  "buildCommand": "next build",
+  "installCommand": "npm install",
+  "framework": "nextjs"
+}

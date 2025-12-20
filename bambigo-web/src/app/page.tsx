@@ -635,7 +635,7 @@ export default function Home() {
       {view === 'task' && (
         <div className="absolute inset-0 z-50 bg-white/10 backdrop-blur-[2px] pointer-events-auto overflow-hidden animate-in fade-in duration-300">
           <TaskMode 
-            destination={typeof nodeName === 'string' ? nodeName : nodeName[locale === 'zh-TW' ? 'zh' : (locale as 'ja' | 'en' | 'zh')] || nodeName.zh} 
+            destination={(typeof nodeName === 'string' ? nodeName : nodeName[locale === 'zh-TW' ? 'zh' : (locale as 'ja' | 'en' | 'zh')] || nodeName.zh) || null} 
             onExit={() => {
               setView('explore')
               setRoute(null)

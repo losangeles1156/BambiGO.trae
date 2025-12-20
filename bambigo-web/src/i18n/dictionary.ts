@@ -96,6 +96,13 @@ export type Dictionary = {
     evacuate: string
     reportHazard: string
   }
+  shelters: {
+    emergency: string
+    tsunami: string
+    flood: string
+    fire: string
+    medical: string
+  }
   navigation: {
     title: string
     next: string
@@ -136,17 +143,6 @@ export type Dictionary = {
       earthquake: string
       other: string
     }
-  }
-  navigation: {
-    title: string
-    distance: string
-    duration: string
-    nearest: string
-    calculating: string
-    walking: string
-    safety: string
-    fastest: string
-    tripGuard: string
   }
 }
 

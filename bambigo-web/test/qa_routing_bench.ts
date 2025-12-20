@@ -71,7 +71,7 @@ export async function runQABenchmark() {
         const route = await fetchWalkingRoute(c.start, c.end, { useCache: false });
         const latency = Date.now() - start;
         results.success++;
-        if (route.features[0].properties.safety_status === 'safe') {
+        if (route && route.features?.[0]?.properties?.safety_status === 'safe') {
           results.safetyCheckPassed++;
         } else {
           results.compromisedCount++;

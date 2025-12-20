@@ -92,6 +92,13 @@ export const ja: Dictionary = {
     evacuate: '避難する',
     reportHazard: '危険を通報'
   },
+  shelters: {
+    emergency: '指定緊急避難場所',
+    tsunami: '津波避難ビル',
+    flood: '洪水避難場所',
+    fire: '広域避難場所',
+    medical: '救護所'
+  },
   navigation: {
     title: 'ルート案内',
     next: '次へ',
@@ -132,16 +139,5 @@ export const ja: Dictionary = {
       earthquake: '地震',
       other: 'その他'
     }
-  },
-  navigation: {
-    title: 'ルート案内',
-    distance: '距離',
-    duration: '予定時間',
-    nearest: '最寄りの',
-    calculating: 'ルート計算中...',
-    walking: '徒歩',
-    safety: '安全優先',
-    fastest: '最短ルート',
-    tripGuard: 'トリップガード'
   }
 }

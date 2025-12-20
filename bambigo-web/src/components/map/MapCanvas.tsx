@@ -38,13 +38,18 @@ interface MapCanvasProps {
   triggerGeolocate?: number // Incremental value to trigger geolocate
 }
 
+const MAP_STYLES = [
+  'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
+  'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+  'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
+]
+
 const MapCanvas = ({
   height,
   showBus,
   zone,
   center,
   route,
-  accessibility,
   showPopup,
   onNodeSelected,
   onLocationError,
@@ -54,7 +59,7 @@ const MapCanvas = ({
   triggerGeolocate = 0,
 }: MapCanvasProps) => {
   const mapContainer = useRef<HTMLDivElement>(null)
-  const map = useRef<any>(null)
+  const map = useRef<maplibregl.Map | null>(null)
   const markers = useRef<maplibregl.Marker[]>([])
   const onNodeSelectedRef = useRef(onNodeSelected)
   const geolocateControl = useRef<maplibregl.GeolocateControl | null>(null)
@@ -72,19 +77,11 @@ const MapCanvas = ({
     }
   }, [triggerGeolocate])
 
-  // Map Styles Configuration
-  const MAP_STYLES = [
-    'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
-    'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
-    'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
-  ]
-
   // Initialize Map
   useEffect(() => {
     if (map.current || !mapContainer.current) return
 
     const initialCenter: [number, number] = center || [139.7774, 35.7141] // Ueno Station
-    let styleIndex = 0
 
     const initMap = (sIndex: number) => {
       if (!mapContainer.current) return
@@ -99,7 +96,7 @@ const MapCanvas = ({
         attributionControl: false,
       })
 
-      map.current!.on('error', (e: any) => {
+      map.current!.on('error', (e: { error?: { message?: string; status?: number } }) => {
         // Catch tile loading errors or style errors
         if (e.error?.message?.includes('tile') || e.error?.status === 404) {
           console.warn(`Map Tile error detected on style ${sIndex}:`, e.error)
@@ -138,7 +135,7 @@ const MapCanvas = ({
 
     const UENO_STATION_COORDS: [number, number] = [139.7774, 35.7141]
 
-    geolocate.on('geolocate', (position: any) => {
+    geolocate.on('geolocate', (position: GeolocationPosition) => {
       const userCoords: [number, number] = [position.coords.longitude, position.coords.latitude]
       
       // Calculate distances to all nodes
@@ -167,7 +164,7 @@ const MapCanvas = ({
           }
 
           // Optionally select Ueno station if it exists in nodes
-          const ueno = nodes.features.find(f => f.id === 'ueno-station' || (f.properties as any).id === 'ueno-station')
+          const ueno = nodes.features.find(f => f.id === 'ueno-station' || (f.properties as Record<string, unknown>)?.id === 'ueno-station')
           if (ueno && onNodeSelectedRef.current) {
             onNodeSelectedRef.current(ueno)
           }
@@ -223,13 +220,13 @@ const MapCanvas = ({
     })
 
     // Click Handler
-    map.current!.on('click', (e: any) => {
+    map.current!.on('click', (e: maplibregl.MapMouseEvent) => {
       if (!onNodeSelectedRef.current) return
       
       const features = map.current?.queryRenderedFeatures(e.point)
       
       if (features && features.length > 0) {
-        const poi = features.find((f: any) => f.source === 'openmaptiles' && (f.layer.id.includes('poi') || f.layer.id.includes('station')))
+        const poi = features.find((f: maplibregl.MapGeoJSONFeature) => f.source === 'openmaptiles' && (f.layer.id.includes('poi') || f.layer.id.includes('station')))
         
         if (poi) {
            const name = poi.properties?.name || poi.properties?.name_en
@@ -255,19 +252,21 @@ const MapCanvas = ({
       map.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [loaded, locale])
 
   // Handle Bus Layer Visibility
   useEffect(() => {
     if (!map.current || !loaded) return
     
-    const layers = map.current.getStyle().layers
-    const transportLayers = layers.filter((l: any) => 
+    const style = map.current.getStyle()
+    if (!style || !style.layers) return
+    
+    const transportLayers = style.layers.filter((l: maplibregl.LayerSpecification) => 
       l.id.includes('transport') || l.id.includes('bus') || l.id.includes('transit')
     )
     
-    transportLayers.forEach((l: any) => {
-      map.current.setLayoutProperty(l.id, 'visibility', showBus ? 'visible' : 'none')
+    transportLayers.forEach((l: maplibregl.LayerSpecification) => {
+      map.current?.setLayoutProperty(l.id, 'visibility', showBus ? 'visible' : 'none')
     })
   }, [showBus, loaded])
 
@@ -305,10 +304,10 @@ const MapCanvas = ({
           const iconEl = document.createElement('div')
           iconEl.className = 'w-6 h-6 rounded-full bg-blue-600 border-2 border-white shadow-md cursor-pointer hover:scale-110 transition-transform flex items-center justify-center text-white text-[10px] font-bold'
           iconEl.innerHTML = 'B'
-          iconEl.setAttribute('data-testid', `marker-${feature.id || (feature.properties as any)?.id}`)
+          iconEl.setAttribute('data-testid', `marker-${feature.id || (feature.properties as Record<string, unknown>)?.id}`)
           
           const labelEl = document.createElement('div')
-          const nameObj = (feature.properties as any)?.name || {}
+          const nameObj = (feature.properties as Record<string, Record<string, string>>)?.name || {}
           const langCode = locale.split('-')[0] // handle zh-TW -> zh
           const nm = nameObj[langCode] || nameObj['zh'] || nameObj['en'] || nameObj['ja'] || 'Node'
           
@@ -341,7 +340,7 @@ const MapCanvas = ({
         }
       })
     }
-  }, [nodes, loaded, showPopup])
+  }, [nodes, loaded, showPopup, locale])
 
   // Handle Route Updates
   useEffect(() => {

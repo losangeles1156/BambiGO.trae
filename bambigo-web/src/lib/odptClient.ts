@@ -107,7 +107,7 @@ export class OdptClient {
           }
           // Non-retryable HTTP error
           const err = new Error(`ODPT HTTP ${res.status}`)
-          ;(err as any).status = res.status
+          Object.assign(err, { status: res.status })
           throw err
         }
         let data: unknown
@@ -130,7 +130,7 @@ export class OdptClient {
         return data
       } catch (e: unknown) {
         // If it's a non-retryable ODPT HTTP error, throw it immediately
-        if (e instanceof Error && (e as any).status && !([429, 503].includes((e as any).status))) {
+        if (e instanceof Error && 'status' in e && !([429, 503].includes((e as { status: number }).status))) {
           throw e
         }
 

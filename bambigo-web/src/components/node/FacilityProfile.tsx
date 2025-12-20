@@ -42,8 +42,9 @@ export default function FacilityProfile({ counts, vibeTags, showZero = false, cl
           <div 
             key={category} 
             className="inline-flex items-center gap-1 px-2 py-1 bg-gray-50 rounded-lg border border-gray-100 shadow-sm"
+            aria-label={`${CATEGORY_CONFIG[category as keyof typeof CATEGORY_CONFIG].label}: ${count}`}
           >
-            <span className="text-sm">{CATEGORY_CONFIG[category as keyof typeof CATEGORY_CONFIG].icon}</span>
+            <span className="text-sm" aria-hidden="true">{CATEGORY_CONFIG[category as keyof typeof CATEGORY_CONFIG].icon}</span>
             <span className="text-xs font-bold text-gray-700">{count as number}</span>
           </div>
         ))}

@@ -1,9 +1,10 @@
 'use client'
 import { getLocalizedName } from '../../../lib/utils/i18n'
 import TagChip from '../ui/TagChip'
-import { Building2, Activity, Coffee, Sparkles, MapPin, Users, Train, Store, Briefcase, Info, Quote } from 'lucide-react'
+import { Building2, Activity, Coffee, Sparkles, MapPin, Users, Train, Store, Briefcase, Info, Quote, ChevronRight } from 'lucide-react'
 import { clsx } from 'clsx'
 import FacilityProfile, { CategoryCounts } from '../node/FacilityProfile'
+import StatusPill from '../ui/StatusPill'
 
 type Name = { ja?: string; en?: string; zh?: string }
 type Tag = { label: string; tone?: 'purple' | 'yellow' | 'gray' | 'blue' | 'green' | 'red' }
@@ -12,7 +13,7 @@ interface Facility {
   id: string
   name: string
   type: 'shop' | 'office' | 'service'
-  icon: any
+  icon: React.ReactNode
 }
 
 interface TrafficStatus {
@@ -26,10 +27,6 @@ type Props = {
   name: Name
   zone?: 'core' | 'buffer' | 'outer'
   l1Summary?: string
-  l1Tags?: Tag[]
-  l2Status?: Tag[]
-  l3Context?: Tag[]
-  l4Timeline?: Tag[]
   facilities?: Facility[]
   traffic?: TrafficStatus[]
   crowdLevel?: 'low' | 'medium' | 'high'
@@ -43,10 +40,6 @@ export default function NodeDetailCard({
   name, 
   zone = 'core',
   l1Summary = '', 
-  l1Tags = [], 
-  l2Status = [], 
-  l3Context = [], 
-  l4Timeline = [],
   facilities = [],
   traffic = [],
   crowdLevel = 'medium',
@@ -141,21 +134,19 @@ export default function NodeDetailCard({
             </div>
             <div className="grid grid-cols-1 gap-2">
               {traffic.map((t, i) => (
-                <div key={i} className="flex items-center justify-between p-3 bg-gray-50/50 rounded-xl border border-gray-100/50">
+                <div key={i} className="flex items-center justify-between p-3 bg-gray-50/50 rounded-xl border border-gray-100/50" role="status" aria-label={`${t.line}: ${t.status}`}>
                   <div className="flex items-center gap-3">
                     <div className={clsx(
                       "w-2 h-2 rounded-full",
                       t.tone === 'green' ? "bg-green-500" : t.tone === 'yellow' ? "bg-yellow-500" : "bg-red-500"
-                    )} />
+                    )} aria-hidden="true" />
                     <span className="font-bold text-sm text-gray-700">{t.line}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={clsx(
-                      "text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider",
-                      t.tone === 'green' ? "bg-green-100 text-green-700" : t.tone === 'yellow' ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"
-                    )}>
-                      {t.status}
-                    </span>
+                    <StatusPill 
+                      text={t.status} 
+                      severity={t.tone === 'green' ? 'success' : t.tone === 'yellow' ? 'warning' : 'error'} 
+                    />
                     {t.delay && <span className="text-[10px] text-gray-400 font-bold">+{t.delay}m</span>}
                   </div>
                 </div>
@@ -176,9 +167,7 @@ export default function NodeDetailCard({
                 <div className="text-2xl font-black text-orange-600 uppercase tracking-tighter">
                   {crowdLevel === 'low' ? '舒適' : crowdLevel === 'medium' ? '適中' : '擁擠'}
                 </div>
-                <div className="text-[10px] text-orange-700 bg-white/50 px-2 py-1 rounded font-bold border border-orange-100">
-                  基於歷史數據
-                </div>
+                <StatusPill text="歷史數據" severity="info" className="bg-white/50 border-orange-100" />
               </div>
               <div className="relative z-10 flex flex-col items-end">
                 <span className="text-[10px] text-orange-400 uppercase font-black tracking-widest mb-0.5">趨勢</span>
@@ -226,5 +215,3 @@ export default function NodeDetailCard({
     </div>
   )
 }
-
-import { ChevronRight } from 'lucide-react'

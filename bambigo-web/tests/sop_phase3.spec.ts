@@ -1,8 +1,12 @@
-import { describe, it, expect, vi } from 'vitest'
-import { fetchWalkingRoute } from '../src/lib/sop/engine'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { fetchWalkingRoute, clearRouteCache } from '../src/lib/sop/engine'
 import { dictionary } from '../src/i18n/dictionary'
 
 describe('SOP Phase 3: Quality Assurance', () => {
+  
+  beforeEach(() => {
+    clearRouteCache()
+  })
   
   describe('Navigation Accuracy & Reliability', () => {
     it('should fetch a real walking route from OSRM', async () => {

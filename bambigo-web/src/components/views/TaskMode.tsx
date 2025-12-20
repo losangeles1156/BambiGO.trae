@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import NavigationCard, { NavigationStep } from '../features/navigation/NavigationCard'
-import { CheckCircle2, Shield, AlertTriangle, XCircle } from 'lucide-react'
+import { CheckCircle2, Shield } from 'lucide-react'
 import { useLanguage } from '../../contexts/LanguageContext'
 
 type Props = { 
@@ -12,7 +12,7 @@ type Props = {
 }
 
 // Mock Data Generation
-const generateRoute = (dest: string, t: any): NavigationStep[] => [
+const generateRoute = (dest: string, t: (key: string) => string): NavigationStep[] => [
   { id: '1', type: 'start', instruction: t('header.langLabel') === '日' ? '北に進み、中央通りへ' : '往北走，前往中央通', distance: 50, secondaryText: `${t('common.start')}：${t('header.defaultLocation')}` },
   { id: '2', type: 'straight', instruction: t('header.langLabel') === '日' ? '中央通りを直進' : '沿著中央通直行', distance: 300 },
   { id: '3', type: 'turn-left', instruction: t('header.langLabel') === '日' ? '左折して雷門通りへ' : '左轉進入雷門通り', distance: 150, secondaryText: `${t('common.landmark')}：FamilyMart` },
@@ -31,12 +31,10 @@ export default function TaskMode({ destination, onExit, steps }: Props) {
 
   // Simulate progress
   useEffect(() => {
-    // Reset progress on step change
-    setProgress(0)
-    
     if (currentStepIndex >= route.length - 1) {
-      setProgress(100)
-      return
+      // Use microtask or timeout to avoid synchronous setState warning
+      const t = setTimeout(() => setProgress(100), 0)
+      return () => clearTimeout(t)
     }
     
     const timer = setInterval(() => {

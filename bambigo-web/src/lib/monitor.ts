@@ -20,7 +20,7 @@ export interface LogEntry {
   status?: number
   duration_ms?: number
   ip?: string
-  error?: any
+  error?: unknown
   metadata?: Record<string, unknown>
 }
 

@@ -7,15 +7,16 @@ export interface AIMessage {
   timestamp: number
 }
 
-type AIEventHandler<T = any> = (event: string, data: T) => void
+type AIEventHandler<T = unknown> = (event: string, data: T) => void
 
 class AIClient {
   private static instance: AIClient
   private socket: WebSocket | null = null
-  private listeners: Map<string, Set<AIEventHandler>> = new Map()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private listeners: Map<string, Set<AIEventHandler<any>>> = new Map()
   private url: string = process.env.NEXT_PUBLIC_AI_WS_URL || 'wss://api.bambigo.com/v1/ai/stream'
   private mockMode: boolean = !process.env.NEXT_PUBLIC_AI_WS_URL
-  private reconnectTimer: any = null
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null
   private maxRetries: number = 5
   private retryCount: number = 0
 
@@ -158,19 +159,21 @@ class AIClient {
     }
   }
 
-  on<T = any>(event: string, handler: AIEventHandler<T>) {
+  on<T = unknown>(event: string, handler: AIEventHandler<T>) {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, new Set())
     }
-    this.listeners.get(event)!.add(handler as AIEventHandler)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    this.listeners.get(event)!.add(handler as AIEventHandler<any>)
     return () => this.off(event, handler)
   }
 
-  off<T = any>(event: string, handler: AIEventHandler<T>) {
-    this.listeners.get(event)?.delete(handler as AIEventHandler)
+  off<T = unknown>(event: string, handler: AIEventHandler<T>) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    this.listeners.get(event)?.delete(handler as AIEventHandler<any>)
   }
 
-  private emit<T = any>(event: string, data: T) {
+  private emit<T = unknown>(event: string, data: T) {
     this.listeners.get(event)?.forEach(handler => handler(event, data))
   }
 }

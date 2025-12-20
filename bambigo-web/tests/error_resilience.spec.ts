@@ -1,7 +1,6 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { GET as NodesGET } from '../src/app/api/nodes/route'
 import { GET as LiveGET } from '../src/app/api/live/route'
-import { GET as FacilitiesGET } from '../src/app/api/facilities/route'
 import { GET as AggregatorGET } from '../src/app/api/nodes/live/facilities/route'
 
 describe('Error Resilience & Boundary Tests', () => {
@@ -17,7 +16,7 @@ describe('Error Resilience & Boundary Tests', () => {
     // The current implementation returns default mock data or 400 depending on validation
     // Let's check if it returns 400 for invalid bbox
     expect(res.status).toBe(400)
-    const json = await res.json()
+    const json = (await res.json()) as { error: { code: string } }
     expect(json.error.code).toBe('INVALID_PARAMETER')
   })
 
@@ -36,7 +35,7 @@ describe('Error Resilience & Boundary Tests', () => {
     // If DB is actually down in test env, it should return 200 with warning
     if (res.headers.get('X-API-Warn') === 'DB_UNAVAILABLE') {
       expect(res.status).toBe(200)
-      const json = await res.json()
+      const json = (await res.json()) as { transit: { status: string } }
       expect(json.transit.status).toBe('unknown')
     }
   })
@@ -46,7 +45,7 @@ describe('Error Resilience & Boundary Tests', () => {
     const req = new Request('http://localhost/api/nodes/live/facilities?node_id=test-node')
     const res = await AggregatorGET(req)
     expect(res.status).toBe(200)
-    const json = await res.json()
+    const json = (await res.json()) as { nodes: unknown; live: unknown; facilities: unknown }
     expect(json).toHaveProperty('nodes')
     expect(json).toHaveProperty('live')
     expect(json).toHaveProperty('facilities')

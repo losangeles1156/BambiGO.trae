@@ -31,12 +31,12 @@ describe('assistant route', () => {
     expect(res.status).toBe(400)
     expect(res.headers.get('Content-Type')).toContain('application/json')
   })
-  it('returns 500 when no valid provider configured', async () => {
+  it('returns 501 when no valid provider configured', async () => {
     process.env.AI_PROVIDER = 'mock' // 'mock' is no longer supported
     const req = new Request('http://localhost/api/assistant?q=hello', { headers: { 'x-real-ip': '1.2.3.4' } })
     const res = await GET(req)
-    expect(res.status).toBe(500)
-    expect(await res.json()).toEqual({ error: { code: 'CONFIG_ERROR', message: 'No valid AI provider configured' } })
+    expect(res.status).toBe(501)
+    expect(await res.json()).toEqual({ error: { code: 'NOT_IMPLEMENTED', message: 'No AI provider configured (mock)' } })
   })
   it('rate limits when exceeded', async () => {
     process.env.ASSISTANT_RATE_LIMIT = '1,1'

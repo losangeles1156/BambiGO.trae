@@ -47,7 +47,13 @@ async function runVerification() {
   }
 }
 
-function generateReport(results: any, error?: string) {
+interface TestResults {
+  connection: { status: string; duration: number };
+  transformation: { status: string; duration: number };
+  e2e: { status: string; duration: number };
+}
+
+function generateReport(results: TestResults, error?: string) {
   const reportPath = path.join(process.cwd(), 'docs', 'ODPT_VERIFICATION_REPORT.md')
   const reportContent = `
 # ODPT Integration Verification Report

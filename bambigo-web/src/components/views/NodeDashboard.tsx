@@ -1,32 +1,33 @@
 'use client'
 import { useEffect, useRef, useState, useMemo } from 'react'
-import { Heart, Edit2 } from 'lucide-react'
+import { Edit2, MessageSquare, ChevronRight, Bell, ShieldCheck } from 'lucide-react'
 import ActionCarousel from '../cards/ActionCarousel'
-import Chip from '../ui/Chip'
 import FacilityList from '../lists/FacilityList'
 import NodeFacilityManager from './NodeFacilityManager'
-import NodeL1Manager from './NodeL1Manager'
 import { useAuth } from '../auth/AuthContext'
 import { derivePersonaFromFacilities } from '../../lib/tagging'
 import { supabase } from '../../lib/supabase'
 import { L1_CATEGORIES_DATA } from '../tagging/constants'
-import { L3ServiceFacility, L4ActionCard, L4CardType } from '../../types/tagging'
+import { L3ServiceFacility, L4ActionCard } from '../../types/tagging'
 import { adaptFacilityItem } from '../../lib/adapters/facilities'
 import { FacilityItem } from '../../app/api/facilities/route'
-import TagChip from '../ui/TagChip'
-import { Users, Info, Bell, MessageSquare, ChevronRight, ExternalLink, ShieldCheck } from 'lucide-react'
 import NodeDetailCard from '../cards/NodeDetailCard'
 
 type Name = { ja?: string; en?: string; zh?: string }
 type Status = { label: string; tone?: 'yellow' | 'blue' | 'red' | 'green' }
+interface Station {
+  id: string;
+  name: string;
+  bikes_available: number;
+  docks_available: number;
+}
 type Props = { nodeId?: string; name: Name; statuses: Status[]; actions: string[]; onAction: (a: string) => void; onRouteHint?: (hint: string) => void; filterSuitability?: { tag?: string; minConfidence?: number } }
 
 import { useLanguage } from '../../contexts/LanguageContext'
 
-export default function NodeDashboard({ nodeId, name, statuses, actions, onAction, onRouteHint, filterSuitability }: Props) {
+export default function NodeDashboard({ nodeId, name, statuses, onAction, onRouteHint, filterSuitability }: Props) {
   const { t } = useLanguage()
   const { user, session } = useAuth()
-  const [isFavorite, setIsFavorite] = useState(false)
   const [text, setText] = useState('')
   const [msgs, setMsgs] = useState<{ role: 'user' | 'ai'; content: string }[]>([])
   const abortRef = useRef<AbortController | null>(null)
@@ -35,10 +36,13 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
   const [facilities, setFacilities] = useState<L3ServiceFacility[]>([])
   const [stations, setStations] = useState<{ id: string; name: string; bikes_available: number; docks_available: number }[]>([])
   const [nodeType, setNodeType] = useState<string>('')
+  const [nodeZone, setNodeZone] = useState<'core' | 'buffer' | 'outer'>('core')
   const [transitStatus, setTransitStatus] = useState<string | undefined>(undefined)
   const [isEditingFacilities, setIsEditingFacilities] = useState(false)
   const [isLineBound, setIsLineBound] = useState(false)
   const [isTripGuardActive, setIsTripGuardActive] = useState(false)
+  const [facilityCounts, setFacilityCounts] = useState<Record<string, number> | null>(null)
+  const [vibeTags, setVibeTags] = useState<string[]>([])
 
   // Derive Persona when dependencies change
   const persona = useMemo(() => {
@@ -78,10 +82,22 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
       setLoading(true)
 
       try {
-        // 1. Fetch Node Type
+        // 1. Fetch Node Type & L1 Profile
         if (!nodeId.startsWith('mock-')) {
-          const { data } = await supabase.from('nodes').select('type').eq('id', nodeId).single()
-          if (!ignore && data?.type) setNodeType(data.type)
+          const { data: nodeData } = await supabase.from('nodes').select('type, zone').eq('id', nodeId).single()
+          if (!ignore && nodeData?.type) setNodeType(nodeData.type)
+          if (!ignore && nodeData?.zone) setNodeZone(nodeData.zone as 'core' | 'buffer' | 'outer')
+
+          const { data: profileData } = await supabase
+            .from('node_facility_profiles')
+            .select('category_counts, vibe_tags')
+            .eq('node_id', nodeId)
+            .single()
+          
+          if (!ignore && profileData) {
+            setFacilityCounts(profileData.category_counts)
+            setVibeTags(profileData.vibe_tags || [])
+          }
         } else {
           if (!ignore) setNodeType('station')
         }
@@ -97,7 +113,7 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
         const j = await r.json()
         const rawItems = Array.isArray(j?.facilities?.items) ? (j.facilities?.items as FacilityItem[]) : []
         const adaptedItems = rawItems.map(adaptFacilityItem)
-        const sts = Array.isArray(j?.live?.mobility?.stations) ? (j.live?.mobility?.stations as any[]) : []
+        const sts = Array.isArray(j?.live?.mobility?.stations) ? (j.live?.mobility?.stations as Station[]) : []
         const tStatus = j?.live?.transit?.status
         const delay = j?.live?.transit?.delay_minutes
 
@@ -168,21 +184,7 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
       ignore = true
       controller.abort()
     }
-  }, [nodeId, filterSuitability?.tag, filterSuitability?.minConfidence, persona])
-
-  // Check Favorite Status separately
-  useEffect(() => {
-    if (!user || !nodeId) {
-      setIsFavorite(false)
-      return
-    }
-    supabase
-      .from('saved_locations')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .eq('node_id', nodeId)
-      .then(({ count }) => setIsFavorite((count || 0) > 0))
-  }, [user, nodeId])
+  }, [nodeId, filterSuitability?.tag, filterSuitability?.minConfidence, persona, t])
 
   const getL1Breadcrumb = () => {
     if (!nodeType) return null
@@ -192,38 +194,6 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
     return { label: nodeType, icon: '📍' }
   }
   const l1Info = getL1Breadcrumb()
-
-  const toggleFavorite = async () => {
-    if (!user) {
-      // TODO: Show login modal or toast
-      alert(t('dashboard.loginRequired'))
-      return
-    }
-    if (!nodeId) return
-
-    if (isFavorite) {
-      const { error } = await supabase
-        .from('saved_locations')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('node_id', nodeId)
-      
-      if (!error) setIsFavorite(false)
-    } else {
-      const { error } = await supabase
-        .from('saved_locations')
-        .insert({
-          user_id: user.id,
-          node_id: nodeId,
-          title: name.zh || name.ja || name.en // Save a snapshot of the name
-        })
-
-      if (!error) setIsFavorite(true)
-    }
-  }
-
-
-
 
   const send = async (q: string) => {
     if (!q.trim()) return
@@ -350,6 +320,7 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
         {/* L1-L3 Detail Card Framework */}
         <NodeDetailCard
           name={name}
+          zone={nodeZone}
           l1Summary={l1Info?.label}
           l1Tags={persona.map(p => ({ label: p, tone: 'purple' }))}
           l2Status={statuses.filter(s => s.tone !== 'yellow' && s.tone !== 'red').map(s => ({ label: s.label, tone: 'blue' }))}
@@ -366,6 +337,9 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
           }] : []}
           crowdLevel="medium"
           crowdTrend="stable"
+          facilityCounts={facilityCounts}
+          vibeTags={vibeTags}
+          persona={Array.isArray(persona) ? persona.join('、') : persona}
         />
 
         {/* Trip Guard / Line Integration (Member Exclusive) */}
@@ -437,7 +411,7 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
             <ChevronRight size={20} className="text-gray-300 group-hover:text-blue-500 transition-all" />
           </div>
           <div className="bg-gray-50 rounded-xl p-3 text-sm text-gray-600 italic">
-            "這附近有沒有適合辦公的咖啡廳？"
+            &quot;這附近有沒有適合辦公的咖啡廳？&quot;
           </div>
         </section>
 

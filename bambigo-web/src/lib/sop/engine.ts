@@ -114,6 +114,25 @@ export function findNearestFacility(
 
 // --- Routing ---
 
+interface OSRMRoute {
+  distance: number;
+  duration: number;
+  geometry: LineString;
+  legs: Array<{
+    steps: Array<{
+      distance: number;
+      duration: number;
+      maneuver: {
+        instruction: string;
+        type: string;
+        modifier?: string;
+        location: [number, number];
+      };
+    }>;
+  }>;
+  is_compromised?: boolean;
+}
+
 /**
  * Fetches real walking routes from OSRM with Caching & Smart Obstacle Avoidance
  * Supports multiple route options: fastest, safest, shortest
@@ -149,18 +168,18 @@ export async function fetchWalkingRoute(
       throw new Error(`OSRM Error: ${data.code}`);
     }
 
-    const routes = data.routes;
+    const routes = data.routes as OSRMRoute[];
     let selectedRoute = routes[0];
 
     // --- Safest Route Logic ---
     if (avoidZones.length > 0) {
       // Try to find a route that doesn't intersect any zone
-      const safeRoutes = routes.filter((r: any) => !checkRouteSafety(r.geometry.coordinates, avoidZones));
+      const safeRoutes = routes.filter((r) => !checkRouteSafety(r.geometry.coordinates, avoidZones));
       
       if (safeRoutes.length > 0) {
         // Pick the best from safe routes based on preference
         if (preference === 'shortest') {
-          selectedRoute = safeRoutes.sort((a: any, b: any) => a.distance - b.distance)[0];
+          selectedRoute = safeRoutes.sort((a, b) => a.distance - b.distance)[0];
         } else {
           selectedRoute = safeRoutes[0]; // OSRM's first is usually fastest
         }
@@ -170,7 +189,7 @@ export async function fetchWalkingRoute(
         selectedRoute.is_compromised = true;
       }
     } else if (preference === 'shortest') {
-      selectedRoute = routes.sort((a: any, b: any) => a.distance - b.distance)[0];
+      selectedRoute = routes.sort((a, b) => a.distance - b.distance)[0];
     }
 
     const feature: Feature<LineString> = {
@@ -184,7 +203,7 @@ export async function fetchWalkingRoute(
         safety_status: selectedRoute.is_compromised ? 'compromised' : 'safe',
         warning: selectedRoute.is_compromised ? 'Route passes through hazardous zone' : undefined,
         timestamp: Date.now(),
-        steps: selectedRoute.legs?.[0]?.steps?.map((s: any) => ({
+        steps: selectedRoute.legs?.[0]?.steps?.map((s) => ({
           instruction: s.maneuver.instruction,
           type: mapManeuverType(s.maneuver.type, s.maneuver.modifier),
           distance: s.distance,
@@ -202,7 +221,7 @@ export async function fetchWalkingRoute(
     };
 
     // Add alternatives as low-opacity features if requested (could be used by UI)
-    routes.forEach((r: any, idx: number) => {
+    routes.forEach((r, idx: number) => {
       if (r === selectedRoute) return;
       fc.features.push({
         type: 'Feature',
@@ -212,7 +231,7 @@ export async function fetchWalkingRoute(
           distance: r.distance,
           duration: r.duration,
           is_safe: !checkRouteSafety(r.geometry.coordinates, avoidZones),
-          steps: r.legs?.[0]?.steps?.map((s: any) => ({
+          steps: r.legs?.[0]?.steps?.map((s) => ({
             instruction: s.maneuver.instruction,
             type: mapManeuverType(s.maneuver.type, s.maneuver.modifier),
             distance: s.distance,

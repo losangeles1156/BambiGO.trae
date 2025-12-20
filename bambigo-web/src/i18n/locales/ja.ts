@@ -83,7 +83,14 @@ export const ja: Dictionary = {
     view: '表示',
     doneEditing: '完了',
     manageFacilities: '施設管理',
-    transport: '交通'
+    transport: '交通',
+    crowdStatus: '混雑状況',
+    crowdCrowded: '混雑',
+    crowdNormal: '普通',
+    crowdQuiet: '空いている',
+    crowdEstimate: '過去データによる推計',
+    tripGuardEnroll: 'LINEトリップガードに登録',
+    tripGuardDesc: '路線の遅延や異常をリアルタイムで通知',
   },
   actions: {
     toilet: 'トイレを探す',

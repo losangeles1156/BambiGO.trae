@@ -83,7 +83,14 @@ export const en: Dictionary = {
     view: 'View',
     doneEditing: 'Done',
     manageFacilities: 'Manage Facilities',
-    transport: 'Transport'
+    transport: 'Transport',
+    crowdStatus: 'Crowd Status',
+    crowdCrowded: 'Crowded',
+    crowdNormal: 'Normal',
+    crowdQuiet: 'Quiet',
+    crowdEstimate: 'Historical Estimate',
+    tripGuardEnroll: 'Join Line Trip Guard',
+    tripGuardDesc: 'Get real-time delay & anomaly alerts',
   },
   actions: {
     toilet: 'Find Toilet',

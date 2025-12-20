@@ -96,9 +96,9 @@ describe('SOP Engine - Routing & Safety', () => {
 
     const result = await fetchWalkingRoute(start, end, { useCache: false });
     
-    expect(result.features[0].properties.safety_status).toBe('safe');
-    expect(result.features[0].properties.distance).toBe(500);
-    expect(result.features[0].properties.steps).toHaveLength(2);
+    expect(result.features[0].properties!.safety_status).toBe('safe');
+    expect(result.features[0].properties!.distance).toBe(500);
+    expect(result.features[0].properties!.steps).toHaveLength(2);
   });
 
   it('identifies an unsafe route passing through hazard zone', async () => {
@@ -111,8 +111,8 @@ describe('SOP Engine - Routing & Safety', () => {
       useCache: false 
     });
     
-    expect(result.features[0].properties.safety_status).toBe('compromised');
-    expect(result.features[0].properties.warning).toContain('hazardous zone');
+    expect(result.features[0].properties!.safety_status).toBe('compromised');
+    expect(result.features[0].properties!.warning).toContain('hazardous zone');
   });
 
   it('selects a safe alternative when primary is unsafe', async () => {
@@ -131,8 +131,8 @@ describe('SOP Engine - Routing & Safety', () => {
       useCache: false 
     });
     
-    expect(result.features[0].properties.safety_status).toBe('safe');
-    expect(result.features[0].properties.distance).toBe(500); // Should pick the safe one
+    expect(result.features[0].properties!.safety_status).toBe('safe');
+    expect(result.features[0].properties!.distance).toBe(500); // Should pick the safe one
   });
 
   it('prefers shortest route when specified', async () => {
@@ -151,7 +151,7 @@ describe('SOP Engine - Routing & Safety', () => {
       useCache: false 
     });
     
-    expect(result.features[0].properties.distance).toBe(500);
+    expect(result.features[0].properties!.distance).toBe(500);
   });
 
   it('checks segment-polygon intersection correctly', () => {

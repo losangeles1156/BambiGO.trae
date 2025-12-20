@@ -1,97 +1,230 @@
 'use client'
 import { getLocalizedName } from '../../../lib/utils/i18n'
 import TagChip from '../ui/TagChip'
-import { Building2, Activity, Coffee, Sparkles, MapPin } from 'lucide-react'
+import { Building2, Activity, Coffee, Sparkles, MapPin, Users, Train, Store, Briefcase, Info, Quote } from 'lucide-react'
+import { clsx } from 'clsx'
+import FacilityProfile, { CategoryCounts } from '../node/FacilityProfile'
 
 type Name = { ja?: string; en?: string; zh?: string }
-type Tag = { label: string; tone?: 'purple' | 'yellow' | 'gray' | 'blue' }
+type Tag = { label: string; tone?: 'purple' | 'yellow' | 'gray' | 'blue' | 'green' | 'red' }
+
+interface Facility {
+  id: string
+  name: string
+  type: 'shop' | 'office' | 'service'
+  icon: any
+}
+
+interface TrafficStatus {
+  line: string
+  status: string
+  delay?: number
+  tone: 'green' | 'yellow' | 'red'
+}
 
 type Props = {
   name: Name
+  zone?: 'core' | 'buffer' | 'outer'
   l1Summary?: string
   l1Tags?: Tag[]
   l2Status?: Tag[]
   l3Context?: Tag[]
   l4Timeline?: Tag[]
+  facilities?: Facility[]
+  traffic?: TrafficStatus[]
+  crowdLevel?: 'low' | 'medium' | 'high'
+  crowdTrend?: 'up' | 'down' | 'stable'
+  facilityCounts?: CategoryCounts
+  vibeTags?: string[]
+  persona?: string
 }
 
-export default function NodeDetailCard({ name, l1Summary = '', l1Tags = [], l2Status = [], l3Context = [], l4Timeline = [] }: Props) {
+export default function NodeDetailCard({ 
+  name, 
+  zone = 'core',
+  l1Summary = '', 
+  l1Tags = [], 
+  l2Status = [], 
+  l3Context = [], 
+  l4Timeline = [],
+  facilities = [],
+  traffic = [],
+  crowdLevel = 'medium',
+  crowdTrend = 'stable',
+  facilityCounts,
+  vibeTags = [],
+  persona = ''
+}: Props) {
   const locale = typeof navigator !== 'undefined' ? navigator.language : 'zh-TW'
 
-  return (
-    <div className="ui-card p-5 bg-white rounded-xl shadow-sm border border-gray-100">
-      <div className="flex items-start justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-gray-900">{getLocalizedName(name as Record<string, string>, locale)}</h2>
-          <div className="flex items-center text-gray-500 text-sm mt-1">
-            <MapPin size={14} className="mr-1" />
-            <span>{name.en || name.ja}</span>
-          </div>
+  if (zone === 'outer') {
+    return (
+      <div className="ui-card p-6 bg-white rounded-2xl shadow-xl border border-gray-100 flex flex-col items-center text-center space-y-4">
+        <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center text-3xl">🦌</div>
+        <h2 className="text-xl font-bold text-gray-900">超出服務範圍</h2>
+        <p className="text-gray-500 text-sm">BambiGO 目前專注於東京都心，這裡我還不太熟悉。</p>
+        <div className="w-full space-y-2 pt-2">
+          <button className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold flex items-center justify-center gap-2">
+            <MapPin size={18} />
+            規劃回都心路線
+          </button>
+          <button className="w-full py-3 bg-gray-50 text-gray-700 rounded-xl font-bold">
+            稍後再說
+          </button>
         </div>
-        {l1Summary && <TagChip label={l1Summary} layer="L1" icon={Building2} />}
+      </div>
+    )
+  }
+
+  const isBuffer = zone === 'buffer'
+
+  return (
+    <div className={clsx(
+      "ui-card bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden transition-all",
+      isBuffer && "opacity-90 grayscale-[0.3]"
+    )}>
+      {/* Header Section */}
+      <div className="p-5 border-b border-gray-50 bg-gradient-to-b from-gray-50/50 to-white">
+        <div className="flex items-start justify-between">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              {isBuffer ? (
+                <div className="w-2 h-2 bg-gray-400 rounded-full" />
+              ) : (
+                <Train size={18} className="text-blue-600" />
+              )}
+              <h2 className="text-xl font-bold text-gray-900 truncate">
+                {getLocalizedName(name as Record<string, string>, locale)}
+              </h2>
+            </div>
+            <div className="flex items-center text-gray-400 text-xs font-medium uppercase tracking-wider">
+              <MapPin size={12} className="mr-1" />
+              <span>{name.en || name.ja}</span>
+            </div>
+          </div>
+          {!isBuffer && l1Summary && (
+            <TagChip label={l1Summary} layer="L1" icon={Building2} />
+          )}
+        </div>
+
+        {/* L1 Fingerprint & Vibe Tags (Core only) */}
+        {!isBuffer && (facilityCounts || vibeTags.length > 0) && (
+          <div className="mt-4 pt-4 border-t border-gray-100/50">
+            <FacilityProfile 
+              counts={facilityCounts || { shopping: 0, dining: 0, medical: 0, education: 0, leisure: 0, finance: 0 }} 
+              vibeTags={vibeTags} 
+            />
+          </div>
+        )}
       </div>
 
-      <div className="mt-6 space-y-5">
-        {/* L1 Structural Layer */}
-        {l1Tags.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">L1 Structure</span>
-              <div className="h-px flex-1 bg-gray-100"></div>
+      <div className="p-5 space-y-6">
+        {/* Node Persona (Core only) */}
+        {!isBuffer && persona && (
+          <section className="relative">
+            <Quote size={24} className="absolute -top-1 -left-1 text-blue-50 opacity-20" />
+            <div className="relative z-10 pl-2">
+              <h3 className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1.5">節點畫像</h3>
+              <p className="text-sm text-gray-600 leading-relaxed font-medium">
+                {persona}
+              </p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {l1Tags.map((t, i) => (
-                <TagChip key={i} label={t.label} layer="L1" />
-              ))}
-            </div>
-          </div>
+          </section>
         )}
 
-        {/* L2 Aggregation Layer */}
-        {l2Status.length > 0 && (
-          <div>
-             <div className="flex items-center gap-2 mb-2">
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">L2 Atmosphere</span>
-              <div className="h-px flex-1 bg-gray-100"></div>
+        {/* Real-time Traffic Status (L2) */}
+        {traffic.length > 0 && (
+          <section>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-1 h-4 bg-indigo-500 rounded-full" />
+              <h3 className="text-sm font-bold text-gray-800">即時交通狀態</h3>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {l2Status.map((t, i) => (
-                <TagChip key={i} label={t.label} layer="L2" icon={Activity} />
+            <div className="grid grid-cols-1 gap-2">
+              {traffic.map((t, i) => (
+                <div key={i} className="flex items-center justify-between p-3 bg-gray-50/50 rounded-xl border border-gray-100/50">
+                  <div className="flex items-center gap-3">
+                    <div className={clsx(
+                      "w-2 h-2 rounded-full",
+                      t.tone === 'green' ? "bg-green-500" : t.tone === 'yellow' ? "bg-yellow-500" : "bg-red-500"
+                    )} />
+                    <span className="font-bold text-sm text-gray-700">{t.line}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={clsx(
+                      "text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider",
+                      t.tone === 'green' ? "bg-green-100 text-green-700" : t.tone === 'yellow' ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"
+                    )}>
+                      {t.status}
+                    </span>
+                    {t.delay && <span className="text-[10px] text-gray-400 font-bold">+{t.delay}m</span>}
+                  </div>
+                </div>
               ))}
             </div>
-          </div>
+          </section>
         )}
 
-        {/* L3 Functional Layer */}
-        {l3Context.length > 0 && (
-          <div>
-             <div className="flex items-center gap-2 mb-2">
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">L3 Utility</span>
-              <div className="h-px flex-1 bg-gray-100"></div>
+        {/* Crowd Prediction (Core only) */}
+        {!isBuffer && (
+          <section>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-1 h-4 bg-orange-500 rounded-full" />
+              <h3 className="text-sm font-bold text-gray-800">人潮預測</h3>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {l3Context.map((t, i) => (
-                <TagChip key={i} label={t.label} layer="L3" icon={Coffee} />
-              ))}
+            <div className="p-4 bg-orange-50/30 rounded-2xl border border-orange-100 flex items-center justify-between relative overflow-hidden">
+              <div className="relative z-10 flex items-center gap-4">
+                <div className="text-2xl font-black text-orange-600 uppercase tracking-tighter">
+                  {crowdLevel === 'low' ? '舒適' : crowdLevel === 'medium' ? '適中' : '擁擠'}
+                </div>
+                <div className="text-[10px] text-orange-700 bg-white/50 px-2 py-1 rounded font-bold border border-orange-100">
+                  基於歷史數據
+                </div>
+              </div>
+              <div className="relative z-10 flex flex-col items-end">
+                <span className="text-[10px] text-orange-400 uppercase font-black tracking-widest mb-0.5">趨勢</span>
+                <div className="flex items-center gap-1 text-orange-600 font-black">
+                  {crowdTrend === 'up' ? <Activity size={16} className="rotate-[-45deg]" /> : crowdTrend === 'down' ? <Activity size={16} className="rotate-[45deg]" /> : <Activity size={16} />}
+                  <span className="text-sm">{crowdTrend === 'up' ? '上升中' : crowdTrend === 'down' ? '緩解中' : '持平'}</span>
+                </div>
+              </div>
+              {/* Decorative pulse */}
+              <div className="absolute top-1/2 left-0 -translate-y-1/2 w-1 h-8 bg-orange-500/20 rounded-full" />
             </div>
-          </div>
+          </section>
         )}
 
-        {/* L4 Action Layer */}
-        {l4Timeline.length > 0 && (
-          <div>
-             <div className="flex items-center gap-2 mb-2">
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">L4 Strategy</span>
-              <div className="h-px flex-1 bg-gray-100"></div>
+        {/* Surrounding Facilities (Core only) */}
+        {!isBuffer && facilities.length > 0 && (
+          <section>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-1 h-4 bg-blue-500 rounded-full" />
+              <h3 className="text-sm font-bold text-gray-800">周邊設施</h3>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {l4Timeline.map((t, i) => (
-                <TagChip key={i} label={t.label} layer="L4" icon={Sparkles} />
+            <div className="grid grid-cols-2 gap-2">
+              {facilities.map((f) => (
+                <div key={f.id} className="flex items-center gap-2 p-2.5 bg-white border border-gray-100 rounded-xl shadow-sm hover:border-blue-200 hover:shadow-md transition-all group">
+                  <div className="p-1.5 bg-blue-50 rounded-lg text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    {f.type === 'shop' ? <Store size={14} /> : f.type === 'office' ? <Briefcase size={14} /> : <Info size={14} />}
+                  </div>
+                  <span className="text-[11px] font-bold text-gray-700 truncate">{f.name}</span>
+                </div>
               ))}
             </div>
+          </section>
+        )}
+
+        {/* Simplified Notice for Buffer Zone */}
+        {isBuffer && (
+          <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 text-center">
+            <p className="text-xs text-gray-500 font-medium">此區域僅提供基本導航資訊</p>
+            <button className="mt-3 text-xs text-blue-600 font-bold flex items-center justify-center gap-1 mx-auto hover:underline">
+              了解更多圈層差異 <ChevronRight size={14} />
+            </button>
           </div>
         )}
       </div>
     </div>
   )
 }
+
+import { ChevronRight } from 'lucide-react'

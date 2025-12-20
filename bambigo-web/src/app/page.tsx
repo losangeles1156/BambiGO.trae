@@ -52,6 +52,15 @@ export default function Home() {
   const [mapStyleIndex, setMapStyleIndex] = useState(0)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [navigationSteps, setNavigationSteps] = useState<NavigationStep[]>([])
+  const [triggerGeolocate, setTriggerGeolocate] = useState(0)
+
+  const handleLocationError = (error: string) => {
+    if (error === 'OUT_OF_RANGE') {
+      alert(t('common.outOfRange') || '你目前距離服務節點超過 50 公里，已為你自動定位至上野車站。你可以手動選擇其他車站。')
+    } else if (error === 'PERMISSION_DENIED') {
+      alert(t('common.locationDenied') || '無法取得位置權限，請檢查瀏覽器設定。')
+    }
+  }
 
   // Mock nodes for demonstration
   const mockNodes = useMemo((): FeatureCollection => ({
@@ -391,6 +400,13 @@ export default function Home() {
   const fabActions = useMemo(() => {
     const common = [
       {
+        id: 'gps',
+        icon: <Navigation className="w-6 h-6" />,
+        label: t('common.gps') || '定位',
+        onClick: () => setTriggerGeolocate(prev => prev + 1),
+        variant: 'primary' as const
+      },
+      {
         id: 'ai',
         icon: <Bot className="w-6 h-6" />,
         label: 'AI Assistant',
@@ -480,6 +496,26 @@ export default function Home() {
   const showInstall = !!installEvt
   const actions = [t('actions.toilet'), t('actions.locker'), t('actions.asakusa'), t('actions.evacuate')]
 
+  const handleDashboardAction = (action: string) => {
+     if (action === 'ai_assistant') {
+       setShowAssistant(true)
+     } else if (action.includes('去')) {
+       setView('task')
+     } else if (action.startsWith('app:filter')) {
+       try {
+         const url = new URL(action.replace('app:', 'http://dummy/'))
+         const tag = url.searchParams.get('tag') || undefined
+         const status = url.searchParams.get('status') || undefined
+         const indoor = url.searchParams.get('indoor')
+         let finalTag = tag
+         if (indoor === 'true') finalTag = 'indoor'
+         setMapFilter({ tag: finalTag, status })
+         setView('explore')
+         setNodeId(null)
+       } catch {}
+     }
+   }
+
   return (
     <MobileViewport>
       <Header 
@@ -501,6 +537,8 @@ export default function Home() {
           accessibility={accessibility || undefined}
           showPopup={view === 'explore'}
           onNodeSelected={handleNodeSelected}
+          onLocationError={handleLocationError}
+          triggerGeolocate={triggerGeolocate}
           nodes={mockNodes}
           styleIndex={mapStyleIndex}
           locale={locale}
@@ -511,7 +549,24 @@ export default function Home() {
       {view === 'explore' && (
         <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none">
           <div className="pointer-events-auto">
-            <SearchBar onSubmit={(q) => { if (q.trim()) setView('dashboard') }} onMic={() => setShowAssistant(true)} />
+            <SearchBar 
+              onSubmit={(q) => { 
+                if (!q.trim()) return
+                const query = q.toLowerCase()
+                const found = mockNodes.features.find(f => {
+                  const props = f.properties as { name: { ja?: string; en?: string; zh?: string } }
+                  return props.name.zh?.toLowerCase().includes(query) || 
+                         props.name.ja?.toLowerCase().includes(query) || 
+                         props.name.en?.toLowerCase().includes(query)
+                })
+                if (found) {
+                  handleNodeSelected(found)
+                } else {
+                  setView('dashboard') 
+                }
+              }} 
+              onMic={() => setShowAssistant(true)} 
+            />
           </div>
         </div>
       )}
@@ -601,23 +656,7 @@ export default function Home() {
                 statuses={envStatuses} 
                 actions={actions} 
                 filterSuitability={(() => { const q = tagging.buildSuitabilityQuery(tagState.tags, 0.6); return { tag: q.tag, minConfidence: q.minConfidence } })()} 
-                onAction={(a) => { 
-                  if (a.includes('去')) {
-                    setView('task')
-                  } else if (a.startsWith('app:filter')) {
-                    try {
-                      const url = new URL(a.replace('app:', 'http://dummy/'))
-                      const tag = url.searchParams.get('tag') || undefined
-                      const status = url.searchParams.get('status') || undefined
-                      const indoor = url.searchParams.get('indoor')
-                      let finalTag = tag
-                      if (indoor === 'true') finalTag = 'indoor'
-                      setMapFilter({ tag: finalTag, status })
-                      setView('explore')
-                      setNodeId(null)
-                    } catch {}
-                  }
-                }} 
+                onAction={handleDashboardAction} 
                 onRouteHint={handleRouteHint} 
               />
               <div className="mt-4 pb-20">

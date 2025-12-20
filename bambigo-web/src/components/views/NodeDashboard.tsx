@@ -14,6 +14,8 @@ import { L3ServiceFacility, L4ActionCard, L4CardType } from '../../types/tagging
 import { adaptFacilityItem } from '../../lib/adapters/facilities'
 import { FacilityItem } from '../../app/api/facilities/route'
 import TagChip from '../ui/TagChip'
+import { Users, Info, Bell, MessageSquare, ChevronRight, ExternalLink, ShieldCheck } from 'lucide-react'
+import NodeDetailCard from '../cards/NodeDetailCard'
 
 type Name = { ja?: string; en?: string; zh?: string }
 type Status = { label: string; tone?: 'yellow' | 'blue' | 'red' | 'green' }
@@ -35,8 +37,10 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
   const [nodeType, setNodeType] = useState<string>('')
   const [transitStatus, setTransitStatus] = useState<string | undefined>(undefined)
   const [isEditingFacilities, setIsEditingFacilities] = useState(false)
+  const [isLineBound, setIsLineBound] = useState(false)
+  const [isTripGuardActive, setIsTripGuardActive] = useState(false)
 
-  // Derive Persona when dependencies change (needs to be declared before usage below)
+  // Derive Persona when dependencies change
   const persona = useMemo(() => {
     const l1 = L1_CATEGORIES_DATA.find(c => c.id === nodeType || c.subCategories.some(s => s.id === nodeType))
     const l1Main = l1?.id
@@ -340,83 +344,108 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
   }
   return (
     <div className="flex flex-col h-full bg-gray-50 overflow-hidden">
-      {/* Header */}
-      <div className="flex-none bg-white/95 backdrop-blur-sm p-5 shadow-sm z-10 border-b border-gray-100">
-        {l1Info && (
-          <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-gray-500 bg-gray-50 inline-flex px-2 py-0.5 rounded-full">
-            <span>{l1Info.icon}</span>
-            <span>{l1Info.label}</span>
-          </div>
-        )}
-        <div className="flex justify-between items-start mb-3">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{name.zh || name.en}</h1>
-            <div className="text-sm text-gray-500 font-medium">{name.ja}</div>
-          </div>
-          <button 
-            onClick={toggleFavorite}
-            className={`p-2.5 rounded-full transition-all active:scale-95 ${isFavorite ? 'bg-pink-50 text-pink-500 shadow-inner' : 'bg-gray-50 text-gray-400 hover:bg-gray-100'}`}
-          >
-            <Heart className={isFavorite ? "fill-current" : ""} size={22} />
-          </button>
-        </div>
-        
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
-          {statuses.map((s, i) => {
-            // Map legacy tones to new Layers
-            // Yellow/Red (Alerts) -> L4 (Action)
-            // Blue/Green/Gray -> L2 (Atmosphere)
-            const isAlert = s.tone === 'yellow' || s.tone === 'red'
-            return (
-              <TagChip 
-                key={i} 
-                label={s.label} 
-                layer={isAlert ? 'L4' : 'L2'} 
-              />
-            )
-          })}
-          {persona.map((p, i) => (
-            <TagChip 
-              key={`p-${i}`} 
-              label={`#${p}`} 
-              layer="L1" 
-            />
-          ))}
-        </div>
-      </div>
-
       {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+      <div className="flex-1 overflow-y-auto p-4 space-y-6 pb-24">
+        
+        {/* L1-L3 Detail Card Framework */}
+        <NodeDetailCard
+          name={name}
+          l1Summary={l1Info?.label}
+          l1Tags={persona.map(p => ({ label: p, tone: 'purple' }))}
+          l2Status={statuses.filter(s => s.tone !== 'yellow' && s.tone !== 'red').map(s => ({ label: s.label, tone: 'blue' }))}
+          facilities={facilities.slice(0, 6).map(f => ({
+            id: f.id,
+            name: f.attributes?.zh || f.attributes?.ja || f.id,
+            type: f.category === 'shop' ? 'shop' : f.category === 'office' ? 'office' : 'service',
+            icon: null
+          }))}
+          traffic={transitStatus ? [{
+            line: t('dashboard.transport'),
+            status: transitStatus === 'delayed' ? t('dashboard.transitDelayed') : t('common.monitoring').split('：')[1] || '正常',
+            tone: transitStatus === 'delayed' ? 'yellow' : 'green'
+          }] : []}
+          crowdLevel="medium"
+          crowdTrend="stable"
+        />
 
-        {/* L1 Tag Manager */}
-        <section>
-          <NodeL1Manager nodeId={nodeId || ''} />
+        {/* Trip Guard / Line Integration (Member Exclusive) */}
+        <section className={`rounded-2xl p-5 text-white shadow-lg relative overflow-hidden group transition-all ${isTripGuardActive ? 'bg-gradient-to-br from-blue-600 to-indigo-700' : 'bg-gradient-to-br from-green-500 to-emerald-600'}`}>
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Bell size={20} className={isTripGuardActive ? "animate-pulse" : "animate-bounce"} />
+                <h3 className="font-bold text-lg">{t('navigation.tripGuard')}</h3>
+              </div>
+              {isTripGuardActive && (
+                <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest">Active</span>
+              )}
+            </div>
+            <p className="text-sm text-white/90 mb-4 leading-relaxed">
+              {isTripGuardActive 
+                ? '正在為您監控前往目的地的路線。若有異常將立即透過 LINE 通知。'
+                : t('dashboard.tripGuardDesc')}
+            </p>
+            
+            {!isLineBound ? (
+              <button 
+                onClick={() => {
+                  if (!user) {
+                    alert(t('dashboard.loginRequired'))
+                  } else {
+                    // Simulate Line Enrollment
+                    setLoading(true)
+                    setTimeout(() => {
+                      setIsLineBound(true)
+                      setLoading(false)
+                      alert('LINE 帳號綁定成功！')
+                    }, 1500)
+                  }
+                }}
+                className="w-full bg-white text-green-600 font-bold py-3 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-md"
+              >
+                <img src="/line-icon.png" alt="LINE" className="w-5 h-5" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                {t('dashboard.tripGuardEnroll')}
+                <ChevronRight size={16} />
+              </button>
+            ) : (
+              <button 
+                onClick={() => setIsTripGuardActive(!isTripGuardActive)}
+                className={`w-full font-bold py-3 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-md ${isTripGuardActive ? 'bg-white text-blue-600' : 'bg-white text-green-600'}`}
+              >
+                {isTripGuardActive ? '關閉行程守護' : '啟動行程守護'}
+                <ShieldCheck size={18} />
+              </button>
+            )}
+          </div>
+          {/* Decorative background elements */}
+          <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+          <div className="absolute bottom-0 left-0 -ml-4 -mb-4 w-24 h-24 bg-black/5 rounded-full blur-xl" />
         </section>
-        
-        {/* Quick Actions (L0 - from props) */}
-        {actions.length > 0 && (
-          <section>
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="text-sm font-semibold text-gray-700">{t('dashboard.quickActions')}</h2>
+
+        {/* AI Conversation Entry Point (Third Layer) */}
+        <section className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 group hover:border-blue-200 transition-all cursor-pointer" onClick={() => onAction('ai_assistant')}>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl group-hover:bg-blue-600 group-hover:text-white transition-all">
+                <MessageSquare size={24} />
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900">{t('dashboard.aiGuide')}</h3>
+                <p className="text-xs text-gray-500">詢問關於此節點的更多細節</p>
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {actions.map((a, i) => (
-                <button
-                  key={i}
-                  onClick={() => onAction(a)}
-                  className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 shadow-sm active:scale-95 transition-all hover:border-blue-400 hover:text-blue-600"
-                >
-                  {a}
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
-        
-        {/* Action Cards (L4) */}
+            <ChevronRight size={20} className="text-gray-300 group-hover:text-blue-500 transition-all" />
+          </div>
+          <div className="bg-gray-50 rounded-xl p-3 text-sm text-gray-600 italic">
+            "這附近有沒有適合辦公的咖啡廳？"
+          </div>
+        </section>
+
+        {/* Suggested Actions (L4) */}
         <section>
-          <div className="flex justify-between items-center mb-3">
-            <h2 className="text-sm font-semibold text-gray-700">{t('dashboard.suggestedActions')}</h2>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-1 h-4 bg-orange-500 rounded-full" />
+            <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wider">{t('dashboard.suggestedActions')}</h2>
           </div>
           <ActionCarousel 
             cards={cards} 
@@ -435,12 +464,15 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
         {/* Facilities List (L3) */}
         <section>
           <div className="flex justify-between items-center mb-3">
-            <h2 className="text-sm font-semibold text-gray-700">{t('dashboard.nearbyFacilities')}</h2>
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-4 bg-blue-400 rounded-full" />
+              <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wider">{t('dashboard.nearbyFacilities')}</h2>
+            </div>
             <div className="flex items-center gap-2">
               <span className="text-xs text-gray-400">{facilities.length} {t('common.places')}</span>
               <button 
                 onClick={() => setIsEditingFacilities(!isEditingFacilities)}
-                className={`p-1 rounded transition-colors ${isEditingFacilities ? 'text-blue-600 bg-blue-50' : 'text-gray-400 hover:text-blue-600'}`}
+                className={`p-1.5 rounded-lg transition-colors ${isEditingFacilities ? 'text-blue-600 bg-blue-50' : 'text-gray-400 hover:text-blue-600 bg-gray-50'}`}
                 title={isEditingFacilities ? t('dashboard.doneEditing') : t('dashboard.manageFacilities')}
               >
                 <Edit2 size={14} />
@@ -456,23 +488,32 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
               />
             </div>
           ) : (
-            <FacilityList items={facilities} />
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <FacilityList items={facilities} />
+            </div>
           )}
         </section>
         
         {/* Shared Mobility Status */}
         {stations.length > 0 && (
            <section>
-             <div className="flex justify-between items-center mb-3">
-               <h2 className="text-sm font-semibold text-gray-700">共享運具站點</h2>
+             <div className="flex items-center gap-2 mb-3">
+               <div className="w-1 h-4 bg-teal-500 rounded-full" />
+               <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wider">{t('dashboard.sharedMobility')}</h2>
              </div>
-             <div className="grid grid-cols-2 gap-2">
+             <div className="grid grid-cols-2 gap-3">
                {stations.slice(0, 4).map((s) => (
-                 <div key={s.id} className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
-                   <div className="text-xs font-medium text-gray-900 truncate">{s.name}</div>
-                   <div className="mt-1 flex justify-between text-xs text-gray-500">
-                     <span>🚲 {s.bikes_available}</span>
-                     <span>🅿️ {s.docks_available}</span>
+                 <div key={s.id} className="rounded-xl border border-gray-100 bg-white p-3 shadow-sm hover:border-blue-200 transition-colors">
+                   <div className="text-xs font-bold text-gray-900 truncate mb-2">{s.name}</div>
+                   <div className="flex justify-between items-center text-[10px] font-semibold">
+                     <div className="flex items-center gap-1 text-blue-600">
+                       <span className="text-sm">🚲</span>
+                       <span>{s.bikes_available}</span>
+                     </div>
+                     <div className="flex items-center gap-1 text-gray-400">
+                       <span className="text-sm">🅿️</span>
+                       <span>{s.docks_available}</span>
+                     </div>
                    </div>
                  </div>
                ))}
@@ -480,50 +521,68 @@ export default function NodeDashboard({ nodeId, name, statuses, actions, onActio
            </section>
         )}
 
-        {/* AI Assistant Chat */}
-        <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="bg-blue-50 px-4 py-2 border-b border-blue-100">
-             <h3 className="text-xs font-semibold text-blue-800">AI 嚮導</h3>
+        {/* AI Assistant Chat Section */}
+        <section className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-6">
+          <div className="bg-blue-600 px-4 py-3 flex items-center justify-between text-white">
+             <div className="flex items-center gap-2">
+               <MessageSquare size={18} />
+               <h3 className="text-sm font-bold">{t('dashboard.aiGuide')}</h3>
+             </div>
+             <div className="flex items-center gap-1">
+               <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+               <span className="text-[10px] font-medium opacity-80">Online</span>
+             </div>
           </div>
-          <div className="p-4 space-y-4">
-            <div className="max-h-48 overflow-y-auto space-y-3">
-              {msgs.length === 0 && <div className="text-center text-xs text-gray-400 py-4">有什麼我可以幫你的嗎？</div>}
+          <div className="p-4">
+            <div className="max-h-60 overflow-y-auto space-y-4 mb-4 scrollbar-hide">
+              {msgs.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-blue-500 mb-3">
+                    <MessageSquare size={24} />
+                  </div>
+                  <p className="text-sm text-gray-500 font-medium">{t('dashboard.aiWelcome')}</p>
+                </div>
+              )}
               {msgs.map((m, i) => (
-                <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
-                    m.role === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-900'
+                <div key={i} className="flex justify-start">
+                  <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${
+                    m.role === 'user' 
+                      ? 'bg-blue-600 text-white rounded-tr-none ml-auto' 
+                      : 'bg-gray-100 text-gray-900 rounded-tl-none'
                   }`}>
                     {m.content}
                   </div>
                 </div>
               ))}
+              {loading && (
+                <div className="flex justify-start">
+                  <div className="bg-gray-100 rounded-2xl px-4 py-2 text-sm text-gray-500 flex gap-1">
+                    <span className="animate-bounce">.</span>
+                    <span className="animate-bounce [animation-delay:0.2s]">.</span>
+                    <span className="animate-bounce [animation-delay:0.4s]">.</span>
+                  </div>
+                </div>
+              )}
             </div>
             
-            <div className="flex gap-2 pt-2 border-t border-gray-100">
+            <div className="flex gap-2">
               <input 
-                className="flex-1 rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" 
+                className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all" 
                 value={text} 
                 onChange={(e) => setText(e.target.value)} 
                 placeholder={t('common.inputPlaceholder')}
                 onKeyDown={(e) => e.key === 'Enter' && !e.nativeEvent.isComposing && (send(text), setText(''))}
               />
               <button 
-                className={`rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors ${loading ? 'bg-blue-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`} 
-                onClick={() => { send(text); setText('') }}
-                disabled={loading}
+                onClick={() => { send(text); setText(''); }}
+                disabled={!text.trim() || loading}
+                className="bg-blue-600 text-white p-2.5 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-blue-200 active:scale-95 transition-transform"
               >
-                {loading ? '...' : t('common.send')}
+                <ChevronRight size={20} />
               </button>
             </div>
           </div>
         </section>
-        
-        {/* Quick Actions */}
-        <div className="flex flex-wrap gap-2 pb-8">
-          {actions.map((a) => (
-            <Chip key={a} label={a} tone={'neutral'} onClick={() => { onAction(a); send(a) }} />
-          ))}
-        </div>
       </div>
     </div>
   )

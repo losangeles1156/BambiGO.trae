@@ -83,7 +83,14 @@ export const zhTW: Dictionary = {
     view: '查看',
     doneEditing: '完成編輯',
     manageFacilities: '管理設施',
-    transport: '交通'
+    transport: '交通',
+    crowdStatus: '人潮狀態',
+    crowdCrowded: '擁擠',
+    crowdNormal: '普通',
+    crowdQuiet: '清靜',
+    crowdEstimate: '歷史數據推估',
+    tripGuardEnroll: '加入 Line 行程守護',
+    tripGuardDesc: '即時接收路線延誤與異常通知',
   },
   actions: {
     toilet: '找廁所',

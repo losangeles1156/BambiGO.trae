@@ -7,6 +7,21 @@ import { Zone } from '@/lib/zones/detector'
 import { FeatureCollection, Feature } from 'geojson'
 import { Colors } from '@/lib/designTokens'
 
+// Helper: Haversine distance in km
+function getDistance(coords1: [number, number], coords2: [number, number]): number {
+  const [lon1, lat1] = coords1
+  const [lon2, lat2] = coords2
+  const R = 6371 // Radius of the earth in km
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLon = (lon2 - lon1) * Math.PI / 180
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon / 2) * Math.sin(dLon / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
+}
+
 interface MapCanvasProps {
   height: string | number
   showBus: boolean
@@ -16,9 +31,11 @@ interface MapCanvasProps {
   accessibility?: { preferElevator?: boolean }
   showPopup?: boolean
   onNodeSelected?: (feature: Feature) => void
+  onLocationError?: (error: string) => void
   nodes?: FeatureCollection
   styleIndex?: number
   locale?: string
+  triggerGeolocate?: number // Incremental value to trigger geolocate
 }
 
 const MapCanvas = ({
@@ -30,20 +47,30 @@ const MapCanvas = ({
   accessibility,
   showPopup,
   onNodeSelected,
+  onLocationError,
   nodes,
   styleIndex = 0,
   locale = 'zh-TW',
+  triggerGeolocate = 0,
 }: MapCanvasProps) => {
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<any>(null)
   const markers = useRef<maplibregl.Marker[]>([])
   const onNodeSelectedRef = useRef(onNodeSelected)
+  const geolocateControl = useRef<maplibregl.GeolocateControl | null>(null)
   const [loaded, setLoaded] = useState(false)
 
   // Keep callback ref up to date
   useEffect(() => {
     onNodeSelectedRef.current = onNodeSelected
   }, [onNodeSelected])
+
+  // External trigger for geolocation
+  useEffect(() => {
+    if (triggerGeolocate > 0 && geolocateControl.current) {
+      geolocateControl.current.trigger()
+    }
+  }, [triggerGeolocate])
 
   // Map Styles Configuration
   const MAP_STYLES = [
@@ -56,7 +83,7 @@ const MapCanvas = ({
   useEffect(() => {
     if (map.current || !mapContainer.current) return
 
-    const initialCenter: [number, number] = center || [139.767125, 35.681236] // Tokyo Station
+    const initialCenter: [number, number] = center || [139.7774, 35.7141] // Ueno Station
     let styleIndex = 0
 
     const initMap = (sIndex: number) => {
@@ -100,14 +127,68 @@ const MapCanvas = ({
 
     map.current!.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')
     map.current!.addControl(new maplibregl.NavigationControl({ showCompass: true, showZoom: false }), 'bottom-right')
+    
     const geolocate = new maplibregl.GeolocateControl({
       positionOptions: { enableHighAccuracy: true },
-      trackUserLocation: true
+      trackUserLocation: true,
+      showUserLocation: true
     })
+    geolocateControl.current = geolocate
     map.current!.addControl(geolocate, 'bottom-right')
+
+    const UENO_STATION_COORDS: [number, number] = [139.7774, 35.7141]
+
+    geolocate.on('geolocate', (position: any) => {
+      const userCoords: [number, number] = [position.coords.longitude, position.coords.latitude]
+      
+      // Calculate distances to all nodes
+      if (nodes && nodes.features.length > 0) {
+        let minDistance = Infinity
+        let nearestNode: Feature | null = null
+
+        nodes.features.forEach((feature: Feature) => {
+          if (feature.geometry.type === 'Point') {
+            const nodeCoords = feature.geometry.coordinates as [number, number]
+            const dist = getDistance(userCoords, nodeCoords)
+            if (dist < minDistance) {
+              minDistance = dist
+              nearestNode = feature
+            }
+          }
+        })
+
+        // If nearest node is > 50km, default to Ueno
+        if (minDistance > 50) {
+          console.log('User is > 50km from nearest node. Resetting to Ueno Station.')
+          map.current?.flyTo({ center: UENO_STATION_COORDS, zoom: 15 })
+          
+          if (onLocationError) {
+            onLocationError('OUT_OF_RANGE')
+          }
+
+          // Optionally select Ueno station if it exists in nodes
+          const ueno = nodes.features.find(f => f.id === 'ueno-station' || (f.properties as any).id === 'ueno-station')
+          if (ueno && onNodeSelectedRef.current) {
+            onNodeSelectedRef.current(ueno)
+          }
+        } else if (nearestNode && onNodeSelectedRef.current) {
+          const node = nearestNode as Feature;
+          console.log(`User is within 50km (${minDistance.toFixed(2)}km). Selecting nearest node:`, node.id)
+          onNodeSelectedRef.current(node)
+        }
+      } else {
+        // No nodes available, check distance to Ueno directly
+        const distToUeno = getDistance(userCoords, UENO_STATION_COORDS)
+        if (distToUeno > 50) {
+          map.current?.flyTo({ center: UENO_STATION_COORDS, zoom: 15 })
+          if (onLocationError) onLocationError('OUT_OF_RANGE')
+        }
+      }
+    })
 
     geolocate.on('error', (e) => {
       console.warn('Geolocation error:', e)
+      if (onLocationError) onLocationError('PERMISSION_DENIED')
       // Fallback: If geolocation fails, fly to initial center
       map.current?.flyTo({ center: initialCenter, zoom: 14 })
     })

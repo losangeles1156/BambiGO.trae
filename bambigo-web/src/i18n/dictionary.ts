@@ -88,6 +88,13 @@ export type Dictionary = {
     doneEditing: string
     manageFacilities: string
     transport: string
+    crowdStatus: string
+    crowdCrowded: string
+    crowdNormal: string
+    crowdQuiet: string
+    crowdEstimate: string
+    tripGuardEnroll: string
+    tripGuardDesc: string
   }
   actions: {
     toilet: string

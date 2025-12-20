@@ -1,0 +1,7 @@
+bambigo-web/test-results/
+bambigo-web/e2e/
+bambigo-web/tests/
+bambigo-web/scripts/
+bambigo-web/.husky/
+bambigo-web/.github/
+**/*.md

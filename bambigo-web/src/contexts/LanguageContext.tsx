@@ -22,7 +22,6 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     const saved = localStorage.getItem('appLang') as Locale
     if (saved && ['zh-TW', 'en', 'ja'].includes(saved)) {
       setLocaleState(saved)
-      document.documentElement.lang = saved === 'zh-TW' ? 'zh-TW' : saved
       return
     }
 
@@ -37,10 +36,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  useEffect(() => {
+    if (!mounted) return
+    document.documentElement.lang = locale === 'zh-TW' ? 'zh-TW' : locale
+  }, [locale, mounted])
+
   const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale)
     localStorage.setItem('appLang', newLocale)
-    document.documentElement.lang = newLocale === 'zh-TW' ? 'zh-TW' : newLocale
   }, [])
 
   const t = useCallback((path: string): string => {

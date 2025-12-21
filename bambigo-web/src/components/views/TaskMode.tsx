@@ -116,13 +116,13 @@ export default function TaskMode({ destination, onExit, steps }: Props) {
               <button 
                 onClick={prevStep}
                 disabled={currentStepIndex === 0}
-                className="bg-white text-gray-700 border border-gray-200 shadow-sm active:scale-95 transition-transform py-3 text-sm font-medium rounded-xl disabled:opacity-50"
+                className="bg-white/95 text-gray-900 border border-gray-200 shadow-lg ring-1 ring-black/5 active:scale-95 transition-transform py-3 text-sm font-semibold rounded-2xl disabled:opacity-50 disabled:shadow-none"
               >
                 {t('common.back')}
               </button>
               <button 
                 onClick={nextStep}
-                className="bg-gray-900 text-white py-3 text-sm font-medium rounded-xl shadow-lg active:scale-95 transition-transform"
+                className="bg-blue-600 text-white py-3 text-sm font-semibold rounded-2xl shadow-xl ring-1 ring-black/10 active:scale-95 transition-transform hover:bg-blue-700"
               >
                 {t('common.simulate')}
               </button>
@@ -130,7 +130,7 @@ export default function TaskMode({ destination, onExit, steps }: Props) {
           ) : (
             <button 
               onClick={handleExit}
-              className="col-span-2 bg-green-500 text-white py-3 font-bold rounded-xl shadow-lg flex items-center justify-center gap-2 hover:bg-green-600 transition-colors"
+              className="col-span-2 bg-green-500 text-white py-3 font-bold rounded-2xl shadow-xl ring-1 ring-black/10 flex items-center justify-center gap-2 hover:bg-green-600 transition-colors"
             >
               <CheckCircle2 className="w-5 h-5" />
               {t('common.finish')}

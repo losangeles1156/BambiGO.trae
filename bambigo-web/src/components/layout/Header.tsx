@@ -68,8 +68,8 @@ export default function Header({ onMenuClick, breadcrumbs = [], locationName }: 
             </nav>
           )}
 
-          {/* Mobile Location/Title (or Fallback if no breadcrumbs) */}
-          <div className={`flex items-center gap-2 overflow-hidden ${breadcrumbs.length > 0 ? 'md:hidden' : ''}`}>
+          {/* Location/Title */}
+          <div className="flex items-center gap-2 overflow-hidden">
             <span className="text-sm font-medium text-gray-500 whitespace-nowrap hidden sm:inline">
               {t('header.youAreAt')}
             </span>

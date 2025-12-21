@@ -1,0 +1,676 @@
+[
+  {
+    "stationId": "higashiginza",
+    "name": "Higashi-ginza",
+    "ward": "Chuo",
+    "line": "Asakusa",
+    "nodeId": "odpt.Station:Toei.Asakusa.Higashiginza",
+    "counts": {
+      "escalator": 2,
+      "elevator": 2
+    },
+    "hasAccessibleToilet": true,
+    "facilities": [
+      {
+        "name": "地上行エレベーター",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_elevator_ground.png"
+      },
+      {
+        "name": "バリアフリートイレ（車椅子使用者対応トイレ）",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_restroom_wheelchair.png"
+      },
+      {
+        "name": "ベビーチェア",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_babychair.png"
+      },
+      {
+        "name": "オストメイト対応トイレ",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_toilet_ostomate.png"
+      },
+      {
+        "name": "ベビーシート",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_babysheet.png"
+      },
+      {
+        "name": "介助用ベッド",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_nursing_bed.png"
+      },
+      {
+        "name": "触知図案内板",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_tactile_map_information.png"
+      },
+      {
+        "name": "AED",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_aed.png"
+      },
+      {
+        "name": "きっぷ売り場",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_ticketoffice.png"
+      },
+      {
+        "name": "きっぷ売り場（自動定期券発売機あり）",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_ticketmachine.png"
+      },
+      {
+        "name": "公衆電話",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_public_phone.png"
+      }
+    ],
+    "rawData": {
+      "barrierFreeText": "バリアフリー設備\n                  エスカレーター : 2台エレベーター : 2台1ルートの確保 : 済みバリアフリートイレ（車椅子使用者対応トイレ） : あり..."
+    }
+  },
+  {
+    "stationId": "takaracho",
+    "name": "Takaracho",
+    "ward": "Chuo",
+    "line": "Asakusa",
+    "nodeId": "odpt.Station:Toei.Asakusa.Takaracho",
+    "counts": {
+      "escalator": 5,
+      "elevator": 2
+    },
+    "hasAccessibleToilet": true,
+    "facilities": [
+      {
+        "name": "地上行エレベーター",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_elevator_ground.png"
+      },
+      {
+        "name": "バリアフリートイレ（車椅子使用者対応トイレ）",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_restroom_wheelchair.png"
+      },
+      {
+        "name": "ベビーチェア",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_babychair.png"
+      },
+      {
+        "name": "オストメイト対応トイレ",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_toilet_ostomate.png"
+      },
+      {
+        "name": "ベビーシート",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_babysheet.png"
+      },
+      {
+        "name": "介助用ベッド",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_nursing_bed.png"
+      },
+      {
+        "name": "触知図案内板",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_tactile_map_information.png"
+      },
+      {
+        "name": "AED",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_aed.png"
+      },
+      {
+        "name": "きっぷ売り場",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_ticketoffice.png"
+      },
+      {
+        "name": "きっぷ売り場（自動定期券発売機あり）",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_ticketmachine.png"
+      },
+      {
+        "name": "公衆電話",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_public_phone.png"
+      },
+      {
+        "name": "コインロッカー",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_locker.png"
+      }
+    ],
+    "rawData": {
+      "barrierFreeText": "バリアフリー設備\n                  エスカレーター : 5台エレベーター : 2台1ルートの確保 : 済みバリアフリートイレ（車椅子使用者対応トイレ） : あり..."
+    }
+  },
+  {
+    "stationId": "nihombashi",
+    "name": "Nihombashi",
+    "ward": "Chuo",
+    "line": "Asakusa",
+    "nodeId": "odpt.Station:Toei.Asakusa.Nihombashi",
+    "counts": {
+      "escalator": 8,
+      "elevator": 3
+    },
+    "hasAccessibleToilet": true,
+    "facilities": [
+      {
+        "name": "ホーム階行エレベーター",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_elevator_home.png"
+      },
+      {
+        "name": "地上行エレベーター",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_elevator_ground.png"
+      },
+      {
+        "name": "バリアフリートイレ（車椅子使用者対応トイレ）",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_restroom_wheelchair.png"
+      },
+      {
+        "name": "ベビーチェア",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_babychair.png"
+      },
+      {
+        "name": "オストメイト対応トイレ",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_toilet_ostomate.png"
+      },
+      {
+        "name": "ベビーシート",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_babysheet.png"
+      },
+      {
+        "name": "触知図案内板",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_tactile_map_information.png"
+      },
+      {
+        "name": "AED",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_aed.png"
+      },
+      {
+        "name": "きっぷ売り場",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_ticketoffice.png"
+      },
+      {
+        "name": "きっぷ売り場（自動定期券発売機あり）",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_ticketmachine.png"
+      },
+      {
+        "name": "店舗",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_store.png"
+      },
+      {
+        "name": "公衆電話",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_public_phone.png"
+      },
+      {
+        "name": "コインロッカー",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_locker.png"
+      }
+    ],
+    "rawData": {
+      "barrierFreeText": "バリアフリー設備\n                  エスカレーター : 8台エレベーター : 3台1ルートの確保 : 済みバリアフリートイレ（車椅子使用者対応トイレ） : あり..."
+    }
+  },
+  {
+    "stationId": "ningyocho",
+    "name": "Ningyocho",
+    "ward": "Chuo",
+    "line": "Asakusa",
+    "nodeId": "odpt.Station:Toei.Asakusa.Ningyocho",
+    "counts": {
+      "escalator": 0,
+      "elevator": 3
+    },
+    "hasAccessibleToilet": true,
+    "facilities": [
+      {
+        "name": "ホーム階行エレベーター",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_elevator_home.png"
+      },
+      {
+        "name": "地上行エレベーター",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_elevator_ground.png"
+      },
+      {
+        "name": "バリアフリートイレ（車椅子使用者対応トイレ）",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_restroom_wheelchair.png"
+      },
+      {
+        "name": "ベビーチェア",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_babychair.png"
+      },
+      {
+        "name": "オストメイト対応トイレ",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_toilet_ostomate.png"
+      },
+      {
+        "name": "ベビーシート",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_babysheet.png"
+      },
+      {
+        "name": "触知図案内板",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_tactile_map_information.png"
+      },
+      {
+        "name": "AED",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_aed.png"
+      },
+      {
+        "name": "きっぷ売り場",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_ticketoffice.png"
+      },
+      {
+        "name": "きっぷ売り場（自動定期券発売機あり）",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_ticketmachine.png"
+      },
+      {
+        "name": "店舗",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_store.png"
+      },
+      {
+        "name": "ATM",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_atm.png"
+      },
+      {
+        "name": "公衆電話",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_public_phone.png"
+      },
+      {
+        "name": "コインロッカー",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_locker.png"
+      }
+    ],
+    "rawData": {
+      "barrierFreeText": "バリアフリー設備\n                  エスカレーター : １台エレベーター : 3台1ルートの確保 : 済みバリアフリートイレ（車椅子使用者対応トイレ） : あり..."
+    }
+  },
+  {
+    "stationId": "higashi-nihombashi",
+    "name": "Higashi-nihombashi",
+    "ward": "Chuo",
+    "line": "Asakusa",
+    "nodeId": "odpt.Station:Toei.Asakusa.Higashinihombashi",
+    "counts": {
+      "escalator": 2,
+      "elevator": 1
+    },
+    "hasAccessibleToilet": true,
+    "facilities": [
+      {
+        "name": "地上行エレベーター",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_elevator_ground.png"
+      },
+      {
+        "name": "バリアフリートイレ（車椅子使用者対応トイレ）",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_restroom_wheelchair.png"
+      },
+      {
+        "name": "ベビーチェア",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_babychair.png"
+      },
+      {
+        "name": "オストメイト対応トイレ",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_toilet_ostomate.png"
+      },
+      {
+        "name": "ベビーシート",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_babysheet.png"
+      },
+      {
+        "name": "触知図案内板",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_tactile_map_information.png"
+      },
+      {
+        "name": "AED",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_aed.png"
+      },
+      {
+        "name": "きっぷ売り場",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_ticketoffice.png"
+      },
+      {
+        "name": "きっぷ売り場（自動定期券発売機あり）",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_ticketmachine.png"
+      },
+      {
+        "name": "公衆電話",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_public_phone.png"
+      }
+    ],
+    "rawData": {
+      "barrierFreeText": "バリアフリー設備\n                  エスカレーター : 2台エレベーター : 1台1ルートの確保 : 済みバリアフリートイレ（車椅子使用者対応トイレ） : あり..."
+    }
+  },
+  {
+    "stationId": "bakuro-yokoyama",
+    "name": "Bakuro-yokoyama",
+    "ward": "Chuo",
+    "line": "Shinjuku",
+    "nodeId": "odpt.Station:Toei.Shinjuku.BakuroYokoyama",
+    "counts": {
+      "escalator": 17,
+      "elevator": 3
+    },
+    "hasAccessibleToilet": true,
+    "facilities": [
+      {
+        "name": "ホーム階行エレベーター",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_elevator_home.png"
+      },
+      {
+        "name": "地上行エレベーター",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_elevator_ground.png"
+      },
+      {
+        "name": "バリアフリートイレ（車椅子使用者対応トイレ）",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_restroom_wheelchair.png"
+      },
+      {
+        "name": "ベビーチェア",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_babychair.png"
+      },
+      {
+        "name": "オストメイト対応トイレ",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_toilet_ostomate.png"
+      },
+      {
+        "name": "ベビーシート",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_babysheet.png"
+      },
+      {
+        "name": "触知図案内板",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_tactile_map_information.png"
+      },
+      {
+        "name": "AED",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_aed.png"
+      },
+      {
+        "name": "きっぷ売り場",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_ticketoffice.png"
+      },
+      {
+        "name": "きっぷ売り場（自動定期券発売機あり）",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_ticketmachine.png"
+      },
+      {
+        "name": "店舗",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_store.png"
+      },
+      {
+        "name": "ATM",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_atm.png"
+      },
+      {
+        "name": "公衆電話",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_public_phone.png"
+      },
+      {
+        "name": "コインロッカー",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_locker.png"
+      }
+    ],
+    "rawData": {
+      "barrierFreeText": "バリアフリー設備\n                  エスカレーター : 17台エレベーター : 3台1ルートの確保 : 済みバリアフリートイレ（車椅子使用者対応トイレ） : あり\n\n新宿線のホームと..."
+    }
+  },
+  {
+    "stationId": "hamacho",
+    "name": "Hamacho",
+    "ward": "Chuo",
+    "line": "Shinjuku",
+    "nodeId": "odpt.Station:Toei.Shinjuku.Hamacho",
+    "counts": {
+      "escalator": 4,
+      "elevator": 2
+    },
+    "hasAccessibleToilet": true,
+    "facilities": [
+      {
+        "name": "ホーム階行エレベーター",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_elevator_home.png"
+      },
+      {
+        "name": "地上行エレベーター",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_elevator_ground.png"
+      },
+      {
+        "name": "バリアフリートイレ（車椅子使用者対応トイレ）",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_restroom_wheelchair.png"
+      },
+      {
+        "name": "ベビーチェア",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_babychair.png"
+      },
+      {
+        "name": "オストメイト対応トイレ",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_toilet_ostomate.png"
+      },
+      {
+        "name": "ベビーシート",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_babysheet.png"
+      },
+      {
+        "name": "触知図案内板",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_tactile_map_information.png"
+      },
+      {
+        "name": "AED",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_aed.png"
+      },
+      {
+        "name": "きっぷ売り場",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_ticketoffice.png"
+      },
+      {
+        "name": "きっぷ売り場（自動定期券発売機あり）",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_ticketmachine.png"
+      },
+      {
+        "name": "ATM",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_atm.png"
+      },
+      {
+        "name": "公衆電話",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_public_phone.png"
+      },
+      {
+        "name": "コインロッカー",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_locker.png"
+      }
+    ],
+    "rawData": {
+      "barrierFreeText": "バリアフリー設備\n                  エスカレーター : 4台エレベーター : 2台1ルートの確保 : 済みバリアフリートイレ（車椅子使用者対応トイレ） : あり\n\n新宿線のホームと車..."
+    }
+  },
+  {
+    "stationId": "tsukishima",
+    "name": "Tsukishima",
+    "ward": "Chuo",
+    "line": "Oedo",
+    "nodeId": "odpt.Station:Toei.Oedo.Tsukishima",
+    "counts": {
+      "escalator": 5,
+      "elevator": 2
+    },
+    "hasAccessibleToilet": true,
+    "facilities": [
+      {
+        "name": "ホーム階行エレベーター",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_elevator_home.png"
+      },
+      {
+        "name": "地上行エレベーター",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_elevator_ground.png"
+      },
+      {
+        "name": "バリアフリートイレ（車椅子使用者対応トイレ）",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_restroom_wheelchair.png"
+      },
+      {
+        "name": "ベビーチェア",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_babychair.png"
+      },
+      {
+        "name": "オストメイト対応トイレ",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_toilet_ostomate.png"
+      },
+      {
+        "name": "ベビーシート",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_babysheet.png"
+      },
+      {
+        "name": "触知図案内板",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_tactile_map_information.png"
+      },
+      {
+        "name": "AED",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_aed.png"
+      },
+      {
+        "name": "きっぷ売り場",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_ticketoffice.png"
+      },
+      {
+        "name": "きっぷ売り場（自動定期券発売機あり）",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_ticketmachine.png"
+      },
+      {
+        "name": "ATM",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_atm.png"
+      },
+      {
+        "name": "公衆電話",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_public_phone.png"
+      },
+      {
+        "name": "コインロッカー",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_locker.png"
+      }
+    ],
+    "rawData": {
+      "barrierFreeText": "バリアフリー設備\n                  エスカレーター : 5台エレベーター : 2台1ルートの確保 : 済みバリアフリートイレ（車椅子使用者対応トイレ） : あり\n\n大江戸線のホームと..."
+    }
+  },
+  {
+    "stationId": "kachidoki",
+    "name": "Kachidoki",
+    "ward": "Chuo",
+    "line": "Oedo",
+    "nodeId": "odpt.Station:Toei.Oedo.Kachidoki",
+    "counts": {
+      "escalator": 21,
+      "elevator": 4
+    },
+    "hasAccessibleToilet": true,
+    "facilities": [
+      {
+        "name": "ホーム階行エレベーター",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_elevator_home.png"
+      },
+      {
+        "name": "地上行エレベーター",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_elevator_ground.png"
+      },
+      {
+        "name": "バリアフリートイレ（車椅子使用者対応トイレ）",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_restroom_wheelchair.png"
+      },
+      {
+        "name": "ベビーチェア",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_babychair.png"
+      },
+      {
+        "name": "オストメイト対応トイレ",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_toilet_ostomate.png"
+      },
+      {
+        "name": "ベビーシート",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_babysheet.png"
+      },
+      {
+        "name": "触知図案内板",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_tactile_map_information.png"
+      },
+      {
+        "name": "AED",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_aed.png"
+      },
+      {
+        "name": "きっぷ売り場",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_ticketoffice.png"
+      },
+      {
+        "name": "きっぷ売り場（自動定期券発売機あり）",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_ticketmachine.png"
+      },
+      {
+        "name": "ATM",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_atm.png"
+      },
+      {
+        "name": "公衆電話",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_public_phone.png"
+      },
+      {
+        "name": "コインロッカー",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_locker.png"
+      }
+    ],
+    "rawData": {
+      "barrierFreeText": "バリアフリー設備\n                  エスカレーター : 21台エレベーター : 4台1ルートの確保 : 済みバリアフリートイレ（車椅子使用者対応トイレ） : あり\n\n大江戸線のホーム..."
+    }
+  },
+  {
+    "stationId": "tsukijishijo",
+    "name": "Tsukijishijo",
+    "ward": "Chuo",
+    "line": "Oedo",
+    "nodeId": "odpt.Station:Toei.Oedo.Tsukijishijo",
+    "counts": {
+      "escalator": 7,
+      "elevator": 2
+    },
+    "hasAccessibleToilet": true,
+    "facilities": [
+      {
+        "name": "ホーム階行エレベーター",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_elevator_home.png"
+      },
+      {
+        "name": "地上行エレベーター",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_elevator_ground.png"
+      },
+      {
+        "name": "バリアフリートイレ（車椅子使用者対応トイレ）",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_restroom_wheelchair.png"
+      },
+      {
+        "name": "ベビーチェア",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_babychair.png"
+      },
+      {
+        "name": "オストメイト対応トイレ",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_toilet_ostomate.png"
+      },
+      {
+        "name": "ベビーシート",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_babysheet.png"
+      },
+      {
+        "name": "触知図案内板",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_tactile_map_information.png"
+      },
+      {
+        "name": "AED",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_aed.png"
+      },
+      {
+        "name": "きっぷ売り場",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_ticketoffice.png"
+      },
+      {
+        "name": "きっぷ売り場（自動定期券発売機あり）",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_ticketmachine.png"
+      },
+      {
+        "name": "ATM",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_atm.png"
+      },
+      {
+        "name": "公衆電話",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_public_phone.png"
+      },
+      {
+        "name": "コインロッカー",
+        "iconUrl": "https://www.kotsu.metro.tokyo.jp/g/icon/icon_locker.png"
+      }
+    ],
+    "rawData": {
+      "barrierFreeText": "バリアフリー設備\n                  エスカレーター : 7台エレベーター : 2台1ルートの確保 : 済みバリアフリートイレ（車椅子使用者対応トイレ） : あり\n\n大江戸線のホームと..."
+    }
+  }
+]

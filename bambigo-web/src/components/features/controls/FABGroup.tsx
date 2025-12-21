@@ -63,7 +63,16 @@ export function FABGroup({ mainActions, secondaryActions = [] }: FABGroupProps) 
              <LongPressButton
                onShortPress={action.onClick}
                onLongPress={action.onLongPress || (() => {})}
-               className="w-12 h-12 rounded-2xl bg-white text-gray-800 shadow-lg flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all border border-gray-100"
+               className={clsx(
+                 "w-12 h-12 rounded-2xl",
+                 "bg-white/95 text-gray-900",
+                 "shadow-lg ring-1 ring-black/5",
+                 "flex items-center justify-center",
+                 "transition-transform duration-150 active:scale-95",
+                 "hover:bg-white",
+                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+                 "backdrop-blur-sm"
+               )}
                aria-label={action.label}
              >
                {action.icon}
@@ -75,7 +84,7 @@ export function FABGroup({ mainActions, secondaryActions = [] }: FABGroupProps) 
       {/* Slide Handle Indicator */}
       {secondaryActions.length > 0 && (
         <div 
-          className="w-14 flex justify-center py-2 -mb-2 z-10 opacity-60 cursor-pointer hover:opacity-100 transition-opacity active:scale-90"
+          className="w-14 min-h-12 flex justify-center items-center -mb-2 z-10 opacity-70 cursor-pointer hover:opacity-100 transition-opacity active:scale-90"
           onClick={() => {
             setShowSecondary(!showSecondary)
             if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10)
@@ -84,7 +93,7 @@ export function FABGroup({ mainActions, secondaryActions = [] }: FABGroupProps) 
           aria-label={showSecondary ? "Hide secondary actions" : "Show secondary actions"}
           aria-expanded={showSecondary}
         >
-          <div className="bg-gray-200/80 backdrop-blur-sm rounded-full px-4 py-1 border border-white/20 shadow-sm">
+          <div className="bg-white/85 backdrop-blur-sm rounded-full px-4 py-1.5 border border-gray-200 shadow-sm ring-1 ring-black/5">
             {showSecondary ? <ChevronDown size={20} className="text-gray-600" /> : <ChevronUp size={20} className="text-gray-600" />}
           </div>
         </div>
@@ -98,9 +107,17 @@ export function FABGroup({ mainActions, secondaryActions = [] }: FABGroupProps) 
                onShortPress={action.onClick}
                onLongPress={action.onLongPress || (() => {})}
                className={clsx(
-                 "w-14 h-14 rounded-2xl shadow-xl flex items-center justify-center transition-all active:scale-95 border-2",
-                 action.variant === 'primary' ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700" : 
-                 action.variant === 'danger' ? "bg-red-500 text-white border-red-500 hover:bg-red-600" : "bg-white text-gray-900 border-white hover:bg-gray-50"
+                 "w-14 h-14 rounded-2xl",
+                 "shadow-xl ring-1 ring-black/10",
+                 "flex items-center justify-center",
+                 "transition-transform duration-150 active:scale-95",
+                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+                 "backdrop-blur-sm",
+                 action.variant === 'primary'
+                   ? "bg-blue-600 text-white hover:bg-blue-700"
+                   : action.variant === 'danger'
+                     ? "bg-red-500 text-white hover:bg-red-600"
+                     : "bg-white/95 text-gray-900 hover:bg-white"
                )}
                aria-label={action.label}
              >

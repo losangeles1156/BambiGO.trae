@@ -39,6 +39,8 @@ export const ja: Dictionary = {
     backToCenter: '中心エリアに戻る',
     manageTags: 'タグを管理',
     swipeUpForDetails: '上にスワイプして詳細を表示',
+    remove: '削除',
+    tapForDetails: 'タップして詳細を見る',
   },
   header: {
     youAreAt: '現在地',
@@ -146,5 +148,176 @@ export const ja: Dictionary = {
       earthquake: '地震',
       other: 'その他'
     }
+  },
+  tagging: {
+    managerRegionLabel: 'タグ管理',
+    activeTagsLabel: '選択中のタグ',
+    l1Title: 'L1 カテゴリ（構造）',
+    l2Title: 'L2 雰囲気（集約）',
+    l2: {
+      odpt: {
+        label: '運行情報',
+        normal: '平常運転',
+        delay: '遅延',
+        suspended: '運転見合わせ'
+      },
+      weather: {
+        label: '天気',
+        rain: '雨',
+        snow: '雪'
+      },
+      crowd: {
+        label: '混雑',
+        crowded: '混雑'
+      }
+    },
+    l3Title: 'L3 施設（機能）',
+    l4Title: 'L4 戦略（提案）',
+    l4Contexts: {
+      luggage: '大きな荷物',
+      stroller: 'ベビーカー',
+      wheelchair: '車椅子/バリアフリー',
+      rush: '急いでいる'
+    },
+    stationKnowledge: '駅の豆知識・注意点',
+    filterBarLabel: 'タグフィルターバー',
+    serviceFilterPrefix: 'サービスフィルター',
+    serviceTagDistribution: 'サービスタグ分布',
+    generateStrategy: '生成',
+    strategyCardTitle: '移動戦略',
+    strategyEngineTitle: 'AI戦略エンジン',
+    strategyEngineSubtitle: '状況に応じたL4インサイト',
+    strategyEmptyBody: 'タグ・天気・時間を分析して、パーソナライズされた移動提案を生成します。',
+    selectNodeToGenerate: '戦略を生成するにはノードを選択してください',
+    personasLabel: '推定ペルソナ',
+    persona: {
+      transitHub: '交通ハブ',
+      localVibe: 'ローカル生活',
+      digitalNomadReady: 'デジタルノマド向け',
+      accessibleFriendly: 'バリアフリー対応',
+    },
+    addTag: 'タグを追加',
+    addL1: '生活機能を追加 (L1)',
+    subCategories: '{{label}} サブカテゴリ',
+    back: '戻る',
+    layers: {
+      l1: { name: '生活機能', description: '構造的/静的分類' },
+      l2: { name: '空間集約', description: 'エリア/雰囲気' },
+      l3: { name: 'サービス施設', description: '実用/アメニティ' },
+      l4: { name: '移動戦略', description: 'AI提案' }
+    },
+    l1: {
+      dining: {
+        label: '飲食',
+        izakaya: '居酒屋',
+        ramen: 'ラーメン',
+        cafe: 'カフェ',
+        restaurant: 'レストラン',
+        fast_food: 'ファストフード'
+      },
+      shopping: {
+        label: '買い物',
+        drugstore: 'ドラッグストア',
+        convenience_store: 'コンビニ',
+        electronics: '家電量販店',
+        supermarket: 'スーパー'
+      },
+      medical: {
+        label: '医療',
+        clinic: 'クリニック',
+        pharmacy: '薬局',
+        hospital: '病院',
+        dentist: '歯科'
+      },
+      leisure: {
+        label: 'レジャー',
+        park: '公園',
+        museum: '博物館',
+        gym: 'ジム',
+        cinema: '映画館',
+        karaoke: 'カラオケ'
+      },
+      education: {
+        label: '教育',
+        school: '学校',
+        university: '大学',
+        library: '図書館'
+      },
+      finance: {
+        label: '金融',
+        bank: '銀行',
+        atm: 'ATM',
+        currency_exchange: '外貨両替'
+      },
+      accommodation: {
+        label: '宿泊',
+        hotel: 'ホテル',
+        hostel: 'ホステル',
+        apartment: 'アパート'
+      },
+      business: {
+        label: 'ビジネス',
+        office: 'オフィスビル',
+        coworking: 'コワーキング',
+        factory: '工場'
+      },
+      religion: {
+        label: '宗教',
+        shrine: '神社',
+        temple: '寺院',
+        church: '教会'
+      },
+      nature: {
+        label: '自然',
+        scenic_spot: '景勝地',
+        garden: '庭園',
+        mountain: '山'
+      },
+      transport: {
+        label: '交通',
+        station: '駅',
+        bus_stop: 'バス停',
+        parking: '駐車場'
+      },
+      public: {
+        label: '公共',
+        police: '警察署',
+        post_office: '郵便局',
+        government: '役所'
+      },
+      residential: {
+        label: '住宅',
+        apartment_complex: '集合住宅',
+        housing: '住宅街'
+      }
+    },
+    l3: {
+      wifi: 'Wi-Fi',
+      toilet: 'トイレ',
+      charging: '充電',
+      locker: 'ロッカー',
+      accessibility: 'バリアフリー',
+      rest_area: '休憩所',
+      other: 'その他'
+    }
+  },
+  nodeDetail: {
+    outOfRangeTitle: 'サポート範囲外',
+    planRouteBack: '中心へ戻るルート',
+    later: 'あとで',
+    serviceFacilitiesTitle: '施設（L3）',
+    trafficTitle: '交通状況（リアルタイム）',
+    crowdTitle: '混雑予測',
+    crowdHistorical: '過去データ',
+    crowdTrendLabel: '傾向',
+    crowdComfort: '快適',
+    crowdMedium: '普通',
+    crowdHigh: '混雑',
+    trendUp: '増加中',
+    trendDown: '減少中',
+    trendStable: '横ばい',
+    nearbyFacilitiesTitle: '周辺施設',
+    bufferNotice: 'このエリアは基本ナビのみ提供します',
+    bufferLearnMore: 'ゾーンの違いを見る',
   }
 }

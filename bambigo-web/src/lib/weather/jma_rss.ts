@@ -29,6 +29,27 @@ const parser = new XMLParser({
   attributeNamePrefix: '@_'
 });
 
+function isAbortError(e: unknown): boolean {
+  const err = e as { name?: unknown; message?: unknown } | null
+  const name = err && typeof err === 'object' ? String(err.name || '') : ''
+  const message = err && typeof err === 'object' ? String(err.message || '') : ''
+  if (name === 'AbortError') return true
+  const m = message.toLowerCase()
+  return m.includes('abort') || m.includes('aborted') || m.includes('canceled') || m.includes('cancelled')
+}
+
+async function fetchTextWithTimeout(url: string, timeoutMs: number): Promise<string> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    const res = await fetch(url, { next: { revalidate: 300 }, signal: controller.signal })
+    if (!res.ok) throw new Error(`Failed to fetch ${url}`)
+    return await res.text()
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
+
 export async function fetchJmaAlerts(): Promise<WeatherAlert[]> {
   const alerts: WeatherAlert[] = [];
   
@@ -36,9 +57,7 @@ export async function fetchJmaAlerts(): Promise<WeatherAlert[]> {
   const results = await Promise.allSettled(
     FEEDS.map(async (feed) => {
       try {
-        const res = await fetch(feed.url, { next: { revalidate: 300 } }); // Cache for 5 mins
-        if (!res.ok) throw new Error(`Failed to fetch ${feed.url}`);
-        const xml = await res.text();
+        const xml = await fetchTextWithTimeout(feed.url, 2500)
         const parsed = parser.parse(xml);
         
         // Atom feed structure: feed -> entry[]
@@ -100,7 +119,9 @@ export async function fetchJmaAlerts(): Promise<WeatherAlert[]> {
         }).filter(Boolean) as WeatherAlert[];
 
       } catch (error) {
-        console.error(`Error fetching JMA feed ${feed.url}:`, error);
+        if (!isAbortError(error)) {
+          console.error(`Error fetching JMA feed ${feed.url}:`, error);
+        }
         return [];
       }
     })

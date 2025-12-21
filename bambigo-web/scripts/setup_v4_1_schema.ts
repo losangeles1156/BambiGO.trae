@@ -10,6 +10,7 @@ create extension if not exists postgis;
 
 -- Drop tables if exist to ensure v4.1 schema compliance
 drop table if exists nudge_logs cascade;
+drop table if exists saved_locations cascade;
 drop table if exists trip_subscriptions cascade;
 drop table if exists users cascade;
 drop table if exists shared_mobility_stations cascade;
@@ -217,6 +218,114 @@ create index idx_nudge_clicked on nudge_logs(deeplink_clicked) where deeplink_cl
 create index idx_nudge_provider on nudge_logs(clicked_provider) where clicked_provider is not null;
 create index idx_nudge_revenue on nudge_logs(city_id, potential_revenue_type, created_at);
 
+-- 9. saved_locations
+create table saved_locations (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references users(id) on delete cascade not null,
+  node_id text references nodes(id) on delete set null,
+  facility_id text references facilities(id) on delete set null,
+  title text,
+  notes text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create index idx_saved_locations_user on saved_locations(user_id);
+create index idx_saved_locations_created on saved_locations(created_at desc);
+
+-- 10. ODPT raw/curated storage (extensible)
+create table odpt_entities (
+  entity_type text not null,
+  same_as text not null,
+  operator text,
+  railway text,
+  dc_date timestamptz,
+  fetched_at timestamptz not null default now(),
+  payload jsonb not null,
+  source_url text,
+  primary key (entity_type, same_as),
+  constraint odpt_entities_same_as_format check (same_as ~ '^odpt\\.'),
+  constraint odpt_entities_payload_object check (jsonb_typeof(payload) = 'object')
+);
+
+create index idx_odpt_entities_type_date on odpt_entities(entity_type, dc_date desc);
+create index idx_odpt_entities_operator on odpt_entities(operator);
+create index idx_odpt_entities_railway on odpt_entities(railway);
+create index idx_odpt_entities_payload_gin on odpt_entities using gin(payload);
+
+create table odpt_stations (
+  same_as text primary key,
+  operator text,
+  railway text,
+  station_code text,
+  title jsonb not null,
+  location geography(point, 4326),
+  dc_date timestamptz,
+  raw jsonb not null,
+  constraint odpt_stations_same_as_format check (same_as ~ '^odpt\\.'),
+  constraint odpt_stations_title_object check (jsonb_typeof(title) = 'object'),
+  constraint odpt_stations_raw_object check (jsonb_typeof(raw) = 'object')
+);
+
+create index idx_odpt_stations_operator on odpt_stations(operator);
+create index idx_odpt_stations_railway on odpt_stations(railway);
+create index idx_odpt_stations_location on odpt_stations using gist(location);
+create index idx_odpt_stations_title_gin on odpt_stations using gin(title);
+
+create table odpt_busstop_poles (
+  same_as text primary key,
+  operator text,
+  busroute_pattern text,
+  title jsonb,
+  location geography(point, 4326),
+  dc_date timestamptz,
+  raw jsonb not null,
+  constraint odpt_busstop_poles_same_as_format check (same_as ~ '^odpt\\.'),
+  constraint odpt_busstop_poles_title_object check (title is null or jsonb_typeof(title) = 'object'),
+  constraint odpt_busstop_poles_raw_object check (jsonb_typeof(raw) = 'object')
+);
+
+create index idx_odpt_busstop_poles_operator on odpt_busstop_poles(operator);
+create index idx_odpt_busstop_poles_pattern on odpt_busstop_poles(busroute_pattern);
+create index idx_odpt_busstop_poles_location on odpt_busstop_poles using gist(location);
+
+create table odpt_station_facilities (
+  same_as text primary key,
+  operator text,
+  station text,
+  facility_type text,
+  title jsonb,
+  location geography(point, 4326),
+  dc_date timestamptz,
+  raw jsonb not null,
+  constraint odpt_station_facilities_same_as_format check (same_as ~ '^odpt\\.'),
+  constraint odpt_station_facilities_title_object check (title is null or jsonb_typeof(title) = 'object'),
+  constraint odpt_station_facilities_raw_object check (jsonb_typeof(raw) = 'object')
+);
+
+create index idx_odpt_station_facilities_operator on odpt_station_facilities(operator);
+create index idx_odpt_station_facilities_station on odpt_station_facilities(station);
+create index idx_odpt_station_facilities_type on odpt_station_facilities(facility_type);
+create index idx_odpt_station_facilities_location on odpt_station_facilities using gist(location);
+
+create table odpt_train_information (
+  content_hash text primary key,
+  operator text not null,
+  railway text,
+  status text,
+  information_text jsonb not null,
+  dc_date timestamptz,
+  fetched_at timestamptz not null default now(),
+  raw jsonb not null,
+  source_url text,
+  constraint odpt_train_information_text_object check (jsonb_typeof(information_text) = 'object'),
+  constraint odpt_train_information_raw_object check (jsonb_typeof(raw) = 'object')
+);
+
+create index idx_odpt_train_information_operator_date on odpt_train_information(operator, fetched_at desc);
+create index idx_odpt_train_information_railway_date on odpt_train_information(railway, fetched_at desc);
+create index idx_odpt_train_information_text_gin on odpt_train_information using gin(information_text);
+
 -- RLS Policies
 alter table cities enable row level security;
 alter table nodes enable row level security;
@@ -226,6 +335,12 @@ alter table shared_mobility_stations enable row level security;
 alter table users enable row level security;
 alter table trip_subscriptions enable row level security;
 alter table nudge_logs enable row level security;
+alter table saved_locations enable row level security;
+alter table odpt_entities enable row level security;
+alter table odpt_stations enable row level security;
+alter table odpt_busstop_poles enable row level security;
+alter table odpt_station_facilities enable row level security;
+alter table odpt_train_information enable row level security;
 
 -- Helper to create public read policy
 create or replace function create_public_read_policy(tbl text) returns void as $$
@@ -241,6 +356,11 @@ select create_public_read_policy('nodes');
 select create_public_read_policy('facilities');
 select create_public_read_policy('facility_suitability');
 select create_public_read_policy('shared_mobility_stations');
+select create_public_read_policy('odpt_entities');
+select create_public_read_policy('odpt_stations');
+select create_public_read_policy('odpt_busstop_poles');
+select create_public_read_policy('odpt_station_facilities');
+select create_public_read_policy('odpt_train_information');
 
 -- Service Role write access
 create or replace function create_service_role_write_policy(tbl text) returns void as $$
@@ -259,6 +379,48 @@ select create_service_role_write_policy('shared_mobility_stations');
 select create_service_role_write_policy('users');
 select create_service_role_write_policy('trip_subscriptions');
 select create_service_role_write_policy('nudge_logs');
+select create_service_role_write_policy('saved_locations');
+select create_service_role_write_policy('odpt_entities');
+select create_service_role_write_policy('odpt_stations');
+select create_service_role_write_policy('odpt_busstop_poles');
+select create_service_role_write_policy('odpt_station_facilities');
+select create_service_role_write_policy('odpt_train_information');
+
+-- User Access Policies
+create or replace function create_user_own_policy(tbl text) returns void as $$
+begin
+  if not exists (select 1 from pg_policies where schemaname='public' and tablename=tbl and policyname=tbl || '_own_select') then
+    execute format('create policy %I_own_select on public.%I for select using (auth.uid() = user_id)', tbl, tbl);
+  end if;
+  if not exists (select 1 from pg_policies where schemaname='public' and tablename=tbl and policyname=tbl || '_own_insert') then
+    execute format('create policy %I_own_insert on public.%I for insert with check (auth.uid() = user_id)', tbl, tbl);
+  end if;
+  if not exists (select 1 from pg_policies where schemaname='public' and tablename=tbl and policyname=tbl || '_own_update') then
+    execute format('create policy %I_own_update on public.%I for update using (auth.uid() = user_id)', tbl, tbl);
+  end if;
+  if not exists (select 1 from pg_policies where schemaname='public' and tablename=tbl and policyname=tbl || '_own_delete') then
+    execute format('create policy %I_own_delete on public.%I for delete using (auth.uid() = user_id)', tbl, tbl);
+  end if;
+end;$$ language plpgsql;
+alter function create_user_own_policy(text) set search_path = pg_catalog, public;
+
+select create_user_own_policy('saved_locations');
+select create_user_own_policy('trip_subscriptions');
+select create_user_own_policy('nudge_logs');
+
+-- Users table is special because the column is 'id', not 'user_id'
+do $$
+begin
+  if not exists (select 1 from pg_policies where schemaname='public' and tablename='users' and policyname='users_own_select') then
+    create policy users_own_select on users for select using (auth.uid() = id);
+  end if;
+  if not exists (select 1 from pg_policies where schemaname='public' and tablename='users' and policyname='users_own_insert') then
+    create policy users_own_insert on users for insert with check (auth.uid() = id);
+  end if;
+  if not exists (select 1 from pg_policies where schemaname='public' and tablename='users' and policyname='users_own_update') then
+    create policy users_own_update on users for update using (auth.uid() = id);
+  end if;
+end $$;
 
 -- RPC for bulk location update
 create or replace function set_node_location_bulk(p_items jsonb)
@@ -301,6 +463,11 @@ end$$;
 `
 
 async function main() {
+  if (process.argv.includes('--print')) {
+    process.stdout.write(sql)
+    return
+  }
+
   function parseEnvFile(filePath: string) {
     if (!fs.existsSync(filePath)) return
     const txt = fs.readFileSync(filePath, 'utf8')
@@ -313,7 +480,8 @@ async function main() {
         let v = m[2]
         if (v.startsWith('"') && v.endsWith('"')) v = v.slice(1, -1)
         if (v.startsWith("'") && v.endsWith("'")) v = v.slice(1, -1)
-        if (!(k in process.env) || !process.env[k]) process.env[k] = v
+        // .env.local should override .env
+        process.env[k] = v
       }
     }
   }
@@ -327,7 +495,10 @@ async function main() {
   
   if (!conn) throw new Error('DATABASE_URL missing')
   
-  const client = new Client({ connectionString: conn })
+  const client = new Client({
+    connectionString: conn,
+    ssl: conn.includes('supabase.') || conn.includes('supabase.com') ? { rejectUnauthorized: false } : undefined,
+  })
   await client.connect()
   try {
     console.log('Applying v4.1 Schema...')

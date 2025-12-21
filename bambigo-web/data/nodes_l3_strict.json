@@ -1,0 +1,1822 @@
+[
+  {
+    "id": "45f4aa64-ab67-41ca-9726-8d9dd69a6bb9",
+    "nodeId": "odpt.Station:Toei.Asakusa.Asakusa",
+    "category": "accessibility",
+    "subCategory": "elevator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Elevator",
+        "ja": "エレベーター"
+      },
+      "count": 3,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.120Z"
+  },
+  {
+    "id": "ec98aeaa-c0e2-4ac3-a36b-19453d6645ac",
+    "nodeId": "odpt.Station:Toei.Asakusa.Asakusa",
+    "category": "accessibility",
+    "subCategory": "escalator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Escalator",
+        "ja": "エスカレーター"
+      },
+      "count": 1,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.125Z"
+  },
+  {
+    "id": "31cc5851-a8d1-41fb-bbbd-1cfd207b7bff",
+    "nodeId": "odpt.Station:Toei.Asakusa.Asakusa",
+    "category": "toilet",
+    "subCategory": "accessible_toilet",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Accessible Toilet",
+        "ja": "だれでもトイレ"
+      },
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.125Z"
+  },
+  {
+    "id": "900b85df-d641-4465-bd79-f52b0918778f",
+    "nodeId": "odpt.Station:Toei.Asakusa.Asakusa",
+    "category": "locker",
+    "subCategory": "coin_locker",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Coin Locker",
+        "ja": "コインロッカー"
+      },
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.125Z"
+  },
+  {
+    "id": "22bfc5ca-a881-41e9-a86c-e5b208ee5d9d",
+    "nodeId": "odpt.Station:Toei.Asakusa.Asakusa",
+    "category": "other",
+    "subCategory": "atm",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "ATM",
+        "ja": "ATM"
+      },
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.125Z"
+  },
+  {
+    "id": "2433ba0e-1b46-4cdb-8484-53baaf62b34d",
+    "nodeId": "odpt.Station:Toei.Asakusa.Kuramae",
+    "category": "accessibility",
+    "subCategory": "elevator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Elevator",
+        "ja": "エレベーター"
+      },
+      "count": 2,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.125Z"
+  },
+  {
+    "id": "c2bb6a08-a5e3-4b7f-8e68-b896376a46af",
+    "nodeId": "odpt.Station:Toei.Asakusa.Kuramae",
+    "category": "accessibility",
+    "subCategory": "escalator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Escalator",
+        "ja": "エスカレーター"
+      },
+      "count": 2,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.126Z"
+  },
+  {
+    "id": "c3b3431b-5804-46aa-8ae3-eeefd6106677",
+    "nodeId": "odpt.Station:Toei.Asakusa.Kuramae",
+    "category": "toilet",
+    "subCategory": "accessible_toilet",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Accessible Toilet",
+        "ja": "だれでもトイレ"
+      },
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.126Z"
+  },
+  {
+    "id": "dff86a3a-04c4-4058-a53c-c32065ea15af",
+    "nodeId": "odpt.Station:Toei.Asakusa.Kuramae",
+    "category": "locker",
+    "subCategory": "coin_locker",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Coin Locker",
+        "ja": "コインロッカー"
+      },
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.126Z"
+  },
+  {
+    "id": "a9509207-40a1-4951-8c89-ab8666c4f27d",
+    "nodeId": "odpt.Station:Toei.Asakusa.Kuramae",
+    "category": "other",
+    "subCategory": "atm",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "ATM",
+        "ja": "ATM"
+      },
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.126Z"
+  },
+  {
+    "id": "3a113310-2417-4bd6-af9c-1a320fa4d89a",
+    "nodeId": "odpt.Station:Toei.Asakusa.Asakusabashi",
+    "category": "accessibility",
+    "subCategory": "elevator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Elevator",
+        "ja": "エレベーター"
+      },
+      "count": 2,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.126Z"
+  },
+  {
+    "id": "5dc45b5d-e7a5-4c75-ae63-67472c280fc6",
+    "nodeId": "odpt.Station:Toei.Asakusa.Asakusabashi",
+    "category": "accessibility",
+    "subCategory": "escalator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Escalator",
+        "ja": "エスカレーター"
+      },
+      "count": 5,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.127Z"
+  },
+  {
+    "id": "34c1fe15-d132-45e8-865e-68476a8c635d",
+    "nodeId": "odpt.Station:Toei.Asakusa.Asakusabashi",
+    "category": "toilet",
+    "subCategory": "accessible_toilet",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Accessible Toilet",
+        "ja": "だれでもトイレ"
+      },
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.127Z"
+  },
+  {
+    "id": "e303e73c-84a2-47e6-b879-5c705e5b3395",
+    "nodeId": "odpt.Station:Toei.Asakusa.Asakusabashi",
+    "category": "locker",
+    "subCategory": "coin_locker",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Coin Locker",
+        "ja": "コインロッカー"
+      },
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.127Z"
+  },
+  {
+    "id": "1600201f-dd2b-4e86-881c-0a074017dcc9",
+    "nodeId": "odpt.Station:Toei.Asakusa.Asakusabashi",
+    "category": "other",
+    "subCategory": "atm",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "ATM",
+        "ja": "ATM"
+      },
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.127Z"
+  },
+  {
+    "id": "2adee24b-e71f-467d-8676-109c2d4a86fd",
+    "nodeId": "odpt.Station:Toei.Oedo.UenoOkachimachi",
+    "category": "accessibility",
+    "subCategory": "elevator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Elevator",
+        "ja": "エレベーター"
+      },
+      "count": 2,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.127Z"
+  },
+  {
+    "id": "1b1fa16f-2b2e-4185-818f-96aa41df31cf",
+    "nodeId": "odpt.Station:Toei.Oedo.UenoOkachimachi",
+    "category": "accessibility",
+    "subCategory": "escalator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Escalator",
+        "ja": "エスカレーター"
+      },
+      "count": 10,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.127Z"
+  },
+  {
+    "id": "c7ef6a5e-e9bd-4f10-aba5-15827530ac8d",
+    "nodeId": "odpt.Station:Toei.Oedo.UenoOkachimachi",
+    "category": "toilet",
+    "subCategory": "accessible_toilet",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Accessible Toilet",
+        "ja": "だれでもトイレ"
+      },
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.127Z"
+  },
+  {
+    "id": "a501b38e-3381-4f09-a247-12d043395601",
+    "nodeId": "odpt.Station:Toei.Oedo.UenoOkachimachi",
+    "category": "locker",
+    "subCategory": "coin_locker",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Coin Locker",
+        "ja": "コインロッカー"
+      },
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.127Z"
+  },
+  {
+    "id": "0541b160-a9e7-4492-a50a-3f6017b99a76",
+    "nodeId": "odpt.Station:Toei.Oedo.UenoOkachimachi",
+    "category": "other",
+    "subCategory": "atm",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "ATM",
+        "ja": "ATM"
+      },
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.127Z"
+  },
+  {
+    "id": "aa3f1685-ec44-4291-abcb-f9df0f55bad8",
+    "nodeId": "odpt.Station:Toei.Oedo.ShinOkachimachi",
+    "category": "accessibility",
+    "subCategory": "elevator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Elevator",
+        "ja": "エレベーター"
+      },
+      "count": 3,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.127Z"
+  },
+  {
+    "id": "6008fd0e-1244-4fcc-9a0c-cc149f9d4697",
+    "nodeId": "odpt.Station:Toei.Oedo.ShinOkachimachi",
+    "category": "accessibility",
+    "subCategory": "escalator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Escalator",
+        "ja": "エスカレーター"
+      },
+      "count": 13,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.127Z"
+  },
+  {
+    "id": "dfaf8d00-d45b-4452-802c-bc29f0a54091",
+    "nodeId": "odpt.Station:Toei.Oedo.ShinOkachimachi",
+    "category": "toilet",
+    "subCategory": "accessible_toilet",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Accessible Toilet",
+        "ja": "だれでもトイレ"
+      },
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.127Z"
+  },
+  {
+    "id": "cc5771e3-049d-4a57-866a-ea9696583416",
+    "nodeId": "odpt.Station:Toei.Oedo.ShinOkachimachi",
+    "category": "locker",
+    "subCategory": "coin_locker",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Coin Locker",
+        "ja": "コインロッカー"
+      },
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.127Z"
+  },
+  {
+    "id": "b8f82d33-068b-4830-9277-19628bb51d8c",
+    "nodeId": "odpt.Station:Toei.Oedo.ShinOkachimachi",
+    "category": "other",
+    "subCategory": "atm",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "ATM",
+        "ja": "ATM"
+      },
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.127Z"
+  },
+  {
+    "id": "8a59ace9-f00e-4f20-a120-635d46bc09f1",
+    "nodeId": "odpt.Station:Toei.Mita.Uchisaiwaicho",
+    "category": "accessibility",
+    "subCategory": "elevator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Elevator",
+        "ja": "エレベーター"
+      },
+      "count": 2,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.127Z"
+  },
+  {
+    "id": "9b7f8a18-4c23-4b32-aa3d-4178ce6e4d6d",
+    "nodeId": "odpt.Station:Toei.Mita.Uchisaiwaicho",
+    "category": "accessibility",
+    "subCategory": "escalator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Escalator",
+        "ja": "エスカレーター"
+      },
+      "count": 10,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.127Z"
+  },
+  {
+    "id": "a114f193-9ce0-4e27-bb55-f25ec8db4bcb",
+    "nodeId": "odpt.Station:Toei.Mita.Uchisaiwaicho",
+    "category": "toilet",
+    "subCategory": "accessible_toilet",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Accessible Toilet",
+        "ja": "だれでもトイレ"
+      },
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.127Z"
+  },
+  {
+    "id": "defaec89-4330-4037-b27b-ba927801929c",
+    "nodeId": "odpt.Station:Toei.Mita.Hibiya",
+    "category": "accessibility",
+    "subCategory": "elevator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Elevator",
+        "ja": "エレベーター"
+      },
+      "count": 1,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.127Z"
+  },
+  {
+    "id": "e0a1b81f-5237-4803-8041-9ab138d9a832",
+    "nodeId": "odpt.Station:Toei.Mita.Hibiya",
+    "category": "accessibility",
+    "subCategory": "escalator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Escalator",
+        "ja": "エスカレーター"
+      },
+      "count": 4,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.127Z"
+  },
+  {
+    "id": "3e771758-0f89-49fd-aa1f-a5ebb0e797a7",
+    "nodeId": "odpt.Station:Toei.Mita.Hibiya",
+    "category": "toilet",
+    "subCategory": "accessible_toilet",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Accessible Toilet",
+        "ja": "だれでもトイレ"
+      },
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.127Z"
+  },
+  {
+    "id": "f022a0e2-7723-4e3c-88bd-99165145aea7",
+    "nodeId": "odpt.Station:Toei.Mita.Otemachi",
+    "category": "accessibility",
+    "subCategory": "elevator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Elevator",
+        "ja": "エレベーター"
+      },
+      "count": 3,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.127Z"
+  },
+  {
+    "id": "91ee4f6d-4fa8-450b-bdf6-008e21665c88",
+    "nodeId": "odpt.Station:Toei.Mita.Otemachi",
+    "category": "accessibility",
+    "subCategory": "escalator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Escalator",
+        "ja": "エスカレーター"
+      },
+      "count": 5,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.127Z"
+  },
+  {
+    "id": "a30fc87a-3145-4858-a321-95ebe316cea5",
+    "nodeId": "odpt.Station:Toei.Mita.Otemachi",
+    "category": "toilet",
+    "subCategory": "accessible_toilet",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Accessible Toilet",
+        "ja": "だれでもトイレ"
+      },
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "373d2243-f7ee-4001-84a3-e64cafb6f6d0",
+    "nodeId": "odpt.Station:Toei.Mita.Jimbocho",
+    "category": "accessibility",
+    "subCategory": "elevator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Elevator",
+        "ja": "エレベーター"
+      },
+      "count": 2,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "67acb630-81a3-468b-a434-5c8593cf7502",
+    "nodeId": "odpt.Station:Toei.Mita.Jimbocho",
+    "category": "accessibility",
+    "subCategory": "escalator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Escalator",
+        "ja": "エスカレーター"
+      },
+      "count": 6,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "bfcf73ce-5a5b-492a-8db5-bb8c12fddf84",
+    "nodeId": "odpt.Station:Toei.Mita.Jimbocho",
+    "category": "toilet",
+    "subCategory": "accessible_toilet",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Accessible Toilet",
+        "ja": "だれでもトイレ"
+      },
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "f572cc02-848b-4753-a5b4-5b867b02952a",
+    "nodeId": "odpt.Station:Toei.Mita.Suidobashi",
+    "category": "accessibility",
+    "subCategory": "elevator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Elevator",
+        "ja": "エレベーター"
+      },
+      "count": 2,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "f2c8d3d4-7f37-4c6a-b388-7581afe11626",
+    "nodeId": "odpt.Station:Toei.Mita.Suidobashi",
+    "category": "accessibility",
+    "subCategory": "escalator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Escalator",
+        "ja": "エスカレーター"
+      },
+      "count": 3,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "5627a600-ca78-466e-ba1a-1fcb3c4dac11",
+    "nodeId": "odpt.Station:Toei.Mita.Suidobashi",
+    "category": "toilet",
+    "subCategory": "accessible_toilet",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Accessible Toilet",
+        "ja": "だれでもトイレ"
+      },
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "520a59df-3e01-4ca2-b552-ff856f400170",
+    "nodeId": "odpt.Station:Toei.Shinjuku.Ichigaya",
+    "category": "accessibility",
+    "subCategory": "elevator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Elevator",
+        "ja": "エレベーター"
+      },
+      "count": 3,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "c3ad1394-1f5d-4d52-90db-4247499e0cf4",
+    "nodeId": "odpt.Station:Toei.Shinjuku.Ichigaya",
+    "category": "accessibility",
+    "subCategory": "escalator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Escalator",
+        "ja": "エスカレーター"
+      },
+      "count": 9,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "4a09b9c6-daba-491f-a5df-8a35a62e1745",
+    "nodeId": "odpt.Station:Toei.Shinjuku.Ichigaya",
+    "category": "toilet",
+    "subCategory": "accessible_toilet",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Accessible Toilet",
+        "ja": "だれでもトイレ"
+      },
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "608a362c-97d6-4ee8-9482-fcc59878f1b1",
+    "nodeId": "odpt.Station:Toei.Shinjuku.Kudanshita",
+    "category": "accessibility",
+    "subCategory": "elevator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Elevator",
+        "ja": "エレベーター"
+      },
+      "count": 4,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "ea62ed7f-e80b-4fcc-8025-174186d666d5",
+    "nodeId": "odpt.Station:Toei.Shinjuku.Kudanshita",
+    "category": "accessibility",
+    "subCategory": "escalator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Escalator",
+        "ja": "エスカレーター"
+      },
+      "count": 18,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "86a0a385-35ff-4b2d-bdec-b873b8fd00d9",
+    "nodeId": "odpt.Station:Toei.Shinjuku.Kudanshita",
+    "category": "toilet",
+    "subCategory": "accessible_toilet",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Accessible Toilet",
+        "ja": "だれでもトイレ"
+      },
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "21dbb5ff-0672-49a6-8a34-51fc8ead83bd",
+    "nodeId": "odpt.Station:Toei.Shinjuku.Ogawamachi",
+    "category": "accessibility",
+    "subCategory": "elevator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Elevator",
+        "ja": "エレベーター"
+      },
+      "count": 3,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "bb783435-9508-4302-9a94-ae4799968c04",
+    "nodeId": "odpt.Station:Toei.Shinjuku.Ogawamachi",
+    "category": "accessibility",
+    "subCategory": "escalator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Escalator",
+        "ja": "エスカレーター"
+      },
+      "count": 8,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "9650b4c5-9b93-498d-bbdc-ffc371e4b51c",
+    "nodeId": "odpt.Station:Toei.Shinjuku.Ogawamachi",
+    "category": "toilet",
+    "subCategory": "accessible_toilet",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Accessible Toilet",
+        "ja": "だれでもトイレ"
+      },
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "95eaee75-103e-421b-a348-de1d4eb77801",
+    "nodeId": "odpt.Station:Toei.Shinjuku.Iwamotocho",
+    "category": "accessibility",
+    "subCategory": "elevator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Elevator",
+        "ja": "エレベーター"
+      },
+      "count": 3,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "53fdd1de-1916-4dee-a837-309e8af22917",
+    "nodeId": "odpt.Station:Toei.Shinjuku.Iwamotocho",
+    "category": "accessibility",
+    "subCategory": "escalator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Escalator",
+        "ja": "エスカレーター"
+      },
+      "count": 12,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "f031b06c-a45c-44a5-b3af-847f5db039be",
+    "nodeId": "odpt.Station:Toei.Shinjuku.Iwamotocho",
+    "category": "toilet",
+    "subCategory": "accessible_toilet",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Accessible Toilet",
+        "ja": "だれでもトイレ"
+      },
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "2e3361f6-d600-4c1c-b03f-f781d4260d11",
+    "nodeId": "odpt.Station:Toei.Asakusa.Higashiginza",
+    "category": "accessibility",
+    "subCategory": "elevator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Elevator",
+        "ja": "エレベーター"
+      },
+      "count": 2,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "18e65795-a55a-468a-87cf-303dd79f837a",
+    "nodeId": "odpt.Station:Toei.Asakusa.Higashiginza",
+    "category": "accessibility",
+    "subCategory": "escalator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Escalator",
+        "ja": "エスカレーター"
+      },
+      "count": 2,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "c529f69e-7d2d-4eb3-ada6-e6a79c250659",
+    "nodeId": "odpt.Station:Toei.Asakusa.Higashiginza",
+    "category": "toilet",
+    "subCategory": "accessible_toilet",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Accessible Toilet",
+        "ja": "だれでもトイレ"
+      },
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "9f02087d-c99d-47b1-8a78-2e8c2f09f345",
+    "nodeId": "odpt.Station:Toei.Asakusa.Takaracho",
+    "category": "accessibility",
+    "subCategory": "elevator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Elevator",
+        "ja": "エレベーター"
+      },
+      "count": 2,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "093644c7-4f1d-4e33-a753-5538d813a584",
+    "nodeId": "odpt.Station:Toei.Asakusa.Takaracho",
+    "category": "accessibility",
+    "subCategory": "escalator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Escalator",
+        "ja": "エスカレーター"
+      },
+      "count": 5,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "e89a6e88-4950-4a67-b4f3-5372e3cd86e5",
+    "nodeId": "odpt.Station:Toei.Asakusa.Takaracho",
+    "category": "toilet",
+    "subCategory": "accessible_toilet",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Accessible Toilet",
+        "ja": "だれでもトイレ"
+      },
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "9da89a8e-ec79-4c36-819f-f3cd83bf2e42",
+    "nodeId": "odpt.Station:Toei.Asakusa.Nihombashi",
+    "category": "accessibility",
+    "subCategory": "elevator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Elevator",
+        "ja": "エレベーター"
+      },
+      "count": 3,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "47c232a4-a81c-4a4e-9a4e-b4c4c3180c3f",
+    "nodeId": "odpt.Station:Toei.Asakusa.Nihombashi",
+    "category": "accessibility",
+    "subCategory": "escalator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Escalator",
+        "ja": "エスカレーター"
+      },
+      "count": 8,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "82da0540-07c5-4855-b6cc-1d83b6716b62",
+    "nodeId": "odpt.Station:Toei.Asakusa.Nihombashi",
+    "category": "toilet",
+    "subCategory": "accessible_toilet",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Accessible Toilet",
+        "ja": "だれでもトイレ"
+      },
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "74dfbe66-5af9-425b-81c8-6d06be734c77",
+    "nodeId": "odpt.Station:Toei.Asakusa.Ningyocho",
+    "category": "accessibility",
+    "subCategory": "elevator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Elevator",
+        "ja": "エレベーター"
+      },
+      "count": 3,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "e57c6e55-a355-42f4-b977-371efa0ad63f",
+    "nodeId": "odpt.Station:Toei.Asakusa.Ningyocho",
+    "category": "toilet",
+    "subCategory": "accessible_toilet",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Accessible Toilet",
+        "ja": "だれでもトイレ"
+      },
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "84794f19-597d-43cb-913d-bf8c6288d403",
+    "nodeId": "odpt.Station:Toei.Asakusa.Higashinihombashi",
+    "category": "accessibility",
+    "subCategory": "elevator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Elevator",
+        "ja": "エレベーター"
+      },
+      "count": 1,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "be1346da-72fe-4c3a-ac6b-e38f4009ad74",
+    "nodeId": "odpt.Station:Toei.Asakusa.Higashinihombashi",
+    "category": "accessibility",
+    "subCategory": "escalator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Escalator",
+        "ja": "エスカレーター"
+      },
+      "count": 2,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "f58351d2-2a82-4fdf-bc5c-ac61f86a1686",
+    "nodeId": "odpt.Station:Toei.Asakusa.Higashinihombashi",
+    "category": "toilet",
+    "subCategory": "accessible_toilet",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Accessible Toilet",
+        "ja": "だれでもトイレ"
+      },
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "d5fc5e17-3c83-48fe-8bcc-e6db77a1e85b",
+    "nodeId": "odpt.Station:Toei.Shinjuku.BakuroYokoyama",
+    "category": "accessibility",
+    "subCategory": "elevator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Elevator",
+        "ja": "エレベーター"
+      },
+      "count": 3,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "b3e977e4-9238-44c4-9f17-5df24c75c3f2",
+    "nodeId": "odpt.Station:Toei.Shinjuku.BakuroYokoyama",
+    "category": "accessibility",
+    "subCategory": "escalator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Escalator",
+        "ja": "エスカレーター"
+      },
+      "count": 17,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "1944eac7-26f3-4c18-88cf-e9fd9514831c",
+    "nodeId": "odpt.Station:Toei.Shinjuku.BakuroYokoyama",
+    "category": "toilet",
+    "subCategory": "accessible_toilet",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Accessible Toilet",
+        "ja": "だれでもトイレ"
+      },
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "2bd6c9dd-3371-4d3b-a102-73de21b5166b",
+    "nodeId": "odpt.Station:Toei.Shinjuku.Hamacho",
+    "category": "accessibility",
+    "subCategory": "elevator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Elevator",
+        "ja": "エレベーター"
+      },
+      "count": 2,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.128Z"
+  },
+  {
+    "id": "56b16af2-46f8-4b0b-b10c-376d2f430581",
+    "nodeId": "odpt.Station:Toei.Shinjuku.Hamacho",
+    "category": "accessibility",
+    "subCategory": "escalator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Escalator",
+        "ja": "エスカレーター"
+      },
+      "count": 4,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.129Z"
+  },
+  {
+    "id": "4d670ad7-8456-478f-9871-2970a6a85604",
+    "nodeId": "odpt.Station:Toei.Shinjuku.Hamacho",
+    "category": "toilet",
+    "subCategory": "accessible_toilet",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Accessible Toilet",
+        "ja": "だれでもトイレ"
+      },
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.129Z"
+  },
+  {
+    "id": "484c04ad-5fea-43d0-a401-0ba3ce47c344",
+    "nodeId": "odpt.Station:Toei.Oedo.Tsukishima",
+    "category": "accessibility",
+    "subCategory": "elevator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Elevator",
+        "ja": "エレベーター"
+      },
+      "count": 2,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.129Z"
+  },
+  {
+    "id": "ffa7651c-2ba9-4635-8137-f388ca116728",
+    "nodeId": "odpt.Station:Toei.Oedo.Tsukishima",
+    "category": "accessibility",
+    "subCategory": "escalator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Escalator",
+        "ja": "エスカレーター"
+      },
+      "count": 5,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.129Z"
+  },
+  {
+    "id": "c885ca11-4652-405f-ba83-018602bc564f",
+    "nodeId": "odpt.Station:Toei.Oedo.Tsukishima",
+    "category": "toilet",
+    "subCategory": "accessible_toilet",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Accessible Toilet",
+        "ja": "だれでもトイレ"
+      },
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.129Z"
+  },
+  {
+    "id": "c137bcdd-441f-45ba-a483-53ae6984179e",
+    "nodeId": "odpt.Station:Toei.Oedo.Kachidoki",
+    "category": "accessibility",
+    "subCategory": "elevator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Elevator",
+        "ja": "エレベーター"
+      },
+      "count": 4,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.129Z"
+  },
+  {
+    "id": "a86bfa17-7def-42d1-b964-5a8520562b17",
+    "nodeId": "odpt.Station:Toei.Oedo.Kachidoki",
+    "category": "accessibility",
+    "subCategory": "escalator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Escalator",
+        "ja": "エスカレーター"
+      },
+      "count": 21,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.129Z"
+  },
+  {
+    "id": "bee1c53c-3068-483b-8c6a-02ba2a00486e",
+    "nodeId": "odpt.Station:Toei.Oedo.Kachidoki",
+    "category": "toilet",
+    "subCategory": "accessible_toilet",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Accessible Toilet",
+        "ja": "だれでもトイレ"
+      },
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.129Z"
+  },
+  {
+    "id": "01bb8dcc-0ac4-4918-913a-d6775e2ff209",
+    "nodeId": "odpt.Station:Toei.Oedo.Tsukijishijo",
+    "category": "accessibility",
+    "subCategory": "elevator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Elevator",
+        "ja": "エレベーター"
+      },
+      "count": 2,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.129Z"
+  },
+  {
+    "id": "7dc45265-261d-4e24-b8ed-25859f8949fc",
+    "nodeId": "odpt.Station:Toei.Oedo.Tsukijishijo",
+    "category": "accessibility",
+    "subCategory": "escalator",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Escalator",
+        "ja": "エスカレーター"
+      },
+      "count": 7,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.129Z"
+  },
+  {
+    "id": "63056fcb-7188-4413-9f85-d869994e123b",
+    "nodeId": "odpt.Station:Toei.Oedo.Tsukijishijo",
+    "category": "toilet",
+    "subCategory": "accessible_toilet",
+    "location": {},
+    "provider": {
+      "type": "station",
+      "name": "Toei Subway",
+      "requiresPurchase": false
+    },
+    "attributes": {
+      "name": {
+        "en": "Accessible Toilet",
+        "ja": "だれでもトイレ"
+      },
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "original_source": "official_scrape"
+    },
+    "source": "official",
+    "updatedAt": "2025-12-21T10:03:54.129Z"
+  }
+]

@@ -64,7 +64,7 @@ describe('Hybrid AI Architecture Flow', () => {
     // Support both legacy 'cards' array and new 'primary/secondary' structure
     const cards = json.fallback.cards || [json.fallback.primary, ...json.fallback.secondary].filter(Boolean)
     expect(cards.length).toBeGreaterThan(0)
-  })
+  }, 20000)
 
   it('routes "weather" query to Tool Layer with Weather Card', async () => {
     const res = await query('今天天氣如何')

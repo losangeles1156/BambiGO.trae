@@ -39,6 +39,8 @@ export const zhTW: Dictionary = {
     backToCenter: '回到中心區域',
     manageTags: '管理標籤',
     swipeUpForDetails: '上滑查看詳細資訊',
+    remove: '移除',
+    tapForDetails: '點擊查看詳情',
   },
   header: {
     youAreAt: '你在',
@@ -146,5 +148,176 @@ export const zhTW: Dictionary = {
       earthquake: '地震',
       other: '其他'
     }
+  },
+  tagging: {
+    managerRegionLabel: '標籤管理',
+    activeTagsLabel: '已選標籤',
+    l1Title: 'L1 類別（結構）',
+    l2Title: 'L2 即時狀態（動態）',
+    l2: {
+      odpt: {
+        label: '列車運行狀況',
+        normal: '正常運行',
+        delay: '誤點/延遲',
+        suspended: '暫停行駛'
+      },
+      weather: {
+        label: '天氣',
+        rain: '雨天',
+        snow: '雪天'
+      },
+      crowd: {
+        label: '人潮',
+        crowded: '擁擠'
+      }
+    },
+    l3Title: 'L3 服務設施（機能）',
+    l4Title: 'L4 行動策略（建議）',
+    l4Contexts: {
+      luggage: '攜帶大件行李',
+      stroller: '推嬰兒車',
+      wheelchair: '行動不便/輪椅',
+      rush: '趕時間'
+    },
+    stationKnowledge: '車站知識經驗',
+    filterBarLabel: '標籤篩選列',
+    serviceFilterPrefix: '服務篩選',
+    serviceTagDistribution: '服務標籤分布',
+    generateStrategy: '生成策略',
+    strategyCardTitle: '移動策略',
+    strategyEngineTitle: 'AI 策略引擎',
+    strategyEngineSubtitle: '情境化 L4 洞察',
+    strategyEmptyBody: '分析標籤、天氣與時間，生成個人化移動建議。',
+    selectNodeToGenerate: '請先選擇節點後再生成策略',
+    personasLabel: '推導畫像',
+    persona: {
+      transitHub: '交通樞紐',
+      localVibe: '在地生活',
+      digitalNomadReady: '數位遊牧友好',
+      accessibleFriendly: '無障礙友善',
+    },
+    addTag: '新增標籤',
+    addL1: '新增生活機能 (L1)',
+    subCategories: '{{label}} 子類別',
+    back: '返回',
+    layers: {
+      l1: { name: '生活機能', description: '結構性/靜態分類' },
+      l2: { name: '空間聚合', description: '區域/氛圍' },
+      l3: { name: '服務設施', description: '實用/設施' },
+      l4: { name: '移動策略', description: 'AI 建議' }
+    },
+    l1: {
+      dining: {
+        label: '餐飲',
+        izakaya: '居酒屋',
+        ramen: '拉麵',
+        cafe: '咖啡廳',
+        restaurant: '餐廳',
+        fast_food: '速食'
+      },
+      shopping: {
+        label: '購物',
+        drugstore: '藥妝店',
+        convenience_store: '便利商店',
+        electronics: '3C/電器',
+        supermarket: '超市'
+      },
+      medical: {
+        label: '醫療',
+        clinic: '診所',
+        pharmacy: '藥局',
+        hospital: '醫院',
+        dentist: '牙醫'
+      },
+      leisure: {
+        label: '休閒',
+        park: '公園',
+        museum: '博物館',
+        gym: '健身房',
+        cinema: '電影院',
+        karaoke: 'KTV'
+      },
+      education: {
+        label: '教育',
+        school: '學校',
+        university: '大學',
+        library: '圖書館'
+      },
+      finance: {
+        label: '金融',
+        bank: '銀行',
+        atm: 'ATM',
+        currency_exchange: '換匯所'
+      },
+      accommodation: {
+        label: '住宿',
+        hotel: '飯店',
+        hostel: '青年旅館',
+        apartment: '公寓'
+      },
+      business: {
+        label: '商務',
+        office: '辦公大樓',
+        coworking: '共享空間',
+        factory: '工廠'
+      },
+      religion: {
+        label: '宗教',
+        shrine: '神社',
+        temple: '寺廟',
+        church: '教堂'
+      },
+      nature: {
+        label: '自然',
+        scenic_spot: '景點',
+        garden: '庭園',
+        mountain: '山岳'
+      },
+      transport: {
+        label: '交通',
+        station: '車站',
+        bus_stop: '公車站',
+        parking: '停車場'
+      },
+      public: {
+        label: '公共',
+        police: '警察局',
+        post_office: '郵局',
+        government: '政府機關'
+      },
+      residential: {
+        label: '住宅',
+        apartment_complex: '公寓大樓',
+        housing: '住宅區'
+      }
+    },
+    l3: {
+      wifi: '無線網路',
+      toilet: '廁所',
+      charging: '充電',
+      locker: '置物櫃',
+      accessibility: '無障礙',
+      rest_area: '休息區',
+      other: '其他'
+    }
+  },
+  nodeDetail: {
+    outOfRangeTitle: '超出服務範圍',
+    planRouteBack: '規劃回都心路線',
+    later: '稍後再說',
+    serviceFacilitiesTitle: '服務設施（L3）',
+    trafficTitle: '即時交通狀態',
+    crowdTitle: '人潮預測',
+    crowdHistorical: '歷史數據',
+    crowdTrendLabel: '趨勢',
+    crowdComfort: '舒適',
+    crowdMedium: '適中',
+    crowdHigh: '擁擠',
+    trendUp: '上升中',
+    trendDown: '緩解中',
+    trendStable: '持平',
+    nearbyFacilitiesTitle: '周邊設施',
+    bufferNotice: '此區域僅提供基本導航資訊',
+    bufferLearnMore: '了解更多圈層差異',
   }
 }

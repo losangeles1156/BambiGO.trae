@@ -1,9 +1,18 @@
 import { NextResponse } from 'next/server'
-import { Client } from 'pg'
+import db from '@/lib/db'
+import redis from '@/lib/redis'
 import OdptClient from '@/lib/odptClient'
 
 // Per-IP rate limiting buckets
 const rateBuckets = new Map<string, { count: number; resetAt: number }>()
+
+let dbUnavailableUntil = 0
+let dbUnavailableLastLogAt = 0
+let dbUnavailableLastMessage = ''
+
+const DB_BACKOFF_MS = 5 * 60 * 1000
+const DB_LOG_THROTTLE_MS = 60 * 1000
+const CACHE_TTL = 60
 
 // Data models (API payload types)
 export type LiveTransit = {
@@ -34,17 +43,15 @@ export type LiveResponse = {
   bbox?: [number, number, number, number] | null
   transit: LiveTransit
   mobility: { stations: LiveMobilityStation[] }
-  updated_at: string
-}
-
-function normalizeConn(s: string) {
-  try {
-    const u = new URL(s)
-    if (u.password) u.password = encodeURIComponent(decodeURIComponent(u.password))
-    return u.toString()
-  } catch {
-    return s
+  odpt_station?: {
+    station_code?: string
+    railway?: string
+    operator?: string
+    connecting_railways?: string[]
+    exits?: string[]
+    raw?: Record<string, unknown>
   }
+  updated_at: string
 }
 
 export async function GET(req: Request) {
@@ -116,39 +123,30 @@ export async function GET(req: Request) {
     limit = Math.min(1000, Math.max(1, Math.floor(n)))
   }
 
-  const rawConn = process.env.DATABASE_URL
-    || process.env.SUPABASE_DB_URL
-    || process.env.SUPABASE_POSTGRES_URL
-    || process.env.SUPABASE_DATABASE_URL
-
-  // Fallback when DB is missing
-  if (!rawConn) {
-    const payload: LiveResponse = {
-      node_id: nodeId,
-      bbox,
-      transit: { status: 'unknown', delay_minutes: 0 },
-      mobility: { stations: [] },
-      updated_at: new Date().toISOString(),
+  // 1. Redis Cache Check
+  // Key format: live:v1:<nodeId>:<bbox>:<limit>:<simTransit>
+  const cacheKey = `live:v1:${nodeId || 'all'}:${bboxParam || 'none'}:${limit || 'def'}:${simTransit || 'none'}`
+  
+  if (redis && !simTransit) {
+    try {
+      const cached = await redis.get<LiveResponse>(cacheKey)
+      if (cached) {
+        return new NextResponse(JSON.stringify(cached), {
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'public, max-age=10, stale-while-revalidate=60',
+            'X-API-Version': 'v4.1-strict',
+            'X-Cache': 'HIT'
+          },
+        })
+      }
+    } catch (e) {
+      console.warn('[LiveAPI] Redis get error:', e)
     }
-    return new NextResponse(JSON.stringify(payload), {
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=10, stale-while-revalidate=60',
-        'X-API-Version': 'v4.1-strict',
-      },
-    })
   }
 
-  const conn = normalizeConn(rawConn)
-  const client = new Client({ 
-    connectionString: conn,
-    connectionTimeoutMillis: 5000, // 5s timeout
-  })
-  try {
-    await client.connect()
-  } catch (e) {
-    console.error('[LiveAPI][DB_CONNECTION_ERROR] Failed to connect to PostgreSQL:', e)
-    // Return partial response instead of 500 if DB is down but other logic (ODPT) might work
+  const now = Date.now()
+  if (now < dbUnavailableUntil) {
     const payload: LiveResponse = {
       node_id: nodeId,
       bbox,
@@ -157,7 +155,7 @@ export async function GET(req: Request) {
       updated_at: new Date().toISOString(),
     }
     return new NextResponse(JSON.stringify(payload), {
-      status: 200, // Graceful degradation
+      status: 200,
       headers: {
         'Content-Type': 'application/json',
         'X-API-Warn': 'DB_UNAVAILABLE',
@@ -165,6 +163,8 @@ export async function GET(req: Request) {
       },
     })
   }
+
+  const client = db
 
   try {
     let transitStatus: 'normal' | 'delayed' | 'suspended' | 'unknown' = 'normal'
@@ -278,7 +278,6 @@ export async function GET(req: Request) {
       return lon >= b[0] && lon <= b[2] && lat >= b[1] && lat <= b[3]
     }
 
-    const now = Date.now()
     const ttlMs = 45000
     type UnknownRec = Record<string, unknown>
     type CacheBucket = { t: number; data: UnknownRec[] }
@@ -358,6 +357,29 @@ export async function GET(req: Request) {
     // 2. Query shared mobility stations
     let sql = ''
     const values: (string | number)[] = []
+
+    let odptStationData: LiveResponse['odpt_station'] | undefined = undefined
+    if (nodeId && nodeId.includes('odpt.Station')) {
+      try {
+        const odptRes = await client.query('select * from odpt_stations where same_as = $1', [nodeId])
+        if (odptRes.rows.length > 0) {
+          const row = odptRes.rows[0]
+          const raw = ((row.raw || {}) as Record<string, unknown>)
+          odptStationData = {
+            station_code: row.station_code,
+            railway: row.railway,
+            operator: row.operator,
+            connecting_railways: Array.isArray(raw['odpt:connectingRailway'])
+              ? (raw['odpt:connectingRailway'] as unknown[]).map(String)
+              : [],
+            exits: Array.isArray(raw['odpt:exit']) ? (raw['odpt:exit'] as unknown[]).map(String) : [],
+            raw,
+          }
+        }
+      } catch (e) {
+        console.error('[LiveAPI] Error fetching odpt_stations:', e)
+      }
+    }
 
     if (bbox) {
       sql = `
@@ -452,7 +474,13 @@ export async function GET(req: Request) {
       bbox,
       transit: { status: transitStatus, delay_minutes: delayMinutes, events: transitEvents.slice(0, 5) },
       mobility: { stations },
+      odpt_station: odptStationData,
       updated_at: new Date().toISOString(),
+    }
+
+    // 2. Cache Set
+    if (redis && !simTransit) {
+      redis.set(cacheKey, payload, { ex: CACHE_TTL }).catch(e => console.warn('[LiveAPI] Redis set error:', e))
     }
 
     return new NextResponse(JSON.stringify(payload), {
@@ -460,10 +488,22 @@ export async function GET(req: Request) {
         'Content-Type': 'application/json',
         'Cache-Control': 'public, max-age=10, stale-while-revalidate=60',
         'X-API-Version': 'v4.1-strict',
+        'X-Cache': 'MISS'
       },
     })
   } catch (e) {
-    console.error('[LiveAPI] Error:', e)
+    const errMsg = e instanceof Error ? e.message : String(e)
+    if (errMsg.includes('ECONNREFUSED') || errMsg.includes('connection')) {
+      dbUnavailableUntil = Date.now() + DB_BACKOFF_MS
+      const at = Date.now()
+      if (at - dbUnavailableLastLogAt > DB_LOG_THROTTLE_MS) {
+        dbUnavailableLastLogAt = at
+        console.warn('[LiveAPI] DB unavailable:', errMsg)
+      }
+    } else {
+      console.error('[LiveAPI] Error:', e)
+    }
+
     const payload: LiveResponse = {
       node_id: nodeId,
       bbox,
@@ -477,7 +517,5 @@ export async function GET(req: Request) {
         'X-API-Version': 'v4.1-strict',
       },
     })
-  } finally {
-    try { await client.end() } catch {}
   }
 }

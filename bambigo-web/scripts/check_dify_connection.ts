@@ -6,20 +6,21 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
 
 async function checkDify() {
   const apiKey = process.env.DIFY_API_KEY
-  const apiUrl = process.env.DIFY_API_URL
+  // Match the logic in src/app/api/assistant/route.ts
+  const apiUrl = process.env.DIFY_BASE_URL || process.env.DIFY_API_URL
 
   console.log('Checking Dify Configuration...')
   console.log(`URL: ${apiUrl}`)
   console.log(`Key: ${apiKey ? 'Present (Hidden)' : 'Missing'}`)
 
   if (!apiKey || !apiUrl) {
-    console.error('❌ Missing DIFY_API_KEY or DIFY_API_URL in environment variables.')
+    console.error('❌ Missing DIFY_API_KEY or DIFY_BASE_URL (or DIFY_API_URL) in environment variables.')
     process.exit(1)
   }
 
   try {
-    // Try to initiate a conversation (lightweight check)
-    // We intentionally send a ping message
+    // Try to initiate a conversation
+    // Changed to streaming because Agent apps often don't support blocking
     const response = await fetch(`${apiUrl}/chat-messages`, {
       method: 'POST',
       headers: {
@@ -30,19 +31,23 @@ async function checkDify() {
         inputs: {
             "user_question": "Ping",
             "context_data": "系統連線測試中...",
-            "context": "系統連線測試中..." // Also add 'context' as variable name might be ambiguous
+            "context": "系統連線測試中..." 
         },
         query: 'Ping',
-        response_mode: 'blocking',
+        response_mode: 'streaming',
         user: 'system-check',
       }),
     })
 
     if (response.ok) {
-      type DifyResp = { answer?: string }
-      const data = await response.json() as DifyResp
-      console.log('✅ Connection Successful!')
-      console.log('Response:', data.answer ? data.answer.substring(0, 50) + '...' : 'No answer text')
+      console.log('✅ Connection Successful! (Stream initiated)')
+      // Just read a bit of the stream to confirm it's working
+      const reader = response.body?.getReader()
+      if (reader) {
+        const { value } = await reader.read()
+        const text = new TextDecoder().decode(value)
+        console.log('First chunk received:', text.substring(0, 100) + '...')
+      }
     } else {
       console.error(`❌ API Error: ${response.status} ${response.statusText}`)
       const text = await response.text()

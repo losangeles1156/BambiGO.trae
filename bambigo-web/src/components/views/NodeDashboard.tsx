@@ -56,6 +56,14 @@ export default function NodeDashboard({ nodeId, name, weatherAlerts = [], onActi
   const [isTripGuardActive, setIsTripGuardActive] = useState(false)
   const [facilityCounts, setFacilityCounts] = useState<CategoryCounts | null>(null)
   const [vibeTags, setVibeTags] = useState<string[]>([])
+  const [odptStation, setOdptStation] = useState<{
+    station_code?: string
+    railway?: string
+    operator?: string
+    connecting_railways?: string[]
+    exits?: string[]
+    raw?: Record<string, unknown>
+  } | null>(null)
 
   const notify = (input: { severity: 'high' | 'medium' | 'low'; title: string; summary: string; ttlMs?: number; dedupeMs?: number }) => {
     onSystemAlert?.(input)
@@ -82,6 +90,15 @@ export default function NodeDashboard({ nodeId, name, weatherAlerts = [], onActi
       }
     }
     return hasAny ? result : null
+  }
+
+  const isAbortError = (e: unknown) => {
+    const err = e as { name?: unknown; message?: unknown } | null
+    const name = err && typeof err === 'object' ? String(err.name || '') : ''
+    const message = err && typeof err === 'object' ? String(err.message || '') : ''
+    if (name === 'AbortError') return true
+    const m = message.toLowerCase()
+    return m.includes('abort') || m.includes('aborted') || m.includes('canceled') || m.includes('cancelled')
   }
 
   // Derive Persona when dependencies change
@@ -158,6 +175,7 @@ export default function NodeDashboard({ nodeId, name, weatherAlerts = [], onActi
         const sts = Array.isArray(j?.live?.mobility?.stations) ? (j.live?.mobility?.stations as Station[]) : []
         const tStatus = j?.live?.transit?.status
         const delay = j?.live?.transit?.delay_minutes
+        const odptSt = j?.live?.odpt_station
 
         const l1 = L1_CATEGORIES_DATA.find(c => c.id === resolvedNodeType || c.subCategories.some(s => s.id === resolvedNodeType))
         const personaLabels = derivePersonaFromFacilities(
@@ -185,14 +203,16 @@ export default function NodeDashboard({ nodeId, name, weatherAlerts = [], onActi
             body: JSON.stringify({
               time: new Date().toISOString(),
               personaLabels,
-              transitStatus: tStatus
+              transitStatus: tStatus,
+              odptStation: odptSt
             })
           })
           if (sRes.ok) {
             const sData = await sRes.json()
             if (Array.isArray(sData)) strategyCards = sData
           }
-        } catch {
+        } catch (e) {
+          if (isAbortError(e)) throw e
           onClientLog?.({ level: 'warn', message: 'strategy:fetchFailed', data: { nodeId } })
         }
 
@@ -227,10 +247,12 @@ export default function NodeDashboard({ nodeId, name, weatherAlerts = [], onActi
           setTransitStatus(tStatus)
           setFacilities(adaptedItems)
           setStations(sts)
+          setOdptStation(odptSt)
           setCards([...newCards, ...strategyCards])
           setLoading(false)
         }
       } catch (e) {
+        if (isAbortError(e)) return
         onClientLog?.({
           level: 'error',
           message: 'dashboard:fetchFailed',
@@ -240,9 +262,12 @@ export default function NodeDashboard({ nodeId, name, weatherAlerts = [], onActi
       }
     }
 
-    fetchData()
+    const timer = setTimeout(() => {
+      void fetchData()
+    }, 150)
     return () => {
       ignore = true
+      clearTimeout(timer)
     }
   }, [nodeId, filterSuitability?.tag, filterSuitability?.minConfidence, t, onClientLog])
 
@@ -262,14 +287,25 @@ export default function NodeDashboard({ nodeId, name, weatherAlerts = [], onActi
     abortRef.current?.abort()
     abortRef.current = new AbortController()
 
+    let difyApiKey = ''
+    let difyApiUrl = ''
+    try {
+      difyApiKey = localStorage.getItem('bambigo.dify.apiKey') || ''
+      difyApiUrl = localStorage.getItem('bambigo.dify.apiUrl') || ''
+    } catch {
+    }
+
     const tokenParam = session?.access_token ? `&token=${encodeURIComponent(session.access_token)}` : ''
-    const url = `/api/assistant?q=${encodeURIComponent(q)}&node_id=${encodeURIComponent(nodeId || '')}${tokenParam}`
+    const providerParam = (difyApiKey || difyApiUrl) ? '&provider=dify' : ''
+    const url = `/api/assistant?q=${encodeURIComponent(q)}&node_id=${encodeURIComponent(nodeId || '')}${tokenParam}${providerParam}`
     const headers: Record<string, string> = { 'Content-Type': 'application/json' }
 
     try {
       if (session?.access_token) {
         headers['Authorization'] = `Bearer ${session.access_token}`
       }
+      if (difyApiKey) headers['x-dify-api-key'] = difyApiKey
+      if (difyApiUrl) headers['x-dify-api-url'] = difyApiUrl
 
       const response = await fetch(url, {
         headers,
@@ -536,6 +572,60 @@ export default function NodeDashboard({ nodeId, name, weatherAlerts = [], onActi
           )}
         </section>
         
+        {/* ODPT Station Details */}
+        {odptStation && (
+          <section className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="bg-gray-800 px-4 py-3 flex items-center justify-between text-white">
+              <div className="flex items-center gap-2">
+                <ShieldCheck size={18} className="text-blue-400" />
+                <h3 className="text-sm font-bold">{t('dashboard.stationInfo') || '車站詳細資訊'}</h3>
+              </div>
+              {odptStation.station_code && (
+                <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] font-bold">
+                  {odptStation.station_code}
+                </span>
+              )}
+            </div>
+            <div className="p-4 space-y-4">
+              {/* Lines & Connecting Railways */}
+              <div className="space-y-2">
+                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('dashboard.lines') || '所屬/轉乘路線'}</div>
+                <div className="flex flex-wrap gap-2">
+                  {odptStation.railway && (
+                    <div className="px-2.5 py-1.5 bg-blue-50 text-blue-700 rounded-lg border border-blue-100 text-xs font-bold">
+                      {odptStation.railway.split(':').pop()?.split('.').pop()}
+                    </div>
+                  )}
+                  {odptStation.connecting_railways?.map((r: string) => (
+                    <div key={r} className="px-2.5 py-1.5 bg-gray-50 text-gray-600 rounded-lg border border-gray-100 text-xs font-medium">
+                      {r.split(':').pop()?.split('.').pop()}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Exits */}
+              {odptStation.exits && odptStation.exits.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('dashboard.exits') || '車站出口'}</div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {odptStation.exits.slice(0, 9).map((exit: string) => (
+                      <div key={exit} className="px-2 py-1 bg-white border border-gray-100 rounded text-[10px] text-center text-gray-500 font-medium truncate">
+                        {exit.split(':').pop()?.split('.').pop()}
+                      </div>
+                    ))}
+                    {odptStation.exits.length > 9 && (
+                      <div className="px-2 py-1 bg-gray-50 border border-gray-100 rounded text-[10px] text-center text-gray-400 font-medium italic">
+                        +{odptStation.exits.length - 9} more
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
         {/* Shared Mobility Status */}
         {stations.length > 0 && (
            <section>

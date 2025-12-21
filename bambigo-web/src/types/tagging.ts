@@ -98,13 +98,16 @@ export type L3ServiceFacility = {
 export type L4CardType = 'primary' | 'secondary' | 'alert'
 
 export type L4ActionCard = {
+  id: string
   type: L4CardType
   title: string
   description: string
-  rationale: string // "Why this recommendation?"
-  tags: string[] // Related L1/L3 tags
-  actions: Array<{
+  rationale: string
+  knowledge?: string // Station specific knowledge/tips
+  tags?: string[]
+  actions: {
     label: string
-    uri: string // e.g., 'navigate:lat,lon', 'open:url'
-  }>
+    action: string
+    params?: Record<string, unknown>
+  }[]
 }

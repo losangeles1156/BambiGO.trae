@@ -11,7 +11,12 @@ if (supabaseUrl && supabaseServiceRoleKey) {
 } else {
   console.warn('Missing Supabase Service Role Key - Admin operations will fail')
   const unconfigured = {
-    rpc: async () => { throw new Error('Supabase admin client is not configured') },
+    from: () => {
+      throw new Error('Supabase admin client is not configured')
+    },
+    rpc: async () => {
+      throw new Error('Supabase admin client is not configured')
+    },
   }
   adminClient = unconfigured as unknown as SupabaseClient
 }

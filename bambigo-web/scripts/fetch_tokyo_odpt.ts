@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import fs from 'node:fs'
 import path from 'node:path'
+import crypto from 'node:crypto'
 
 const bbox = { minLon: 139.73, minLat: 35.65, maxLon: 139.82, maxLat: 35.74 }
 const stationOperators = [
@@ -119,6 +120,23 @@ async function fetchBusStops(token: string) {
   return all
 }
 
+async function fetchTrainInformation(token: string) {
+  const operators = ['odpt.Operator:TokyoMetro', 'odpt.Operator:Toei', 'odpt.Operator:JR-East']
+  const all: unknown[] = []
+  for (const op of operators) {
+    const url = `https://api.odpt.org/api/v4/odpt:TrainInformation?acl:consumerKey=${encodeURIComponent(
+      token
+    )}&odpt:operator=${encodeURIComponent(op)}`
+    try {
+      const data = await fetchJson(url)
+      all.push(...data)
+    } catch {
+      continue
+    }
+  }
+  return all
+}
+
 async function fetchBarrierFree(token: string) {
   const all: unknown[] = []
   for (const op of barrierFreeOperators) {
@@ -160,6 +178,153 @@ type FacilityRow = {
   current_status: string
   attributes?: Record<string, unknown>
   source_dataset: 'odpt'
+}
+
+type OdptEntityRow = {
+  entity_type: string
+  same_as: string
+  operator?: string
+  railway?: string
+  dc_date?: string
+  payload: unknown
+  source_url?: string
+}
+
+type OdptTrainInformationRow = {
+  content_hash: string
+  operator: string
+  railway?: string
+  status?: string
+  information_text: Record<string, unknown>
+  dc_date?: string
+  raw: unknown
+  source_url?: string
+}
+
+function ewktPoint(lon: number, lat: number) {
+  return `SRID=4326;POINT(${lon} ${lat})`
+}
+
+async function safeUpsert(supabase: SupabaseClient, table: string, rows: Record<string, unknown>[], onConflict: string) {
+  if (!rows.length) return true
+  const res = await supabase.from(table).upsert(rows, { onConflict })
+  if (!res.error) return true
+  const msg = res.error.message || ''
+  if (
+    msg.includes('does not exist') ||
+    msg.includes('relation') ||
+    msg.includes('Could not find the table') ||
+    msg.includes('schema cache')
+  ) {
+    return false
+  }
+  throw res.error
+}
+
+async function upsertOdptEntitiesSupabase(
+  supabase: SupabaseClient,
+  entityType: string,
+  items: unknown[],
+  sourceUrl: string
+) {
+  const rows: OdptEntityRow[] = []
+  for (const item of items) {
+    const sameAs = extractId(item)
+    if (!sameAs) continue
+    rows.push({
+      entity_type: entityType,
+      same_as: String(sameAs),
+      operator: pick<string>(item, ['odpt:operator']),
+      railway: pick<string>(item, ['odpt:railway']),
+      dc_date: pick<string>(item, ['dc:date']),
+      payload: item,
+      source_url: sourceUrl,
+    })
+  }
+  return safeUpsert(supabase, 'odpt_entities', rows as unknown as Record<string, unknown>[], 'entity_type,same_as')
+}
+
+async function upsertOdptStationsSupabase(supabase: SupabaseClient, items: unknown[]) {
+  const rows: Record<string, unknown>[] = []
+  for (const item of items) {
+    const sameAs = extractId(item)
+    if (!sameAs) continue
+    const coords = extractCoords(item)
+    const title = pick<string>(item, ['dc:title', 'odpt:stationTitle', 'title'])
+    rows.push({
+      same_as: String(sameAs),
+      operator: pick<string>(item, ['odpt:operator']),
+      railway: pick<string>(item, ['odpt:railway']),
+      station_code: pick<string>(item, ['odpt:stationCode']),
+      title: title ? { ja: String(title) } : { ja: lastSegment(String(sameAs)) },
+      location: coords ? ewktPoint(coords.lon, coords.lat) : null,
+      dc_date: pick<string>(item, ['dc:date']),
+      raw: item,
+    })
+  }
+  return safeUpsert(supabase, 'odpt_stations', rows, 'same_as')
+}
+
+async function upsertOdptBusstopPolesSupabase(supabase: SupabaseClient, items: unknown[]) {
+  const rows: Record<string, unknown>[] = []
+  for (const item of items) {
+    const sameAs = extractId(item)
+    if (!sameAs) continue
+    const coords = extractCoords(item)
+    const title = pick<string>(item, ['dc:title', 'odpt:poleTitle', 'title'])
+    rows.push({
+      same_as: String(sameAs),
+      operator: pick<string>(item, ['odpt:operator']),
+      busroute_pattern: pick<string>(item, ['odpt:busroutePattern']),
+      title: title ? { ja: String(title) } : null,
+      location: coords ? ewktPoint(coords.lon, coords.lat) : null,
+      dc_date: pick<string>(item, ['dc:date']),
+      raw: item,
+    })
+  }
+  return safeUpsert(supabase, 'odpt_busstop_poles', rows, 'same_as')
+}
+
+async function upsertOdptStationFacilitiesSupabase(supabase: SupabaseClient, items: unknown[]) {
+  const rows: Record<string, unknown>[] = []
+  for (const item of items) {
+    const sameAs = extractId(item)
+    if (!sameAs) continue
+    const coords = extractCoords(item)
+    const title = pick<string>(item, ['dc:title', 'title'])
+    rows.push({
+      same_as: String(sameAs),
+      operator: pick<string>(item, ['odpt:operator']),
+      station: pick<string>(item, ['odpt:station']),
+      facility_type: pick<string>(item, ['odpt:facilityType', 'odpt:classification']),
+      title: title ? { ja: String(title) } : null,
+      location: coords ? ewktPoint(coords.lon, coords.lat) : null,
+      dc_date: pick<string>(item, ['dc:date']),
+      raw: item,
+    })
+  }
+  return safeUpsert(supabase, 'odpt_station_facilities', rows, 'same_as')
+}
+
+async function upsertOdptTrainInformationSupabase(supabase: SupabaseClient, items: unknown[], sourceUrl: string) {
+  const rows: OdptTrainInformationRow[] = []
+  for (const item of items) {
+    const operator = pick<string>(item, ['odpt:operator'])
+    if (!operator) continue
+    const contentHash = crypto.createHash('sha256').update(JSON.stringify(item)).digest('hex')
+    const infoText = pick<unknown>(item, ['odpt:trainInformationText', 'odpt:trainInformation'])
+    rows.push({
+      content_hash: contentHash,
+      operator: String(operator),
+      railway: pick<string>(item, ['odpt:railway']),
+      status: pick<string>(item, ['odpt:trainInformationStatus', 'odpt:trainInformationStatusText']),
+      information_text: typeof infoText === 'string' ? { ja: infoText } : (infoText && typeof infoText === 'object' ? (infoText as Record<string, unknown>) : {}),
+      dc_date: pick<string>(item, ['dc:date']),
+      raw: item,
+      source_url: sourceUrl,
+    })
+  }
+  return safeUpsert(supabase, 'odpt_train_information', rows as unknown as Record<string, unknown>[], 'content_hash')
 }
 
 function normalize(item: unknown, kind: 'station' | 'bus_stop'): NormalizedRow | null {
@@ -367,6 +532,7 @@ async function main() {
     const stationsRaw = await fetchStations(token)
     const busRaw = await fetchBusStops(token)
     const barrierRaw = await fetchBarrierFree(token)
+    const trainInfoRaw = await fetchTrainInformation(token)
     const stations = stationsRaw
       .map((x) => normalize(x, 'station'))
       .filter(Boolean) as NormalizedRow[]
@@ -383,6 +549,25 @@ async function main() {
     let updated = 0
     const size = 300
     const supabase = createClient(supabaseUrl, supabaseKey)
+
+    const odptStationsUrl = 'https://api.odpt.org/api/v4/odpt:Station'
+    const odptBusstopUrl = 'https://api.odpt.org/api/v4/odpt:BusstopPole'
+    const odptFacilitiesUrl = 'https://api.odpt.org/api/v4/odpt:StationFacility'
+    const odptTrainInfoUrl = 'https://api.odpt.org/api/v4/odpt:TrainInformation'
+
+    const storedEntities = {
+      stations: await upsertOdptEntitiesSupabase(supabase, 'odpt:Station', stationsRaw, odptStationsUrl),
+      busstops: await upsertOdptEntitiesSupabase(supabase, 'odpt:BusstopPole', busRaw, odptBusstopUrl),
+      facilities: await upsertOdptEntitiesSupabase(supabase, 'odpt:StationFacility', barrierRaw, odptFacilitiesUrl),
+      trainInfo: await upsertOdptEntitiesSupabase(supabase, 'odpt:TrainInformation', trainInfoRaw, odptTrainInfoUrl),
+    }
+
+    const storedCurated = {
+      stations: await upsertOdptStationsSupabase(supabase, stationsRaw),
+      busstops: await upsertOdptBusstopPolesSupabase(supabase, busRaw),
+      facilities: await upsertOdptStationFacilitiesSupabase(supabase, barrierRaw),
+      trainInfo: await upsertOdptTrainInformationSupabase(supabase, trainInfoRaw, odptTrainInfoUrl),
+    }
     
     for (let i = 0; i < all.length; i += size) {
       const batch = all.slice(i, i + size)
@@ -411,9 +596,12 @@ async function main() {
         upserted_added: added,
         upserted_updated: updated,
         barrierfree_fetched: barrierRaw.length,
+        train_information_fetched: trainInfoRaw.length,
         facilities_inserted: bf.length,
         total_odpt_nodes: total,
         city_assigned_total: cityAssigned,
+        odpt_raw_tables_written: storedEntities,
+        odpt_curated_tables_written: storedCurated,
         city_breakdown: {
           tokyo_taito: cityTaito.count || 0,
           tokyo_chiyoda: cityChiyoda.count || 0,

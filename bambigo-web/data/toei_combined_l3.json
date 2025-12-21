@@ -1,0 +1,648 @@
+[
+  {
+    "node_id": "odpt.Station:Toei.Asakusa.Asakusa",
+    "type": "accessibility",
+    "name": {
+      "en": "Elevator",
+      "ja": "エレベーター"
+    },
+    "attributes": {
+      "subCategory": "elevator",
+      "count": 3,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Asakusa.Asakusa",
+    "type": "accessibility",
+    "name": {
+      "en": "Escalator",
+      "ja": "エスカレーター"
+    },
+    "attributes": {
+      "subCategory": "escalator",
+      "count": 1,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Asakusa.Asakusa",
+    "type": "toilet",
+    "name": {
+      "en": "Accessible Toilet",
+      "ja": "だれでもトイレ"
+    },
+    "attributes": {
+      "subCategory": "accessible_toilet",
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Asakusa.Kuramae",
+    "type": "accessibility",
+    "name": {
+      "en": "Elevator",
+      "ja": "エレベーター"
+    },
+    "attributes": {
+      "subCategory": "elevator",
+      "count": 2,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Asakusa.Kuramae",
+    "type": "accessibility",
+    "name": {
+      "en": "Escalator",
+      "ja": "エスカレーター"
+    },
+    "attributes": {
+      "subCategory": "escalator",
+      "count": 2,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Asakusa.Kuramae",
+    "type": "toilet",
+    "name": {
+      "en": "Accessible Toilet",
+      "ja": "だれでもトイレ"
+    },
+    "attributes": {
+      "subCategory": "accessible_toilet",
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Asakusa.Asakusabashi",
+    "type": "accessibility",
+    "name": {
+      "en": "Elevator",
+      "ja": "エレベーター"
+    },
+    "attributes": {
+      "subCategory": "elevator",
+      "count": 2,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Asakusa.Asakusabashi",
+    "type": "accessibility",
+    "name": {
+      "en": "Escalator",
+      "ja": "エスカレーター"
+    },
+    "attributes": {
+      "subCategory": "escalator",
+      "count": 5,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Asakusa.Asakusabashi",
+    "type": "toilet",
+    "name": {
+      "en": "Accessible Toilet",
+      "ja": "だれでもトイレ"
+    },
+    "attributes": {
+      "subCategory": "accessible_toilet",
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Oedo.UenoOkachimachi",
+    "type": "accessibility",
+    "name": {
+      "en": "Elevator",
+      "ja": "エレベーター"
+    },
+    "attributes": {
+      "subCategory": "elevator",
+      "count": 2,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Oedo.UenoOkachimachi",
+    "type": "accessibility",
+    "name": {
+      "en": "Escalator",
+      "ja": "エスカレーター"
+    },
+    "attributes": {
+      "subCategory": "escalator",
+      "count": 10,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Oedo.UenoOkachimachi",
+    "type": "toilet",
+    "name": {
+      "en": "Accessible Toilet",
+      "ja": "だれでもトイレ"
+    },
+    "attributes": {
+      "subCategory": "accessible_toilet",
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Oedo.ShinOkachimachi",
+    "type": "accessibility",
+    "name": {
+      "en": "Elevator",
+      "ja": "エレベーター"
+    },
+    "attributes": {
+      "subCategory": "elevator",
+      "count": 3,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Oedo.ShinOkachimachi",
+    "type": "accessibility",
+    "name": {
+      "en": "Escalator",
+      "ja": "エスカレーター"
+    },
+    "attributes": {
+      "subCategory": "escalator",
+      "count": 13,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Oedo.ShinOkachimachi",
+    "type": "toilet",
+    "name": {
+      "en": "Accessible Toilet",
+      "ja": "だれでもトイレ"
+    },
+    "attributes": {
+      "subCategory": "accessible_toilet",
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Asakusa.Higashiginza",
+    "type": "accessibility",
+    "name": {
+      "en": "Elevator",
+      "ja": "エレベーター"
+    },
+    "attributes": {
+      "subCategory": "elevator",
+      "count": 2,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Asakusa.Higashiginza",
+    "type": "accessibility",
+    "name": {
+      "en": "Escalator",
+      "ja": "エスカレーター"
+    },
+    "attributes": {
+      "subCategory": "escalator",
+      "count": 2,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Asakusa.Higashiginza",
+    "type": "toilet",
+    "name": {
+      "en": "Accessible Toilet",
+      "ja": "だれでもトイレ"
+    },
+    "attributes": {
+      "subCategory": "accessible_toilet",
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Asakusa.Takaracho",
+    "type": "accessibility",
+    "name": {
+      "en": "Elevator",
+      "ja": "エレベーター"
+    },
+    "attributes": {
+      "subCategory": "elevator",
+      "count": 2,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Asakusa.Takaracho",
+    "type": "accessibility",
+    "name": {
+      "en": "Escalator",
+      "ja": "エスカレーター"
+    },
+    "attributes": {
+      "subCategory": "escalator",
+      "count": 5,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Asakusa.Takaracho",
+    "type": "toilet",
+    "name": {
+      "en": "Accessible Toilet",
+      "ja": "だれでもトイレ"
+    },
+    "attributes": {
+      "subCategory": "accessible_toilet",
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Asakusa.Nihombashi",
+    "type": "accessibility",
+    "name": {
+      "en": "Elevator",
+      "ja": "エレベーター"
+    },
+    "attributes": {
+      "subCategory": "elevator",
+      "count": 3,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Asakusa.Nihombashi",
+    "type": "accessibility",
+    "name": {
+      "en": "Escalator",
+      "ja": "エスカレーター"
+    },
+    "attributes": {
+      "subCategory": "escalator",
+      "count": 8,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Asakusa.Nihombashi",
+    "type": "toilet",
+    "name": {
+      "en": "Accessible Toilet",
+      "ja": "だれでもトイレ"
+    },
+    "attributes": {
+      "subCategory": "accessible_toilet",
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Asakusa.Ningyocho",
+    "type": "accessibility",
+    "name": {
+      "en": "Elevator",
+      "ja": "エレベーター"
+    },
+    "attributes": {
+      "subCategory": "elevator",
+      "count": 3,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Asakusa.Ningyocho",
+    "type": "toilet",
+    "name": {
+      "en": "Accessible Toilet",
+      "ja": "だれでもトイレ"
+    },
+    "attributes": {
+      "subCategory": "accessible_toilet",
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Asakusa.Higashinihombashi",
+    "type": "accessibility",
+    "name": {
+      "en": "Elevator",
+      "ja": "エレベーター"
+    },
+    "attributes": {
+      "subCategory": "elevator",
+      "count": 1,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Asakusa.Higashinihombashi",
+    "type": "accessibility",
+    "name": {
+      "en": "Escalator",
+      "ja": "エスカレーター"
+    },
+    "attributes": {
+      "subCategory": "escalator",
+      "count": 2,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Asakusa.Higashinihombashi",
+    "type": "toilet",
+    "name": {
+      "en": "Accessible Toilet",
+      "ja": "だれでもトイレ"
+    },
+    "attributes": {
+      "subCategory": "accessible_toilet",
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Shinjuku.BakuroYokoyama",
+    "type": "accessibility",
+    "name": {
+      "en": "Elevator",
+      "ja": "エレベーター"
+    },
+    "attributes": {
+      "subCategory": "elevator",
+      "count": 3,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Shinjuku.BakuroYokoyama",
+    "type": "accessibility",
+    "name": {
+      "en": "Escalator",
+      "ja": "エスカレーター"
+    },
+    "attributes": {
+      "subCategory": "escalator",
+      "count": 17,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Shinjuku.BakuroYokoyama",
+    "type": "toilet",
+    "name": {
+      "en": "Accessible Toilet",
+      "ja": "だれでもトイレ"
+    },
+    "attributes": {
+      "subCategory": "accessible_toilet",
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Shinjuku.Hamacho",
+    "type": "accessibility",
+    "name": {
+      "en": "Elevator",
+      "ja": "エレベーター"
+    },
+    "attributes": {
+      "subCategory": "elevator",
+      "count": 2,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Shinjuku.Hamacho",
+    "type": "accessibility",
+    "name": {
+      "en": "Escalator",
+      "ja": "エスカレーター"
+    },
+    "attributes": {
+      "subCategory": "escalator",
+      "count": 4,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Shinjuku.Hamacho",
+    "type": "toilet",
+    "name": {
+      "en": "Accessible Toilet",
+      "ja": "だれでもトイレ"
+    },
+    "attributes": {
+      "subCategory": "accessible_toilet",
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Oedo.Tsukishima",
+    "type": "accessibility",
+    "name": {
+      "en": "Elevator",
+      "ja": "エレベーター"
+    },
+    "attributes": {
+      "subCategory": "elevator",
+      "count": 2,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Oedo.Tsukishima",
+    "type": "accessibility",
+    "name": {
+      "en": "Escalator",
+      "ja": "エスカレーター"
+    },
+    "attributes": {
+      "subCategory": "escalator",
+      "count": 5,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Oedo.Tsukishima",
+    "type": "toilet",
+    "name": {
+      "en": "Accessible Toilet",
+      "ja": "だれでもトイレ"
+    },
+    "attributes": {
+      "subCategory": "accessible_toilet",
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Oedo.Kachidoki",
+    "type": "accessibility",
+    "name": {
+      "en": "Elevator",
+      "ja": "エレベーター"
+    },
+    "attributes": {
+      "subCategory": "elevator",
+      "count": 4,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Oedo.Kachidoki",
+    "type": "accessibility",
+    "name": {
+      "en": "Escalator",
+      "ja": "エスカレーター"
+    },
+    "attributes": {
+      "subCategory": "escalator",
+      "count": 21,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Oedo.Kachidoki",
+    "type": "toilet",
+    "name": {
+      "en": "Accessible Toilet",
+      "ja": "だれでもトイレ"
+    },
+    "attributes": {
+      "subCategory": "accessible_toilet",
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Oedo.Tsukijishijo",
+    "type": "accessibility",
+    "name": {
+      "en": "Elevator",
+      "ja": "エレベーター"
+    },
+    "attributes": {
+      "subCategory": "elevator",
+      "count": 2,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Oedo.Tsukijishijo",
+    "type": "accessibility",
+    "name": {
+      "en": "Escalator",
+      "ja": "エスカレーター"
+    },
+    "attributes": {
+      "subCategory": "escalator",
+      "count": 7,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  },
+  {
+    "node_id": "odpt.Station:Toei.Oedo.Tsukijishijo",
+    "type": "toilet",
+    "name": {
+      "en": "Accessible Toilet",
+      "ja": "だれでもトイレ"
+    },
+    "attributes": {
+      "subCategory": "accessible_toilet",
+      "has_wheelchair_access": true,
+      "has_ostomate": true,
+      "has_baby_chair": true,
+      "source": "official_scrape"
+    },
+    "source_dataset": "official"
+  }
+]

@@ -7,6 +7,14 @@ type Context = {
   personaArchetype?: string;
   personaLabels?: string[];
   temperatureC?: number;
+  odptStation?: {
+    station_code?: string
+    railway?: string
+    operator?: string
+    connecting_railways?: string[]
+    exits?: string[]
+    raw?: Record<string, unknown>
+  }
 };
 
 type Facility = {
@@ -179,6 +187,18 @@ export class StrategyEngine {
         tags: Array.from(tags).slice(0, 3),
         actions: [{ label: 'Explore', uri: 'app:map' }]
       });
+    }
+
+    if (context.odptStation) {
+      const lineName = context.odptStation.railway?.split(':').pop()?.split('.').pop() || 'Transit'
+      strategy.push({
+        type: 'primary',
+        title: `${lineName} 站內導航`,
+        description: `包含 ${context.odptStation.exits?.length || 0} 個出口與 ${context.odptStation.connecting_railways?.length || 0} 條轉乘路線資訊。`,
+        rationale: 'Transport node with ODPT data',
+        tags: ['transport', 'navigation'],
+        actions: [{ label: '查看出口地圖', uri: 'app:exits' }]
+      })
     }
 
     return strategy;

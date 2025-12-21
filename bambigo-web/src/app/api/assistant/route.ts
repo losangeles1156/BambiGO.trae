@@ -60,6 +60,7 @@ export const GET = withMonitor(async (req: Request) => {
   const { searchParams } = new URL(req.url)
   const q = (searchParams.get('q') || '').trim()
   const nodeId = (searchParams.get('node_id') || '').trim()
+  const providerOverride = (searchParams.get('provider') || '').trim().toLowerCase()
   
   // Auth: Bearer token takes precedence (header or query), fallback to user_id param (legacy/insecure), then IP
   let userId = (searchParams.get('user_id') || '').trim()
@@ -298,7 +299,8 @@ export const GET = withMonitor(async (req: Request) => {
     }
   }
 
-  const provider = (process.env.AI_PROVIDER || '').toLowerCase()
+  const envProvider = (process.env.AI_PROVIDER || '').toLowerCase()
+  const provider = (providerOverride === 'dify' || providerOverride === 'n8n') ? providerOverride : envProvider
   const mode = routeMode(q)
 
   if (mode === 'tool') {
@@ -360,8 +362,8 @@ export const GET = withMonitor(async (req: Request) => {
   }
 
   if (provider === 'dify') {
-    const apiKey = process.env.DIFY_API_KEY
-    const apiUrl = process.env.DIFY_BASE_URL || process.env.DIFY_API_URL
+    const apiKey = (req.headers.get('x-dify-api-key') || '').trim() || process.env.DIFY_API_KEY
+    const apiUrl = (req.headers.get('x-dify-api-url') || '').trim() || process.env.DIFY_BASE_URL || process.env.DIFY_API_URL
     if (!apiKey || !apiUrl) {
       return new NextResponse(
         JSON.stringify({ error: { code: 'CONFIG_ERROR', message: 'Dify credentials missing' } }),

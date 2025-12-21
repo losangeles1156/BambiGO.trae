@@ -43,6 +43,8 @@ export type Dictionary = {
     backToCenter: string
     manageTags: string
     swipeUpForDetails: string
+    remove: string
+    tapForDetails: string
   },
   header: {
     youAreAt: string
@@ -150,6 +152,50 @@ export type Dictionary = {
       earthquake: string
       other: string
     }
+  }
+
+  tagging: {
+    managerRegionLabel: string
+    activeTagsLabel: string
+    l1Title: string
+    l2Title: string
+    l3Title: string
+    l4Title: string
+    filterBarLabel: string
+    serviceFilterPrefix: string
+    generateStrategy: string
+    strategyCardTitle: string
+    strategyEngineTitle: string
+    strategyEngineSubtitle: string
+    strategyEmptyBody: string
+    selectNodeToGenerate: string
+    personasLabel: string
+    persona: {
+      transitHub: string
+      localVibe: string
+      digitalNomadReady: string
+      accessibleFriendly: string
+    }
+  }
+
+  nodeDetail: {
+    outOfRangeTitle: string
+    planRouteBack: string
+    later: string
+    serviceFacilitiesTitle: string
+    trafficTitle: string
+    crowdTitle: string
+    crowdHistorical: string
+    crowdTrendLabel: string
+    crowdComfort: string
+    crowdMedium: string
+    crowdHigh: string
+    trendUp: string
+    trendDown: string
+    trendStable: string
+    nearbyFacilitiesTitle: string
+    bufferNotice: string
+    bufferLearnMore: string
   }
 }
 

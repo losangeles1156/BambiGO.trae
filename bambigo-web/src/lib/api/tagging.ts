@@ -4,6 +4,21 @@ import { L1Tag, L3ServiceFacility, L4ActionCard } from '@/types/tagging';
 
 const API_BASE = '/api/nodes';
 
+function getAdminWriteKey(): string {
+  if (typeof window === 'undefined') return '';
+  try {
+    return (localStorage.getItem('bambigo.admin.writeKey') || '').trim();
+  } catch {
+    return '';
+  }
+}
+
+function addAdminHeader(headers: Record<string, string>): Record<string, string> {
+  const key = getAdminWriteKey();
+  if (key) headers['x-admin-key'] = key;
+  return headers;
+}
+
 export const TaggingService = {
   
   // --- L1 Operations ---
@@ -18,7 +33,7 @@ export const TaggingService = {
   async addL1Tag(tag: Omit<L1Tag, 'id'>): Promise<L1Tag> {
     const res = await fetch(`${API_BASE}/${tag.nodeId}/tags`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: addAdminHeader({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ layer: 'L1', data: tag })
     });
     
@@ -39,7 +54,8 @@ export const TaggingService = {
 
   async removeL1Tag(nodeId: string, tagId: string): Promise<void> {
     const res = await fetch(`${API_BASE}/${nodeId}/tags?id=${tagId}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: addAdminHeader({})
     });
     if (!res.ok) throw new Error('Failed to delete tag');
   },
@@ -56,7 +72,7 @@ export const TaggingService = {
   async addL3Facility(facility: Omit<L3ServiceFacility, 'id'>): Promise<L3ServiceFacility> {
     const res = await fetch(`${API_BASE}/${facility.nodeId}/tags`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: addAdminHeader({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ layer: 'L3', data: facility })
     });
 
@@ -72,7 +88,7 @@ export const TaggingService = {
   async updateL3Facility(facility: L3ServiceFacility): Promise<L3ServiceFacility> {
     const res = await fetch(`${API_BASE}/${facility.nodeId}/tags?id=${facility.id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: addAdminHeader({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ layer: 'L3', data: facility })
     });
 
@@ -82,7 +98,8 @@ export const TaggingService = {
 
   async removeL3Facility(nodeId: string, facilityId: string): Promise<void> {
     const res = await fetch(`${API_BASE}/${nodeId}/tags?id=${facilityId}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: addAdminHeader({})
     });
     if (!res.ok) throw new Error('Failed to delete facility');
   },

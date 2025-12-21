@@ -7,7 +7,7 @@ const nextConfig = {
     return [
       {
         source: '/@vite/client',
-        destination: '/api/health', // Redirect to a healthy endpoint to avoid 404
+        destination: '/api/vite-client',
       },
       {
         source: '/line-icon.png',

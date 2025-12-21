@@ -30,6 +30,25 @@ const L3_TYPE_MAP: Record<string, L3Category> = {
   medical_aid: 'medical_aid',
 };
 
+function requireAdminWrite(req: NextRequest): Response | null {
+  if (process.env.NODE_ENV !== 'production') return null
+  const expected = (process.env.ADMIN_WRITE_KEY || '').trim()
+  if (!expected) {
+    return NextResponse.json(
+      { error: { code: 'ADMIN_WRITE_NOT_CONFIGURED', message: 'Admin write is not configured' } },
+      { status: 503 }
+    )
+  }
+  const provided = (req.headers.get('x-admin-key') || '').trim()
+  if (provided !== expected) {
+    return NextResponse.json(
+      { error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } },
+      { status: 401 }
+    )
+  }
+  return null
+}
+
 function parseWKBPoint(hex: string): [number, number] | null {
   try {
     const buffer = Buffer.from(hex, 'hex');
@@ -75,33 +94,182 @@ export async function GET(
     const l1: L1Tag[] = [];
     const l3: L3ServiceFacility[] = [
       {
-        id: 'mock-ueno-toilet-1',
+        id: 'mock-ueno-toilet-metro-ginza',
         nodeId,
         category: 'toilet',
         subCategory: 'station_toilet',
-        location: { floor: 'B1', direction: 'Tokyo Metro concourse' },
+        location: { floor: 'B1', direction: 'Tokyo Metro Ginza Line concourse' },
         provider: { type: 'station', name: 'Tokyo Metro' },
         attributes: {
           has_wheelchair_access: true,
           has_baby_care: true,
           gender: 'unisex',
+          reference_urls: [
+            'https://www.tokyometro.jp/station/ueno/accessibility/index.html',
+          ],
         },
-        openingHours: '24 Hours',
         source: 'official',
         updatedAt: new Date().toISOString(),
       },
       {
-        id: 'mock-ueno-locker-1',
+        id: 'mock-ueno-toilet-metro-hibiya',
+        nodeId,
+        category: 'toilet',
+        subCategory: 'station_toilet',
+        location: { floor: 'B1', direction: 'Tokyo Metro Hibiya Line concourse' },
+        provider: { type: 'station', name: 'Tokyo Metro' },
+        attributes: {
+          has_wheelchair_access: true,
+          has_baby_care: true,
+          gender: 'unisex',
+          reference_urls: [
+            'https://www.tokyometro.jp/station/ueno/accessibility/index.html',
+          ],
+        },
+        source: 'official',
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: 'mock-ueno-toilet-jr-1f-central',
+        nodeId,
+        category: 'toilet',
+        subCategory: 'station_toilet',
+        location: { floor: '1F', direction: 'JR Central Gate area' },
+        provider: { type: 'station', name: 'JR East' },
+        attributes: {
+          has_wheelchair_access: true,
+          has_baby_care: false,
+          gender: 'unisex',
+          reference_urls: [
+            'https://www.jreast.co.jp/en/estation/stations/204.html',
+          ],
+        },
+        source: 'official',
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: 'mock-ueno-toilet-jr-3f-park',
+        nodeId,
+        category: 'toilet',
+        subCategory: 'station_toilet',
+        location: { floor: '3F', direction: 'JR Park Gate / Iriya Gate area' },
+        provider: { type: 'station', name: 'JR East' },
+        attributes: {
+          has_wheelchair_access: true,
+          has_baby_care: false,
+          gender: 'unisex',
+          reference_urls: [
+            'https://www.jreast.co.jp/en/estation/stations/204.html',
+          ],
+        },
+        source: 'official',
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: 'mock-ueno-locker-jr-1f-central',
         nodeId,
         category: 'locker',
         subCategory: 'coin_locker',
-        location: { floor: '1F', direction: 'Near main gates (summary)' },
-        provider: { type: 'station', name: 'JR East / Tokyo Metro / Keisei' },
+        location: { floor: '1F', direction: 'JR Central Gate area' },
+        provider: { type: 'station', name: 'JR East' },
         attributes: {
-          total: 19,
-          by_provider: { jr_east: 11, tokyometro: 5, keisei: 3 },
+          locker_bank_count: 4,
           payment: ['Cash', 'IC Card'],
-          size: ['S', 'M', 'L', 'XL'],
+          size: ['SS', 'S', 'M', 'L', 'LL'],
+          reference_urls: [
+            'https://media.jreast.co.jp/articles/1010',
+          ],
+        },
+        source: 'official',
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: 'mock-ueno-locker-jr-m2-shinobazu',
+        nodeId,
+        category: 'locker',
+        subCategory: 'coin_locker',
+        location: { floor: 'M2', direction: 'JR Shinobazu Gate area' },
+        provider: { type: 'station', name: 'JR East' },
+        attributes: {
+          locker_bank_count: 3,
+          payment: ['Cash', 'IC Card'],
+          size: ['SS', 'S', 'M', 'L', 'LL'],
+          reference_urls: [
+            'https://media.jreast.co.jp/articles/1010',
+          ],
+        },
+        source: 'official',
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: 'mock-ueno-locker-jr-3f-iriya-park',
+        nodeId,
+        category: 'locker',
+        subCategory: 'coin_locker',
+        location: { floor: '3F', direction: 'JR Iriya Gate / Park Gate area' },
+        provider: { type: 'station', name: 'JR East' },
+        attributes: {
+          locker_bank_count: 3,
+          payment: ['Cash', 'IC Card'],
+          size: ['SS', 'S', 'M', 'L', 'LL'],
+          reference_urls: [
+            'https://media.jreast.co.jp/articles/1010',
+          ],
+        },
+        source: 'official',
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: 'mock-ueno-locker-jr-2f-higashi',
+        nodeId,
+        category: 'locker',
+        subCategory: 'coin_locker',
+        location: { floor: '2F', direction: 'JR Higashi-Ueno Exit area' },
+        provider: { type: 'station', name: 'JR East' },
+        attributes: {
+          locker_bank_count: 1,
+          payment: ['Cash', 'IC Card'],
+          size: ['S', 'M', 'L'],
+          reference_urls: [
+            'https://media.jreast.co.jp/articles/1010',
+          ],
+        },
+        source: 'official',
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: 'mock-ueno-locker-metro-summary',
+        nodeId,
+        category: 'locker',
+        subCategory: 'coin_locker',
+        location: { floor: 'B1', direction: 'Tokyo Metro Ueno Station (summary)' },
+        provider: { type: 'station', name: 'Tokyo Metro' },
+        attributes: {
+          locker_bank_count: 5,
+          payment: ['Cash', 'IC Card'],
+          size: ['SS', 'S', 'M', 'L', 'LL'],
+          reference_urls: [
+            'https://media.jreast.co.jp/articles/1010',
+            'https://www.tokyometro.jp/station/ueno/yardmap/index_print.html',
+          ],
+        },
+        source: 'official',
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: 'mock-ueno-locker-keisei-summary',
+        nodeId,
+        category: 'locker',
+        subCategory: 'coin_locker',
+        location: { floor: 'B1', direction: 'Keisei Ueno Station (summary)' },
+        provider: { type: 'station', name: 'Keisei' },
+        attributes: {
+          locker_bank_count: 3,
+          payment: ['Cash', 'IC Card'],
+          size: ['SS', 'S', 'M', 'L', 'LL'],
+          reference_urls: [
+            'https://media.jreast.co.jp/articles/1010',
+          ],
         },
         source: 'official',
         updatedAt: new Date().toISOString(),
@@ -198,10 +366,28 @@ export async function POST(
   request: NextRequest,
   props: { params: Promise<{ nodeId: string }> }
 ) {
+  const guard = requireAdminWrite(request)
+  if (guard) return guard
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return NextResponse.json(
+      { error: { code: 'ADMIN_DB_NOT_CONFIGURED', message: 'Supabase admin client is not configured' } },
+      { status: 503 }
+    )
+  }
   const params = await props.params;
   const nodeId = params.nodeId;
-  const body = await request.json();
-  const { layer, data } = body; // Expecting { layer: 'L1' | 'L3', data: ... }
+  let body: Record<string, unknown> | null = null
+  try {
+    const parsed: unknown = await request.json()
+    body = parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : null
+  } catch {
+    return NextResponse.json(
+      { error: { code: 'INVALID_JSON', message: 'Invalid JSON body' } },
+      { status: 400 }
+    )
+  }
+  const layer = body?.layer
+  const data = body?.data
 
   if (!layer || !data) {
     return NextResponse.json({ error: 'Missing layer or data' }, { status: 400 });
@@ -262,12 +448,30 @@ export async function PUT(
   request: NextRequest,
   props: { params: Promise<{ nodeId: string }> }
 ) {
+  const guard = requireAdminWrite(request)
+  if (guard) return guard
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return NextResponse.json(
+      { error: { code: 'ADMIN_DB_NOT_CONFIGURED', message: 'Supabase admin client is not configured' } },
+      { status: 503 }
+    )
+  }
   const params = await props.params;
   const nodeId = params.nodeId;
   const { searchParams } = new URL(request.url);
   const tagId = searchParams.get('id');
-  const body = await request.json();
-  const { layer, data } = body;
+  let body: Record<string, unknown> | null = null
+  try {
+    const parsed: unknown = await request.json()
+    body = parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : null
+  } catch {
+    return NextResponse.json(
+      { error: { code: 'INVALID_JSON', message: 'Invalid JSON body' } },
+      { status: 400 }
+    )
+  }
+  const layer = body?.layer
+  const data = body?.data
 
   if (!tagId) {
     return NextResponse.json({ error: 'Missing tag ID' }, { status: 400 });
@@ -330,6 +534,14 @@ export async function DELETE(
   request: NextRequest,
   props: { params: Promise<{ nodeId: string }> }
 ) {
+  const guard = requireAdminWrite(request)
+  if (guard) return guard
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return NextResponse.json(
+      { error: { code: 'ADMIN_DB_NOT_CONFIGURED', message: 'Supabase admin client is not configured' } },
+      { status: 503 }
+    )
+  }
   const params = await props.params;
   const { searchParams } = new URL(request.url);
   const tagId = searchParams.get('id');

@@ -31,3 +31,12 @@ This document defines the standards for UI development, version control, and con
 - **Visual Regression**: Use Playwright to capture screenshots and compare against baselines.
 - **Text Validation**: Verify that the correct station names (e.g., "上野", "東京") are rendered in all supported languages.
 - **Interaction Tests**: Ensure buttons and search bars function as expected across devices.
+
+## 7. Map Layers & Node Icons
+- **Map Style Presets**: Use the in-app layer picker to switch between 3 approved basemap presets (Voyager Warm / Positron Clean / Muted Light).
+- **Viewport Stability**: Switching map styles must preserve `center` and `zoom` and keep node marker positions stable (target: ≤ 5px perceived shift).
+- **Node Icon System**:
+  - Station: Blue rounded-square marker with white glyph.
+  - Bus Stop: Emerald rounded-square marker with white glyph.
+  - POI: Violet rounded-square marker with white glyph.
+- **Important Node Highlight**: The currently selected node uses a pulse halo to improve recognition.

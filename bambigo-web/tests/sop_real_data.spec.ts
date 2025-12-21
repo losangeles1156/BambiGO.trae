@@ -7,13 +7,19 @@ import path from 'node:path'
 
 config({ path: path.resolve(process.cwd(), '.env.local'), override: true })
 
-const dbUrl = process.env.DATABASE_URL!
+const runRealData = process.env.RUN_REAL_DATA_TESTS === '1' && !!process.env.DATABASE_URL
+const dbUrl = process.env.DATABASE_URL || ''
 
-describe('SOP Real Data Integration Test', () => {
+const describeReal = runRealData ? describe : describe.skip
+
+describeReal('SOP Real Data Integration Test', () => {
   let realFacilities: L3ServiceFacility[] = []
 
   beforeAll(async () => {
-    const client = new Client({ connectionString: dbUrl })
+    const client = new Client({
+      connectionString: dbUrl,
+      ssl: dbUrl.includes('supabase.') || dbUrl.includes('supabase.com') ? { rejectUnauthorized: false } : undefined,
+    })
     await client.connect()
     
     try {

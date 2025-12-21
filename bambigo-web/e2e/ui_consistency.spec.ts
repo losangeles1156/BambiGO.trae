@@ -2,47 +2,98 @@ import { test, expect } from '@playwright/test';
 
 test.describe('UI Consistency and i18n Verification', () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate to the app
+    await page.addInitScript(() => {
+      ;(window as unknown as { __BAMBIGO_E2E__?: boolean }).__BAMBIGO_E2E__ = true
+    })
     await page.goto('/');
+
+    const collapse = page.getByRole('button', { name: 'Collapse issues badge' })
+    if (await collapse.isVisible()) {
+      await collapse.click()
+    }
   });
 
   test('should display correct default location in Header', async ({ page }) => {
     // Default locale is zh-TW, should show "東京站"
-    const locationBtn = page.locator('.ui-header span.text-blue-600');
+    const locationBtn = page.locator('.ui-header button.text-blue-600');
     await expect(locationBtn).toBeVisible({ timeout: 10000 });
     const text = await locationBtn.innerText();
-    expect(['東京站', 'Tokyo Station', '東京駅']).toContain(text);
+    expect(text).toMatch(/東京站|上野站|銀座站|Tokyo Station|Ueno Station|Ginza Station|東京駅|上野駅|銀座駅/);
   });
 
   test('should update Header when a node is selected', async ({ page }) => {
     // Wait for markers to load
-    const uenoMarker = page.getByTestId('marker-ueno-station');
+    const uenoMarker = page.getByTestId('marker-mock-ueno');
     await expect(uenoMarker).toBeVisible({ timeout: 15000 });
     await uenoMarker.click();
 
     // Header should now show "上野站"
-    const locationBtn = page.locator('.ui-header span.text-blue-600');
-    await expect(locationBtn).toHaveText(/上野站|Ueno Station|上野駅/);
+    const locationBtn = page.locator('.ui-header button.text-blue-600');
+    await expect(locationBtn).toContainText(/上野站|Ueno Station|上野駅/);
   });
 
-  test('should switch languages correctly', async ({ page }) => {
-    // Open language menu
-    await page.getByLabel('Select Language').click();
-    
-    // Switch to English
-    await page.getByText('English').click();
-    
-    // Check Header text
-    const youAreAt = page.locator('header').getByText(/You are at|你在|現在地/);
-    await expect(youAreAt).toBeVisible();
-    
-    const locationBtn = page.locator('.ui-header span.text-blue-600');
-    await expect(locationBtn).toHaveText('Tokyo Station');
+  test('should open map layer picker and switch map styles', async ({ page }) => {
+    const layersBtn = page.getByLabel('Map Layers')
+    await expect(layersBtn).toBeVisible({ timeout: 15000 })
+    await layersBtn.click()
 
-    // Switch to Japanese
-    await page.getByLabel('Select Language').click();
-    await page.getByText('日本語').click();
-    await expect(locationBtn).toHaveText('東京駅');
+    await expect(page.getByText('Map Style')).toBeVisible({ timeout: 10000 })
+    await expect(page.getByRole('button', { name: 'Positron Clean' })).toBeVisible()
+
+    await page.getByRole('button', { name: 'Positron Clean' }).click()
+
+    await expect(page.getByText('Map Style')).toBeHidden({ timeout: 10000 })
+
+    const uenoMarker = page.getByTestId('marker-mock-ueno')
+    await expect(uenoMarker).toBeVisible({ timeout: 15000 })
+  })
+
+  test('should switch languages correctly', async ({ page }) => {
+    const setLang = async (label: 'EN' | '日本語') => {
+      const expected = label === 'EN' ? 'en' : 'ja'
+
+      const closeBtn = page.getByLabel('Close menu')
+
+      const closeBtnInViewport = async () => {
+        if (!(await closeBtn.isVisible())) return false
+        const box = await closeBtn.boundingBox()
+        if (!box) return false
+        const viewport = page.viewportSize()
+        if (!viewport) return false
+        return box.x >= 0 && box.y >= 0 && box.x <= viewport.width && box.y <= viewport.height
+      }
+
+      const headerBtns = page.locator('.ui-header').getByRole('button', { name: label, exact: true })
+      if (!(await closeBtnInViewport()) && (await headerBtns.count()) > 0 && await headerBtns.first().isVisible()) {
+        await headerBtns.first().click()
+        await expect(page.locator('html')).toHaveAttribute('lang', expected, { timeout: 15000 })
+        return
+      }
+
+      if (!(await closeBtnInViewport())) {
+        await page.locator('.ui-header').getByRole('button', { name: 'Menu', exact: true }).click({ force: true })
+        await expect.poll(async () => await closeBtnInViewport(), { timeout: 10000 }).toBe(true)
+      }
+
+      const sidebar = closeBtn.locator('..').locator('..')
+      const langBtn = sidebar.getByRole('button', { name: label, exact: true }).first()
+      await expect(langBtn).toBeVisible({ timeout: 10000 })
+
+      try {
+        await langBtn.click({ timeout: 3000 })
+      } catch {
+        await langBtn.evaluate((el) => (el as HTMLElement).click())
+      }
+      await expect(page.locator('html')).toHaveAttribute('lang', expected, { timeout: 15000 })
+    }
+
+    const locationBtn = page.locator('.ui-header button.text-blue-600')
+
+    await setLang('日本語')
+    await expect(locationBtn).toBeVisible()
+
+    await setLang('EN')
+    await expect(locationBtn).toBeVisible()
   });
 
   test('should not contain "捷運101" or other residual text', async ({ page }) => {

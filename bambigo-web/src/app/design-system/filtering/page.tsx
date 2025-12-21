@@ -95,7 +95,7 @@ export default function FilteringDemo() {
     setFilters(prev => [...prev, {
       id,
       layer: 'L3',
-      label: def.label,
+      label: def.id,
       value: l3Id
     }]);
   };
@@ -168,7 +168,7 @@ export default function FilteringDemo() {
                     className="w-full text-left px-3 py-2 hover:bg-emerald-50 rounded-md text-sm text-gray-700 flex items-center gap-2"
                   >
                     <span>{f.icon}</span>
-                    <span>{f.label}</span>
+                    <span>{f.id}</span>
                   </button>
                 ))}
               </div>
@@ -217,7 +217,7 @@ export default function FilteringDemo() {
                       const def = L3_FACILITIES_DATA.find(d => d.id === l3Id);
                       return def ? (
                         <span key={l3Id} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 gap-1">
-                          {def.icon} {def.label}
+                          {def.icon} {def.id}
                         </span>
                       ) : null;
                     })}

@@ -18,11 +18,11 @@ export default function TagVisualization({ items }: Props) {
   }, [items])
   return (
     <div aria-label="Tag Visualization" role="figure" className="rounded-xl border border-gray-200 bg-white p-3">
-      <div className="text-sm font-semibold mb-2">服務標籤分布</div>
+      <div className="text-sm font-semibold mb-2">{t('tagging.serviceTagDistribution')}</div>
       <div className="grid grid-cols-3 gap-2">
         {counts.map(([tag, count]) => (
           <div key={tag} className="flex items-center justify-between rounded border border-gray-100 px-2 py-1 text-xs">
-            <div className="truncate">{tag}</div>
+            <div className="truncate">{t(`tagging.l3.${tag}`) || tag}</div>
             <div className="ml-2 text-gray-600">{count}</div>
           </div>
         ))}

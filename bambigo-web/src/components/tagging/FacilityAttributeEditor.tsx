@@ -68,7 +68,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
 
 export default function FacilityAttributeEditor({ facility, onSave, onCancel, className }: Props) {
   const [data, setData] = useState<Partial<L3ServiceFacility>>(facility)
-  const [attributes, setAttributes] = useState<Record<string, string | number | boolean | undefined>>(facility.attributes as Record<string, string | number | boolean | undefined> || {})
+  const [attributes, setAttributes] = useState<Record<string, unknown>>((facility.attributes as Record<string, unknown> | undefined) || {})
   const [isVerified, setIsVerified] = useState(false) // In a real app, this might come from data
 
   const [location, setLocation] = useState<{ floor?: string; direction?: string }>(facility.location || {})
@@ -80,7 +80,7 @@ export default function FacilityAttributeEditor({ facility, onSave, onCancel, cl
   const Icon = ICON_MAP[category] || HelpCircle
   const catLabel = L3_FACILITIES_DATA.find(f => f.id === category)?.label || category
 
-  const handleAttrChange = (key: string, value: string | boolean) => {
+  const handleAttrChange = (key: string, value: unknown) => {
     setAttributes(prev => ({ ...prev, [key]: value }))
   }
 
@@ -89,13 +89,42 @@ export default function FacilityAttributeEditor({ facility, onSave, onCancel, cl
   }
 
   const handleSave = () => {
+    const normalizedAttributes: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(attributes)) {
+      if (typeof v === 'string') {
+        const s = v.trim()
+        if (
+          (s.startsWith('{') && s.endsWith('}')) ||
+          (s.startsWith('[') && s.endsWith(']'))
+        ) {
+          try {
+            normalizedAttributes[k] = JSON.parse(s) as unknown
+            continue
+          } catch {}
+        }
+      }
+      normalizedAttributes[k] = v
+    }
+
     onSave({
       ...data,
-      attributes,
+      attributes: normalizedAttributes,
       location,
       updatedAt: new Date().toISOString()
       // In real app, we'd handle verification logic here
     })
+  }
+
+  const toInputValue = (v: unknown) => {
+    if (v === null || v === undefined) return ''
+    if (typeof v === 'string') return v
+    if (typeof v === 'number') return String(v)
+    if (typeof v === 'boolean') return v ? 'true' : 'false'
+    try {
+      return JSON.stringify(v)
+    } catch {
+      return String(v)
+    }
   }
 
   return (
@@ -176,22 +205,22 @@ export default function FacilityAttributeEditor({ facility, onSave, onCancel, cl
               <div className="flex-1 flex justify-end">
                 {field.type === 'boolean' ? (
                   <button 
-                    onClick={() => handleAttrChange(field.key, !attributes[field.key])}
+                    onClick={() => handleAttrChange(field.key, attributes[field.key] !== true)}
                     className={clsx(
                       "relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2",
-                      attributes[field.key] ? 'bg-emerald-500' : 'bg-gray-200'
+                      attributes[field.key] === true ? 'bg-emerald-500' : 'bg-gray-200'
                     )}
                   >
                     <span 
                       className={clsx(
                         "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
-                        attributes[field.key] ? 'translate-x-4' : 'translate-x-0'
+                        attributes[field.key] === true ? 'translate-x-4' : 'translate-x-0'
                       )}
                     />
                   </button>
                 ) : field.type === 'select' ? (
                   <select
-                    value={String(attributes[field.key] ?? '')}
+                    value={toInputValue(attributes[field.key])}
                     onChange={(e) => handleAttrChange(field.key, e.target.value)}
                     className="block w-full rounded-md border-gray-300 py-1.5 text-gray-900 shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm sm:leading-6 border px-2"
                   >
@@ -203,7 +232,7 @@ export default function FacilityAttributeEditor({ facility, onSave, onCancel, cl
                 ) : (
                   <input 
                     type="text" 
-                    value={String(attributes[field.key] ?? '')}
+                    value={toInputValue(attributes[field.key])}
                     onChange={(e) => handleAttrChange(field.key, e.target.value)}
                     className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-emerald-600 sm:text-sm sm:leading-6 px-2"
                   />

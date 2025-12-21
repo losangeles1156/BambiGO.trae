@@ -3,6 +3,7 @@ import React from 'react'
 import { LucideIcon, X } from 'lucide-react'
 import { clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 export type TagLayer = 'L1' | 'L2' | 'L3' | 'L4'
 
@@ -16,6 +17,7 @@ interface TagChipProps {
 }
 
 export default function TagChip({ label, layer, icon: Icon, className = '', onClick, onRemove }: TagChipProps) {
+  const { t } = useLanguage()
   // Base styles
   const baseStyles = 'inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1'
   const cursorStyles = onClick ? 'cursor-pointer hover:opacity-80' : 'cursor-default'
@@ -59,7 +61,7 @@ export default function TagChip({ label, layer, icon: Icon, className = '', onCl
             onRemove()
           }}
           className="ml-1 p-0.5 rounded-full hover:bg-black/10 focus:outline-none focus:bg-black/10"
-          aria-label={`Remove ${label}`}
+          aria-label={`${t('common.remove')} ${label}`}
         >
           <X size={12} />
         </button>

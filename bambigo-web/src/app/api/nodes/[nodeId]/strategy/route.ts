@@ -73,7 +73,16 @@ export async function POST(
 ) {
   const params = await props.params;
   const nodeId = params.nodeId;
-  const context = await request.json();
+  let context: Record<string, unknown> = {}
+  try {
+    const parsed: unknown = await request.json()
+    if (parsed && typeof parsed === 'object') context = parsed as Record<string, unknown>
+  } catch {
+    return NextResponse.json(
+      { error: { code: 'INVALID_JSON', message: 'Invalid JSON body' } },
+      { status: 400 }
+    )
+  }
 
   // 1. Fetch tags for this node
   const { data: facilities, error } = await supabase
@@ -91,7 +100,7 @@ export async function POST(
     .eq('id', nodeId)
     .maybeSingle();
 
-  type FacilityRow = { type?: string; subCategory?: string; attributes?: Record<string, unknown> }
+  type FacilityRow = { type?: string | null; subCategory?: string | null; attributes?: Record<string, unknown> | null }
   const l1Context = deriveL1Context(
     typeof (nodeRow as unknown as { type?: string } | null | undefined)?.type === 'string'
       ? ((nodeRow as unknown as { type?: string }).type as string)
@@ -109,15 +118,45 @@ export async function POST(
     }
   );
 
+  const normalizedFacilities = (facilities || []).map((f: FacilityRow) => ({
+    type: String(f.type || f.subCategory || (f.attributes && (f.attributes as Record<string, unknown>).subCategory) || ''),
+    attributes: (f.attributes || {}) as Record<string, unknown>,
+  }))
+
   const meta = nodeRow?.metadata as Record<string, unknown> | null | undefined
   const personaArchetype = typeof meta?.persona_archetype === 'string' ? (meta.persona_archetype as string) : undefined
 
-  const strategies = StrategyEngine.generate(facilities || [], {
-    ...context,
-    now: new Date(),
-    personaArchetype,
-    personaLabels
-  });
+  const odptStation = (() => {
+    const raw = context.odptStation
+    if (!raw || typeof raw !== 'object') return undefined
+    const r = raw as Record<string, unknown>
+    const connectingRailways = Array.isArray(r.connecting_railways) && r.connecting_railways.every((v) => typeof v === 'string')
+      ? (r.connecting_railways as string[])
+      : undefined
+    const exits = Array.isArray(r.exits) && r.exits.every((v) => typeof v === 'string')
+      ? (r.exits as string[])
+      : undefined
+    return {
+      station_code: typeof r.station_code === 'string' ? r.station_code : undefined,
+      railway: typeof r.railway === 'string' ? r.railway : undefined,
+      operator: typeof r.operator === 'string' ? r.operator : undefined,
+      connecting_railways: connectingRailways,
+      exits,
+      raw: r,
+    }
+  })()
 
-  return NextResponse.json(strategies);
+  const cards = StrategyEngine.generate(
+    normalizedFacilities,
+    {
+      ...context,
+      time: typeof context.time === 'string' ? context.time : undefined,
+      now: typeof context.time === 'string' ? new Date(context.time) : new Date(),
+      personaArchetype,
+      personaLabels,
+      odptStation
+    }
+  );
+
+  return NextResponse.json(cards);
 }

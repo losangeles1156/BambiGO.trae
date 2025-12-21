@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
-import { X, Send, Navigation, MessageSquare, ShieldCheck } from 'lucide-react'
+import { X, Send, Navigation, MessageSquare, ShieldCheck, Settings } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useLanguage } from '../../contexts/LanguageContext'
 
@@ -32,6 +32,9 @@ export default function FullScreenAssistant({ open, onClose, onCommand, nodeId }
   const [error, setError] = useState<string | null>(null)
   const [showLinePrompt, setShowLinePrompt] = useState(false)
   const [tripGuardStatus, setTripGuardStatus] = useState<TripGuardStatus>('inactive')
+  const [showDifySettings, setShowDifySettings] = useState(false)
+  const [difyApiUrl, setDifyApiUrl] = useState('')
+  const [difyApiKey, setDifyApiKey] = useState('')
   
   const abortControllerRef = useRef<AbortController | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -59,6 +62,15 @@ export default function FullScreenAssistant({ open, onClose, onCommand, nodeId }
       abortControllerRef.current = null
     }
   }, [])
+
+  useEffect(() => {
+    if (!open) return
+    try {
+      setDifyApiUrl(localStorage.getItem('bambigo.dify.apiUrl') || '')
+      setDifyApiKey(localStorage.getItem('bambigo.dify.apiKey') || '')
+    } catch {
+    }
+  }, [open])
 
   const handleSubmit = async (queryText: string = text) => {
     const q = queryText.trim()
@@ -133,19 +145,38 @@ export default function FullScreenAssistant({ open, onClose, onCommand, nodeId }
       params.set('q', q)
       if (nodeId) params.set('node_id', nodeId)
       if (session?.access_token) params.set('token', session.access_token)
+      if (difyApiKey || difyApiUrl) params.set('provider', 'dify')
 
       const url = `/api/assistant?${params.toString()}`
       const headers: Record<string, string> = { 'Content-Type': 'application/json' }
       if (session?.access_token) {
         headers['Authorization'] = `Bearer ${session.access_token}`
       }
+      if (difyApiKey) headers['x-dify-api-key'] = difyApiKey
+      if (difyApiUrl) headers['x-dify-api-url'] = difyApiUrl
 
       const response = await fetch(url, {
         headers,
         signal: abortControllerRef.current?.signal
       })
 
-      if (!response.ok || !response.body) {
+      if (!response.ok) {
+        throw new Error('Network error or AI service unavailable')
+      }
+
+      const contentType = response.headers.get('Content-Type') || ''
+      if (contentType.includes('application/json')) {
+        const j = await response.json().catch(() => null as unknown)
+        const primary = (j as { fallback?: { primary?: { title?: unknown; desc?: unknown; description?: unknown } } } | null)?.fallback?.primary
+        const title = primary?.title ? String(primary.title) : ''
+        const desc = primary?.desc ? String(primary.desc) : primary?.description ? String(primary.description) : ''
+        const msg = [title, desc].filter(Boolean).join('\n') || '收到回覆，但內容無法解析。'
+        setMessages(prev => [...prev, { role: 'ai', content: msg, timestamp: Date.now() }])
+        setLoading(false)
+        return
+      }
+
+      if (!response.body) {
         throw new Error('Network error or AI service unavailable')
       }
 
@@ -248,14 +279,84 @@ export default function FullScreenAssistant({ open, onClose, onCommand, nodeId }
               </div>
             </div>
           </div>
-          <button 
-            onClick={onClose}
-            aria-label="Close Assistant"
-            className="rounded-xl p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-all active:scale-90"
-          >
-            <X size={22} />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setShowDifySettings(v => !v)}
+              aria-label="AI Provider Settings"
+              className="rounded-xl p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-all active:scale-90"
+              disabled={loading}
+            >
+              <Settings size={20} />
+            </button>
+            <button 
+              onClick={onClose}
+              aria-label="Close Assistant"
+              className="rounded-xl p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-all active:scale-90"
+            >
+              <X size={22} />
+            </button>
+          </div>
         </div>
+
+        {showDifySettings && (
+          <div className="border-b bg-white px-4 py-3 space-y-3">
+            <div className="grid grid-cols-1 gap-2">
+              <div className="space-y-1">
+                <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Dify API URL</div>
+                <input
+                  type="text"
+                  value={difyApiUrl}
+                  onChange={(e) => setDifyApiUrl(e.target.value)}
+                  placeholder="https://api.dify.ai/v1"
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                />
+              </div>
+              <div className="space-y-1">
+                <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Dify API Key</div>
+                <input
+                  type="password"
+                  value={difyApiKey}
+                  onChange={(e) => setDifyApiKey(e.target.value)}
+                  placeholder="app-..."
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => {
+                  try {
+                    localStorage.removeItem('bambigo.dify.apiUrl')
+                    localStorage.removeItem('bambigo.dify.apiKey')
+                  } catch {
+                  }
+                  setDifyApiUrl('')
+                  setDifyApiKey('')
+                }}
+                className="text-xs font-bold text-gray-400 hover:text-gray-600 transition-colors"
+                disabled={loading}
+              >
+                Clear
+              </button>
+              <button
+                onClick={() => {
+                  try {
+                    if (difyApiUrl.trim()) localStorage.setItem('bambigo.dify.apiUrl', difyApiUrl.trim())
+                    else localStorage.removeItem('bambigo.dify.apiUrl')
+                    if (difyApiKey.trim()) localStorage.setItem('bambigo.dify.apiKey', difyApiKey.trim())
+                    else localStorage.removeItem('bambigo.dify.apiKey')
+                  } catch {
+                  }
+                  setShowDifySettings(false)
+                }}
+                className="rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700 transition-colors disabled:bg-gray-200 disabled:text-gray-500"
+                disabled={loading}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Chat Area */}
         <div className="flex-1 overflow-y-auto bg-gray-50/50 p-4 space-y-4 scrollbar-hide">

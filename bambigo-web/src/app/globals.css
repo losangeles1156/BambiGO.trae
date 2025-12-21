@@ -136,4 +136,32 @@ body {
   .ui-chip--yellow { background: var(--status-warning-bg); color: var(--status-warning-text); }
   .ui-chip--blue { background: var(--status-info-bg); color: var(--status-info-text); }
   .ui-chip--green { background: var(--status-success-bg); color: var(--status-success-text); }
+
+  .node-icon__sprite {
+    display: none;
+    width: 16px;
+    height: 16px;
+    background-repeat: no-repeat;
+  }
+
+  .node-icon__sprite--l3 {
+    background-image: url('/icons/sprite/nodes-l3-32.png');
+    background-size: 400% 200%;
+  }
+
+  html[data-icon-mode='sprite'] .node-icon__sprite {
+    display: inline-block;
+  }
+
+  html[data-icon-mode='sprite'] .node-icon__fallback {
+    display: none;
+  }
+
+  .node-icon__sprite--l3_wifi { background-position: 0% 0%; }
+  .node-icon__sprite--l3_toilet { background-position: 33.333% 0%; }
+  .node-icon__sprite--l3_charging { background-position: 66.666% 0%; }
+  .node-icon__sprite--l3_locker { background-position: 100% 0%; }
+  .node-icon__sprite--l3_accessibility { background-position: 0% 100%; }
+  .node-icon__sprite--l3_rest_area { background-position: 33.333% 100%; }
+  .node-icon__sprite--l3_other { background-position: 66.666% 100%; }
 }

@@ -1,21 +1,27 @@
+ 'use client';
+
 import React from 'react';
-import { SparklesIcon, ArrowRightIcon } from '@heroicons/react/24/solid';
+import { SparklesIcon, ArrowRightIcon, LightBulbIcon } from '@heroicons/react/24/solid';
 import { clsx } from 'clsx';
 import type { L4ActionCard } from '@/types/tagging';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface L4StrategyCardProps {
   strategy: L4ActionCard | null;
   isLoading?: boolean;
   onGenerate: () => void;
   className?: string;
+  disabled?: boolean;
 }
 
 export const L4StrategyCard: React.FC<L4StrategyCardProps> = ({ 
   strategy, 
   isLoading, 
   onGenerate,
-  className 
+  className,
+  disabled
 }) => {
+  const { t } = useLanguage();
   return (
     <div className={clsx("rounded-2xl overflow-hidden border transition-all duration-300", 
       strategy 
@@ -32,18 +38,18 @@ export const L4StrategyCard: React.FC<L4StrategyCardProps> = ({
             </div>
             <div>
               <h3 className={clsx("font-bold text-lg leading-tight", strategy ? "text-gray-900" : "text-gray-500")}>
-                {strategy ? 'Mobility Strategy' : 'AI Strategy Engine'}
+                {strategy ? t('tagging.strategyCardTitle') : t('tagging.strategyEngineTitle')}
               </h3>
-              {!strategy && <p className="text-xs text-gray-400">Context-aware L4 insights</p>}
+              {!strategy && <p className="text-xs text-gray-400">{t('tagging.strategyEngineSubtitle')}</p>}
             </div>
           </div>
           
           <button
             onClick={onGenerate}
-            disabled={isLoading}
+            disabled={isLoading || disabled}
             className={clsx(
               "px-4 py-2 rounded-full text-sm font-semibold shadow-sm transition-all flex items-center gap-2",
-              isLoading 
+              (isLoading || disabled)
                 ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                 : strategy
                   ? "bg-white text-rose-600 border border-rose-200 hover:bg-rose-50"
@@ -53,11 +59,11 @@ export const L4StrategyCard: React.FC<L4StrategyCardProps> = ({
             {isLoading ? (
               <>
                 <ArrowRightIcon className="w-4 h-4 animate-spin" />
-                Thinking...
+                {t('common.loading')}
               </>
             ) : (
               <>
-                {strategy ? 'Regenerate' : 'Generate Insights'}
+                {t('tagging.generateStrategy')}
                 {!strategy && <ArrowRightIcon className="w-4 h-4" />}
               </>
             )}
@@ -106,7 +112,7 @@ export const L4StrategyCard: React.FC<L4StrategyCardProps> = ({
         {!strategy && !isLoading && (
           <div className="py-8 text-center">
             <p className="text-sm text-gray-400 max-w-xs mx-auto">
-              Analyze current tags, weather, and time to generate personalized mobility recommendations.
+              {t('tagging.strategyEmptyBody')}
             </p>
           </div>
         )}

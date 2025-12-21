@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import Header, { BreadcrumbItem } from '../components/layout/Header'
-import MapCanvas from '../components/map/MapCanvas'
+import MapCanvas, { MAP_STYLE_PRESETS } from '../components/map/MapCanvas'
 import MobileViewport from '../components/layout/MobileViewport'
 import { FABGroup } from '../components/features/controls/FABGroup'
 import { AlertBanner, SystemAlert } from '../components/ui/AlertBanner'
@@ -33,10 +33,11 @@ export default function Home() {
   const { t, locale } = useLanguage()
   const { mode, targetCategory } = useSOP()
 
-  const [online, setOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true)
+  const [online, setOnline] = useState<boolean>(true) // Initialize as true for SSR
+  const [mounted, setMounted] = useState(false)
   const [installEvt, setInstallEvt] = useState<unknown>(null)
   const [view, setView] = useState<'explore' | 'dashboard' | 'task'>('explore')
-  const [nodeName, setNodeName] = useState<{ ja?: string; en?: string; zh?: string }>({ zh: '上野站' })
+  const [nodeName, setNodeName] = useState<{ ja?: string; en?: string; zh?: string }>({ ja: '東京駅', en: 'Tokyo Station', zh: '東京站' })
   const [nodeId, setNodeId] = useState<string | null>(null)
   const [zone, setZone] = useState<Zone>('core')
   const [lastCoords, setLastCoords] = useState<[number, number] | null>(null)
@@ -52,11 +53,16 @@ export default function Home() {
   const [envStatuses, setEnvStatuses] = useState<{ label: string; tone?: 'yellow' | 'blue' | 'red' | 'green' }[]>([])
   const [disasterZones, setDisasterZones] = useState<DisasterZone[]>([])
   const [mapStyleIndex, setMapStyleIndex] = useState(0)
+  const [mapLayerPickerOpen, setMapLayerPickerOpen] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [navigationSteps, setNavigationSteps] = useState<NavigationStep[]>([])
   const [triggerGeolocate, setTriggerGeolocate] = useState(0)
 
   useEffect(() => {
+    setMounted(true)
+    if (typeof navigator !== 'undefined') {
+      setOnline(navigator.onLine)
+    }
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
       const qNodeId = params.get('nodeId')
@@ -206,7 +212,7 @@ export default function Home() {
         properties: { 
           id: 'mock-tokyo',
           name: { ja: '東京駅', en: 'Tokyo Station', zh: '東京站' },
-          category: 'station'
+          type: 'station'
         }
       },
       {
@@ -216,7 +222,7 @@ export default function Home() {
         properties: { 
           id: 'mock-ueno',
           name: { ja: '上野駅', en: 'Ueno Station', zh: '上野站' },
-          category: 'station'
+          type: 'station'
         }
       },
       {
@@ -226,7 +232,7 @@ export default function Home() {
         properties: { 
           id: 'mock-ginza',
           name: { ja: '銀座駅', en: 'Ginza Station', zh: '銀座站' },
-          category: 'station'
+          type: 'station'
         }
       }
     ]
@@ -289,7 +295,10 @@ export default function Home() {
     }
   }, [])
 
-  const aiControlEnabled = typeof navigator === 'undefined' ? true : !/Playwright/i.test(navigator.userAgent)
+  const aiControlEnabled = useMemo(() => {
+    if (!mounted || typeof navigator === 'undefined') return true
+    return !(navigator.webdriver || /Playwright/i.test(navigator.userAgent))
+  }, [mounted])
   useAIControl(handleAICommand, { enabled: aiControlEnabled })
 
   const prefersElevator = (hint: string) => /電梯|無障礙|wheelchair|elevators?|エレベータ(ー)?|バリアフリー|車椅子/i.test(hint)
@@ -527,6 +536,47 @@ export default function Home() {
     setAccessibility({ preferElevator: prefersElevator(hint) || true })
   }
 
+  const MapNodeIcon = ({ kind, important }: { kind: 'station' | 'bus_stop' | 'poi'; important?: boolean }) => {
+    const toneClass = kind === 'bus_stop' ? 'bg-emerald-600' : kind === 'poi' ? 'bg-violet-600' : 'bg-blue-600'
+    return (
+      <div className="relative w-10 h-10 flex items-center justify-center">
+        {important && (
+          <>
+            <div className="absolute -inset-1.5 rounded-[18px] bg-blue-500/25 blur-[1px]" />
+            <div className="absolute -inset-1.5 rounded-[18px] bg-blue-500/20 animate-ping" />
+          </>
+        )}
+        <div className={`relative w-10 h-10 rounded-2xl ${toneClass} text-white border-2 border-white shadow-lg ring-1 ring-black/10 flex items-center justify-center`}>
+          {kind === 'bus_stop' ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M7 16V9.5C7 7.6 8.6 6 10.5 6H13.5C15.4 6 17 7.6 17 9.5V16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              <path d="M8 12H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              <path d="M8 16H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              <path d="M9 20L8 22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              <path d="M15 20L16 22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              <circle cx="9" cy="18" r="1" fill="currentColor" />
+              <circle cx="15" cy="18" r="1" fill="currentColor" />
+            </svg>
+          ) : kind === 'poi' ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M12 22s7-4.35 7-11a7 7 0 0 0-14 0c0 6.65 7 11 7 11Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+              <circle cx="12" cy="11" r="2.5" fill="currentColor" />
+            </svg>
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M7 18V9.5C7 7 9 5 11.5 5H12.5C15 5 17 7 17 9.5V18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              <path d="M7 12H17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              <circle cx="9" cy="15" r="1" fill="currentColor" />
+              <circle cx="15" cy="15" r="1" fill="currentColor" />
+              <path d="M8 18L6.5 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              <path d="M16 18L17.5 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   // -- FAB Actions --
   const fabActions = useMemo(() => {
     const common = [
@@ -562,8 +612,7 @@ export default function Home() {
           id: 'layers',
           icon: <Layers className="w-6 h-6" />,
           label: 'Map Layers',
-          onClick: () => setMapStyleIndex(prev => (prev + 1) % 3),
-          onLongPress: () => pushSystemAlert({ severity: 'low', title: 'Map', summary: '進階設定尚未開放', dedupeMs: 5000 }),
+          onClick: () => setMapLayerPickerOpen(true),
           variant: 'secondary' as const
         }
       ]
@@ -600,7 +649,7 @@ export default function Home() {
     }
 
     return common
-  }, [view, t, setTriggerGeolocate, setShowAssistant, pushSystemAlert, setMapStyleIndex])
+  }, [view, t, setTriggerGeolocate, setShowAssistant, pushSystemAlert])
 
   const secondaryFabActions = useMemo(() => [
     {
@@ -674,9 +723,116 @@ export default function Home() {
           triggerGeolocate={triggerGeolocate}
           nodes={mockNodes}
           styleIndex={mapStyleIndex}
+          selectedNodeId={nodeId}
           locale={locale}
         />
       </div>
+
+      {view === 'explore' && mapLayerPickerOpen && (
+        <div className="fixed inset-0 z-40 pointer-events-auto">
+          <button
+            type="button"
+            aria-label="Close"
+            className="absolute inset-0 bg-black/30"
+            onClick={() => setMapLayerPickerOpen(false)}
+          />
+          <div className="absolute bottom-4 right-4 left-4 sm:left-auto sm:w-[420px] rounded-2xl bg-white shadow-2xl ring-1 ring-black/10 overflow-hidden">
+            <div className="px-4 py-3 flex items-center justify-between border-b border-gray-100">
+              <div className="text-sm font-bold text-gray-900">Map Style</div>
+              <button
+                type="button"
+                className="w-9 h-9 rounded-xl border border-gray-200 bg-white hover:bg-gray-50"
+                onClick={() => setMapLayerPickerOpen(false)}
+              >
+                <X className="w-4 h-4 mx-auto" />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-4">
+              <div className="space-y-2">
+                {MAP_STYLE_PRESETS.map((p, idx) => {
+                  const active = idx === mapStyleIndex
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      className={`w-full flex items-center justify-between rounded-xl border px-3 py-2 text-left transition-colors ${active ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-white hover:bg-gray-50'}`}
+                      onClick={() => {
+                        setMapStyleIndex(idx)
+                        setMapLayerPickerOpen(false)
+                      }}
+                    >
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold text-gray-900 truncate">{p.name}</div>
+                        <div className="text-xs text-gray-500 truncate">{p.id}</div>
+                      </div>
+                      <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${active ? 'border-blue-600' : 'border-gray-300'}`} aria-hidden="true">
+                        {active && <div className="w-2.5 h-2.5 rounded-full bg-blue-600" />}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+
+              <div className="rounded-xl border border-gray-200 overflow-hidden">
+                <div className="px-3 py-2 bg-gray-50 text-[11px] font-bold text-gray-700 uppercase tracking-wider">Legend</div>
+                <div className="p-3 grid grid-cols-2 gap-3">
+                  <div className="flex items-center gap-3">
+                    <MapNodeIcon kind="station" />
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-gray-900">Station</div>
+                      <div className="text-xs text-gray-500">Primary node</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <MapNodeIcon kind="bus_stop" />
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-gray-900">Bus Stop</div>
+                      <div className="text-xs text-gray-500">Transit node</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <MapNodeIcon kind="poi" />
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-gray-900">POI</div>
+                      <div className="text-xs text-gray-500">Point of interest</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <MapNodeIcon kind="station" important />
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-gray-900">Important</div>
+                      <div className="text-xs text-gray-500">Pulse highlight</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-gray-200 overflow-hidden">
+                <div className="px-3 py-2 bg-gray-50 text-[11px] font-bold text-gray-700 uppercase tracking-wider">Visibility Check</div>
+                <div className="p-3 grid grid-cols-2 gap-3">
+                  <div className="rounded-xl border border-gray-200 bg-white p-3">
+                    <div className="text-xs font-semibold text-gray-700 mb-2">Light</div>
+                    <div className="flex items-center gap-2">
+                      <MapNodeIcon kind="station" />
+                      <MapNodeIcon kind="bus_stop" />
+                      <MapNodeIcon kind="poi" />
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-gray-800 bg-gray-950 p-3">
+                    <div className="text-xs font-semibold text-gray-200 mb-2">Dark</div>
+                    <div className="flex items-center gap-2">
+                      <MapNodeIcon kind="station" />
+                      <MapNodeIcon kind="bus_stop" />
+                      <MapNodeIcon kind="poi" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Layer 1: Bottom Search (Explore mode only) */}
       {view === 'explore' && (
@@ -803,7 +959,7 @@ export default function Home() {
               </div>
             </div>
           } 
-          fullContent={<TagManager value={tagState} onChange={setTagState} />} 
+          fullContent={<TagManager value={tagState} onChange={setTagState} nodeId={nodeId || undefined} />} 
         />
       )}
 

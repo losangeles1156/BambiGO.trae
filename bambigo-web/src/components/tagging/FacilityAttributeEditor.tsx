@@ -78,7 +78,7 @@ export default function FacilityAttributeEditor({ facility, onSave, onCancel, cl
   
   // Find icon
   const Icon = ICON_MAP[category] || HelpCircle
-  const catLabel = L3_FACILITIES_DATA.find(f => f.id === category)?.label || category
+  const catLabel = L3_FACILITIES_DATA.find(f => f.id === category)?.id || category
 
   const handleAttrChange = (key: string, value: unknown) => {
     setAttributes(prev => ({ ...prev, [key]: value }))

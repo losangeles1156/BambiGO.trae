@@ -27,7 +27,7 @@ async function fetchWithFallback(stationId: string, primaryUrl: string) {
       console.log(`Fetching ${fullUrl}...`)
       const res = await fetch(fullUrl)
       if (res.ok) return await res.text()
-    } catch (e) {
+    } catch {
       console.warn(`Failed to fetch ${url}`)
     }
   }
@@ -35,7 +35,13 @@ async function fetchWithFallback(stationId: string, primaryUrl: string) {
 }
 
 async function main() {
-  const results: any[] = []
+  const results: Array<{
+    stationId: string
+    name: string
+    counts: { escalator: number; elevator: number }
+    hasAccessibleToilet: boolean
+    facilities: string[]
+  }> = []
 
   for (const station of stations) {
     const html = await fetchWithFallback(station.id, station.url)

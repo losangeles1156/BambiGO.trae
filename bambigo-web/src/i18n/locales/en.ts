@@ -36,6 +36,7 @@ export const en: Dictionary = {
     version: 'Version',
     outOfRange: 'Out of support area: Suggest returning to center or use Google Maps.',
     openGoogleMaps: 'Open Google Maps',
+    refresh: 'Refresh',
     backToCenter: 'Back to Center',
     manageTags: 'Manage Tags',
     swipeUpForDetails: 'Swipe up for details',
@@ -121,6 +122,7 @@ export const en: Dictionary = {
     arrive: 'Arrive',
     start: 'Start',
     straight: 'Go Straight',
+    straightLine: 'Straight-line',
     fastest: 'Fastest',
     safest: 'Safest',
     shortest: 'Shortest',
@@ -154,57 +156,41 @@ export const en: Dictionary = {
     activeTagsLabel: 'Active Tags',
     l1Title: 'L1 Categories (Structure)',
     l2Title: 'L2 Live Status (Dynamic)',
-    l2: {
-      odpt: {
-        label: 'Train Status',
-        normal: 'Normal Operation',
-        delay: 'Delayed',
-        suspended: 'Suspended'
-      },
-      weather: {
-        label: 'Weather',
-        rain: 'Rain',
-        snow: 'Snow'
-      },
-      crowd: {
-        label: 'Crowd',
-        crowded: 'Crowded'
-      }
+    l3Title: 'L3 Service Facilities (Static)',
+    l4Title: 'L4 Action Strategy (Actionable)',
+    l1RadiusLabel: 'Search Radius',
+    l1NoPlacesPrefix: 'No places found within',
+    l1NoPlacesTryIncrease: 'Try increasing the range.',
+    l1OpenNow: 'Open now',
+    l1Closed: 'Closed',
+    l1Details: 'Details',
+    l1PersonaPlaceholder: 'Not enough signals yet',
+    l1PersonaCrowdHint: 'Mixed business hours',
+    l1CenterGps: 'GPS',
+    l1CenterNode: 'Node',
+    l1CenterFallback: 'Default',
+    l2AlertsLabel: 'Weather/Earthquake Alerts',
+    l2NoAlerts: 'No active alerts',
+    l2TransitNormal: 'Normal operation',
+    l2TransitDelayed: 'Delays detected',
+    l2TransitSuspended: 'Service suspended',
+    l2TransitUnknown: 'Status unknown',
+    l3LocationUnknown: 'Location pending',
+    l3ValueLabel: 'Value',
+    l3ValuePlaceholder: '—',
+    l3Mvp: {
+      toilet: 'Toilet',
+      locker: 'Locker',
+      charging: 'Charging',
+      atm: 'ATM',
+      accessibility: 'Accessibility',
+      bike: 'Bike'
     },
-    l3Title: 'L3 Service Facilities (Utility)',
-    l4Title: 'L4 Mobility Strategy (Action)',
     l4Contexts: {
-      luggage: 'Large Luggage',
+      luggage: 'Luggage',
       stroller: 'Stroller',
-      wheelchair: 'Wheelchair/Accessible',
-      rush: 'In a Rush'
-    },
-    stationKnowledge: 'Station Knowledge',
-    filterBarLabel: 'Tag Filter Bar',
-    serviceFilterPrefix: 'Service filter',
-    serviceTagDistribution: 'Service Tag Distribution',
-    generateStrategy: 'Generate',
-    strategyCardTitle: 'Mobility Strategy',
-    strategyEngineTitle: 'AI Strategy Engine',
-    strategyEngineSubtitle: 'Context-aware L4 insights',
-    strategyEmptyBody: 'Analyze tags, weather, and time to generate personalized mobility recommendations.',
-    selectNodeToGenerate: 'Select a node to generate a strategy',
-    personasLabel: 'Derived Personas',
-    persona: {
-      transitHub: 'Transit Hub',
-      localVibe: 'Local Vibe',
-      digitalNomadReady: 'Digital Nomad Ready',
-      accessibleFriendly: 'Accessibility Friendly',
-    },
-    addTag: 'Add Tag',
-    addL1: 'Add Life Function (L1)',
-    subCategories: '{{label}} Sub-categories',
-    back: 'Back',
-    layers: {
-      l1: { name: 'Life Function', description: 'Structural/Static Categories' },
-      l2: { name: 'Spatial Aggregation', description: 'Area/Atmosphere' },
-      l3: { name: 'Service Facility', description: 'Utilities/Amenities' },
-      l4: { name: 'Mobility Strategy', description: 'AI Suggestions' }
+      wheelchair: 'Wheelchair',
+      rush: 'In a rush'
     },
     l1: {
       dining: {
@@ -267,11 +253,11 @@ export const en: Dictionary = {
         temple: 'Temple',
         church: 'Church'
       },
-      nature: {
-        label: 'Nature',
-        scenic_spot: 'Scenic Spot',
-        garden: 'Garden',
-        mountain: 'Mountain'
+      public: {
+        label: 'Public',
+        police: 'Police',
+        post_office: 'Post Office',
+        government: 'Government'
       },
       transport: {
         label: 'Transport',
@@ -279,16 +265,41 @@ export const en: Dictionary = {
         bus_stop: 'Bus Stop',
         parking: 'Parking'
       },
-      public: {
-        label: 'Public',
-        police: 'Police',
-        post_office: 'Post Office',
-        government: 'Government'
+      nature: {
+        label: 'Nature',
+        scenic_spot: 'Scenic Spot',
+        garden: 'Garden',
+        mountain: 'Mountain'
       },
       residential: {
         label: 'Residential',
-        apartment_complex: 'Apartment Complex',
-        housing: 'Housing'
+        apartment: 'Apartment Complex',
+        house: 'House'
+      }
+    },
+    l2: {
+      odpt: {
+        label: 'Train Status',
+        normal: 'Normal Operation',
+        delay: 'Delayed',
+        suspended: 'Suspended'
+      },
+      crowd: {
+        label: 'Congestion',
+        normal: 'Normal',
+        high: 'Crowded',
+        veryHigh: 'Very Crowded'
+      },
+      weather: {
+        label: 'Weather',
+        sunny: 'Sunny',
+        rain: 'Rain',
+        storm: 'Storm'
+      },
+      mobility: {
+        label: 'Shared Mobility',
+        available: 'Available',
+        scarce: 'Few Left'
       }
     },
     l3: {
@@ -299,6 +310,32 @@ export const en: Dictionary = {
       accessibility: 'Accessibility',
       rest_area: 'Rest Area',
       other: 'Other'
+    },
+    subCategories: 'Sub-categories for {{label}}',
+    filterBarLabel: 'Filter by Tag',
+    serviceFilterPrefix: 'Service filter',
+    serviceTagDistribution: 'Service Tag Distribution',
+    generateStrategy: 'Generate',
+    strategyCardTitle: 'Mobility Strategy',
+    strategyEngineTitle: 'AI Strategy Engine',
+    strategyEngineSubtitle: 'Context-aware L4 insights',
+    strategyEmptyBody: 'Analyze tags, weather, and time to generate personalized mobility recommendations.',
+    selectNodeToGenerate: 'Select a node to generate a strategy',
+    personasLabel: 'Derived Personas',
+    persona: {
+      transitHub: 'Transit Hub',
+      localVibe: 'Local Vibe',
+      digitalNomadReady: 'Digital Nomad Ready',
+      accessibleFriendly: 'Accessibility Friendly',
+    },
+    addTag: 'Add Tag',
+    addL1: 'Add Life Function (L1)',
+    back: 'Back',
+    layers: {
+      l1: { name: 'Life Function', description: 'Structural/Static Categories' },
+      l2: { name: 'Spatial Aggregation', description: 'Area/Atmosphere' },
+      l3: { name: 'Service Facility', description: 'Utilities/Amenities' },
+      l4: { name: 'Mobility Strategy', description: 'AI Suggestions' }
     }
   },
   nodeDetail: {

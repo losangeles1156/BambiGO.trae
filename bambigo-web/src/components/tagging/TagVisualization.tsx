@@ -1,10 +1,12 @@
 'use client'
 import React, { useMemo } from 'react'
 import type { FacilityItem } from '../../lib/tagging'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 type Props = { items: FacilityItem[] }
 
 export default function TagVisualization({ items }: Props) {
+  const { t } = useLanguage()
   const counts = useMemo(() => {
     const map = new Map<string, number>()
     for (const f of items) {

@@ -1,6 +1,5 @@
 'use client'
 import { getLocalizedName } from '../../../lib/utils/i18n'
-import TagChip from '../ui/TagChip'
 import { Building2, Activity, MapPin, Train, Store, Briefcase, Info, Quote, ChevronRight } from 'lucide-react'
 import { clsx } from 'clsx'
 import FacilityProfile, { CategoryCounts } from '../node/FacilityProfile'
@@ -13,12 +12,6 @@ const FACILITY_ICON_MAP = {
   shop: Store,
   office: Briefcase,
   service: Activity,
-} as const
-
-const FACILITY_LABEL_MAP = {
-  shop: '商店',
-  office: '辦公',
-  service: '服務',
 } as const
 
 type Name = { ja?: string; en?: string; zh?: string }
@@ -37,6 +30,8 @@ interface TrafficStatus {
   tone: 'green' | 'yellow' | 'red'
 }
 
+import { StationIdentity } from '../../config/station-identity'
+
 type Props = {
   name: Name
   zone?: 'core' | 'buffer' | 'outer'
@@ -49,6 +44,7 @@ type Props = {
   vibeTags?: string[]
   persona?: string
   weatherAlerts?: WeatherAlert[]
+  identity?: StationIdentity
 }
 
 export default function NodeDetailCard({ 
@@ -62,10 +58,14 @@ export default function NodeDetailCard({
   facilityCounts,
   vibeTags = [],
   persona = '',
-  weatherAlerts = []
+  weatherAlerts = [],
+  identity
 }: Props) {
   const { t } = useLanguage()
   const locale = typeof navigator !== 'undefined' ? navigator.language : 'zh-TW'
+
+  // Default branding if no identity provided (Blue fallback)
+  const brandColor = identity?.color || '#1d4ed8' // blue-700
 
   if (zone === 'outer') {
     return (
@@ -96,52 +96,91 @@ export default function NodeDetailCard({
         isBuffer && "opacity-90 grayscale-[0.3]"
       )}
     >
-      {/* Header Section */}
-      <div className="p-5 border-b border-gray-50 bg-gradient-to-b from-gray-50/50 to-white">
-        <div className="flex flex-col gap-3">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 min-w-0">
+      {/* L1: Identity & Function Header (Japanese Station Style) */}
+      <div className="relative bg-blue-700 text-white overflow-hidden">
+        <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+          <Train size={120} />
+        </div>
+        <div className="p-5 relative z-10">
+          <div className="flex items-start justify-between">
+            <div>
               <div className="flex items-center gap-2 mb-1">
-                {isBuffer ? (
-                  <div className="w-2 h-2 bg-gray-400 rounded-full" />
-                ) : (
-                  <Train size={18} className="text-blue-600 flex-shrink-0" />
-                )}
-                <h2 className="text-xl font-bold text-gray-900 truncate leading-tight">
+                <h2 className="text-3xl font-black tracking-tight leading-none">
                   {getLocalizedName(name as Record<string, string>, locale)}
                 </h2>
               </div>
-              <div className="flex items-center text-gray-400 text-xs font-medium uppercase tracking-wider">
-                <MapPin size={12} className="mr-1 flex-shrink-0" />
-                <span className="truncate">{name.en || name.ja}</span>
+              <div className="flex items-center gap-3 text-blue-200 text-xs font-bold uppercase tracking-widest font-mono">
+                <span className="bg-blue-800 px-1.5 py-0.5 rounded">{name.en || name.ja}</span>
+                {l1Summary && (
+                  <span className="flex items-center gap-1 text-white">
+                    <Building2 size={12} />
+                    {l1Summary}
+                  </span>
+                )}
               </div>
             </div>
           </div>
-          
-          {/* L1 Tag Row - Moved here for better visibility and spacing */}
-          {!isBuffer && l1Summary && (
-            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-300">
-              <TagChip label={l1Summary} layer="L1" icon={Building2} />
-            </div>
-          )}
         </div>
+      </div>
 
-        {/* L3 Facilities Section (Service Facilities) */}
+      {/* L2: Live Status Dashboard (Compact & High Contrast) */}
+      {!isBuffer && (
+        <div 
+          className="bg-gray-900 text-white text-[10px] font-mono py-1.5 px-5 flex items-center justify-between tracking-wider border-b-4"
+          style={{ borderColor: traffic.some(t => t.tone === 'yellow' || t.tone === 'red') ? '#eab308' : brandColor }}
+        >
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-400">STATUS:</span>
+              <span className={clsx(
+                "font-bold",
+                weatherAlerts.length > 0 ? "text-red-400 animate-pulse" : "text-green-400"
+              )}>
+                {weatherAlerts.length > 0 ? "WARNING" : "NORMAL"}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-400">CROWD:</span>
+              <span className={clsx(
+                "font-bold",
+                crowdLevel === 'high' ? "text-red-400" : "text-blue-400"
+              )}>
+                {crowdLevel.toUpperCase()}
+              </span>
+            </div>
+          </div>
+          <div className="opacity-50">LIVE UPDATE</div>
+        </div>
+      )}
+
+      <div className="p-5 bg-white space-y-6">
+        {/* L3: Service Facilities (Grid Layout with Border Labels) */}
         {!isBuffer && facilities.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-gray-100/50">
-            <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">服務設施 (L3)</h3>
-            <div className="flex flex-wrap gap-2">
+          <div>
+            <div className="flex items-center gap-2 mb-3 border-b border-gray-100 pb-2">
+               <div className="w-1 h-4" style={{ backgroundColor: brandColor }}></div>
+               <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest">FACILITIES (L3)</h3>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {facilities.map((facility) => {
                 const Icon = FACILITY_ICON_MAP[facility.type] || Info
-                const label = FACILITY_LABEL_MAP[facility.type] || facility.name || '設施'
                 return (
                   <div 
                     key={facility.id}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-50 text-gray-600 rounded-lg border border-gray-100 text-xs font-medium transition-colors hover:bg-gray-100"
+                    className="group flex items-center justify-between px-3 py-2.5 bg-white border-l-4 border-gray-200 hover:shadow-sm transition-all duration-200 cursor-default"
+                    style={{ borderColor: 'transparent', borderLeftColor: '#e5e7eb' }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderLeftColor = brandColor
+                      e.currentTarget.style.color = brandColor
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderLeftColor = '#e5e7eb'
+                      e.currentTarget.style.color = ''
+                    }}
                     title={facility.name}
                   >
-                    <Icon size={14} className="text-blue-500" />
-                    <span>{label}</span>
+                    <span className="text-xs font-bold text-gray-700 truncate mr-2 group-hover:text-current transition-colors">{facility.name}</span>
+                    <Icon size={14} className="text-gray-300 group-hover:text-current transition-colors shrink-0" />
                   </div>
                 )
               })}
@@ -151,16 +190,18 @@ export default function NodeDetailCard({
 
         {/* L1 Fingerprint & Vibe Tags (Core only) */}
         {!isBuffer && (facilityCounts || vibeTags.length > 0) && (
-          <div className="mt-4 pt-4 border-t border-gray-100/50">
+          <div>
+             <div className="flex items-center gap-2 mb-3 border-b border-gray-100 pb-2">
+               <div className="w-1 h-4 bg-gray-400"></div>
+               <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest">NODE PROFILE</h3>
+            </div>
             <FacilityProfile 
               counts={facilityCounts || { shopping: 0, dining: 0, medical: 0, education: 0, leisure: 0, finance: 0 }} 
               vibeTags={vibeTags} 
             />
           </div>
         )}
-      </div>
 
-      <div className="p-5 space-y-6">
         {/* Node Persona (Core only) */}
         {!isBuffer && persona && (
           <section className="relative">
@@ -279,25 +320,7 @@ export default function NodeDetailCard({
           </section>
         )}
 
-        {/* Surrounding Facilities (Core only) */}
-        {!isBuffer && facilities.length > 0 && (
-          <section>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-1 h-4 bg-blue-500 rounded-full" />
-              <h3 className="text-sm font-bold text-gray-800">周邊設施</h3>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              {facilities.map((f) => (
-                <div key={f.id} className="flex items-center gap-2 p-2.5 bg-white border border-gray-100 rounded-xl shadow-sm hover:border-blue-200 hover:shadow-md transition-all group">
-                  <div className="p-1.5 bg-blue-50 rounded-lg text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                    {f.type === 'shop' ? <Store size={14} /> : f.type === 'office' ? <Briefcase size={14} /> : <Info size={14} />}
-                  </div>
-                  <span className="text-[11px] font-bold text-gray-700 truncate">{f.name}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
+        {/* Surrounding Facilities (Core only) - Removed to avoid duplication with L3 section above */}
 
         {/* Simplified Notice for Buffer Zone */}
         {isBuffer && (

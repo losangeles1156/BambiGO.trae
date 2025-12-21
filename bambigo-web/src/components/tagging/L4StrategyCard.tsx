@@ -1,7 +1,7 @@
  'use client';
 
 import React from 'react';
-import { SparklesIcon, ArrowRightIcon, LightBulbIcon } from '@heroicons/react/24/solid';
+import { SparklesIcon, ArrowRightIcon } from '@heroicons/react/24/solid';
 import { clsx } from 'clsx';
 import type { L4ActionCard } from '@/types/tagging';
 import { useLanguage } from '@/contexts/LanguageContext';

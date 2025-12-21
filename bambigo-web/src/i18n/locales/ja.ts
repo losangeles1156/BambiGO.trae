@@ -36,6 +36,7 @@ export const ja: Dictionary = {
     version: 'バージョン',
     outOfRange: 'サポート範囲外です：中心エリアに戻るか、Googleマップをご利用ください。',
     openGoogleMaps: 'Googleマップを開く',
+    refresh: '更新',
     backToCenter: '中心エリアに戻る',
     manageTags: 'タグを管理',
     swipeUpForDetails: '上にスワイプして詳細を表示',
@@ -121,6 +122,7 @@ export const ja: Dictionary = {
     arrive: '到着',
     start: '開始',
     straight: '直進',
+    straightLine: '直線距離',
     fastest: '最速ルート',
     safest: '安全ルート',
     shortest: '最短ルート',
@@ -154,66 +156,50 @@ export const ja: Dictionary = {
     activeTagsLabel: '選択中のタグ',
     l1Title: 'L1 カテゴリ（構造）',
     l2Title: 'L2 雰囲気（集約）',
-    l2: {
-      odpt: {
-        label: '運行情報',
-        normal: '平常運転',
-        delay: '遅延',
-        suspended: '運転見合わせ'
-      },
-      weather: {
-        label: '天気',
-        rain: '雨',
-        snow: '雪'
-      },
-      crowd: {
-        label: '混雑',
-        crowded: '混雑'
-      }
+    l3Title: 'L3 サービス施設 (Static)',
+    l4Title: 'L4 行動戦略 (Actionable)',
+    l1RadiusLabel: '検索半径',
+    l1NoPlacesPrefix: '範囲内に見つかりません：',
+    l1NoPlacesTryIncrease: '範囲を広げてみてください。',
+    l1OpenNow: '営業中',
+    l1Closed: '営業時間外',
+    l1Details: '詳細',
+    l1PersonaPlaceholder: '情報が不足しています',
+    l1PersonaCrowdHint: '営業時間が分散',
+    l1CenterGps: 'GPS',
+    l1CenterNode: 'ノード',
+    l1CenterFallback: '既定',
+    l2AlertsLabel: '気象/地震アラート',
+    l2NoAlerts: '現在アラートはありません',
+    l2TransitNormal: '通常運行',
+    l2TransitDelayed: '遅延を検知',
+    l2TransitSuspended: '運転見合わせ',
+    l2TransitUnknown: '状況不明',
+    l3LocationUnknown: '位置未確定',
+    l3ValueLabel: '値',
+    l3ValuePlaceholder: '—',
+    l3Mvp: {
+      toilet: 'トイレ',
+      locker: 'ロッカー',
+      charging: '充電',
+      atm: 'ATM',
+      accessibility: 'バリアフリー',
+      bike: '自転車'
     },
-    l3Title: 'L3 施設（機能）',
-    l4Title: 'L4 戦略（提案）',
     l4Contexts: {
-      luggage: '大きな荷物',
+      luggage: '荷物',
       stroller: 'ベビーカー',
-      wheelchair: '車椅子/バリアフリー',
+      wheelchair: '車いす',
       rush: '急いでいる'
-    },
-    stationKnowledge: '駅の豆知識・注意点',
-    filterBarLabel: 'タグフィルターバー',
-    serviceFilterPrefix: 'サービスフィルター',
-    serviceTagDistribution: 'サービスタグ分布',
-    generateStrategy: '生成',
-    strategyCardTitle: '移動戦略',
-    strategyEngineTitle: 'AI戦略エンジン',
-    strategyEngineSubtitle: '状況に応じたL4インサイト',
-    strategyEmptyBody: 'タグ・天気・時間を分析して、パーソナライズされた移動提案を生成します。',
-    selectNodeToGenerate: '戦略を生成するにはノードを選択してください',
-    personasLabel: '推定ペルソナ',
-    persona: {
-      transitHub: '交通ハブ',
-      localVibe: 'ローカル生活',
-      digitalNomadReady: 'デジタルノマド向け',
-      accessibleFriendly: 'バリアフリー対応',
-    },
-    addTag: 'タグを追加',
-    addL1: '生活機能を追加 (L1)',
-    subCategories: '{{label}} サブカテゴリ',
-    back: '戻る',
-    layers: {
-      l1: { name: '生活機能', description: '構造的/静的分類' },
-      l2: { name: '空間集約', description: 'エリア/雰囲気' },
-      l3: { name: 'サービス施設', description: '実用/アメニティ' },
-      l4: { name: '移動戦略', description: 'AI提案' }
     },
     l1: {
       dining: {
-        label: '飲食',
+        label: '食事',
         izakaya: '居酒屋',
         ramen: 'ラーメン',
         cafe: 'カフェ',
         restaurant: 'レストラン',
-        fast_food: 'ファストフード'
+        fast_food: 'ファーストフード'
       },
       shopping: {
         label: '買い物',
@@ -232,7 +218,7 @@ export const ja: Dictionary = {
       leisure: {
         label: 'レジャー',
         park: '公園',
-        museum: '博物館',
+        museum: '博物館・美術館',
         gym: 'ジム',
         cinema: '映画館',
         karaoke: 'カラオケ'
@@ -247,7 +233,7 @@ export const ja: Dictionary = {
         label: '金融',
         bank: '銀行',
         atm: 'ATM',
-        currency_exchange: '外貨両替'
+        currency_exchange: '両替所'
       },
       accommodation: {
         label: '宿泊',
@@ -258,20 +244,20 @@ export const ja: Dictionary = {
       business: {
         label: 'ビジネス',
         office: 'オフィスビル',
-        coworking: 'コワーキング',
+        coworking: 'コワーキングスペース',
         factory: '工場'
       },
       religion: {
         label: '宗教',
         shrine: '神社',
-        temple: '寺院',
+        temple: 'お寺',
         church: '教会'
       },
-      nature: {
-        label: '自然',
-        scenic_spot: '景勝地',
-        garden: '庭園',
-        mountain: '山'
+      public: {
+        label: '公共',
+        police: '交番・警察署',
+        post_office: '郵便局',
+        government: '役所'
       },
       transport: {
         label: '交通',
@@ -279,16 +265,41 @@ export const ja: Dictionary = {
         bus_stop: 'バス停',
         parking: '駐車場'
       },
-      public: {
-        label: '公共',
-        police: '警察署',
-        post_office: '郵便局',
-        government: '役所'
+      nature: {
+        label: '自然',
+        scenic_spot: '景勝地',
+        garden: '庭園',
+        mountain: '山'
       },
       residential: {
         label: '住宅',
-        apartment_complex: '集合住宅',
-        housing: '住宅街'
+        apartment: '集合住宅',
+        house: '戸建住宅'
+      }
+    },
+    l2: {
+      odpt: {
+        label: '運行状況',
+        normal: '平常運転',
+        delay: '遅延',
+        suspended: '運転見合わせ'
+      },
+      crowd: {
+        label: '混雑状況',
+        normal: '通常',
+        high: '混雑',
+        veryHigh: '非常に混雑'
+      },
+      weather: {
+        label: '天気',
+        sunny: '晴れ',
+        rain: '雨',
+        storm: '嵐'
+      },
+      mobility: {
+        label: 'シェアサイクル',
+        available: '利用可能',
+        scarce: '残りわずか'
       }
     },
     l3: {
@@ -299,6 +310,32 @@ export const ja: Dictionary = {
       accessibility: 'バリアフリー',
       rest_area: '休憩所',
       other: 'その他'
+    },
+    subCategories: '{{label}}のサブカテゴリー',
+    filterBarLabel: 'タグで絞り込み',
+    serviceFilterPrefix: 'サービスフィルター',
+    serviceTagDistribution: 'サービスタグ分布',
+    generateStrategy: '生成',
+    strategyCardTitle: '移動戦略',
+    strategyEngineTitle: 'AI戦略エンジン',
+    strategyEngineSubtitle: '状況に応じたL4インサイト',
+    strategyEmptyBody: 'タグ・天気・時間を分析して、パーソナライズされた移動提案を生成します。',
+    selectNodeToGenerate: '戦略を生成するにはノードを選択してください',
+    personasLabel: '推定ペルソナ',
+    persona: {
+      transitHub: '交通ハブ',
+      localVibe: 'ローカル生活',
+      digitalNomadReady: 'デジタルノマド向け',
+      accessibleFriendly: 'バリアフリー対応',
+    },
+    addTag: 'タグを追加',
+    addL1: '生活機能を追加 (L1)',
+    back: '戻る',
+    layers: {
+      l1: { name: '生活機能', description: '構造的/静的分類' },
+      l2: { name: '空間集約', description: 'エリア/雰囲気' },
+      l3: { name: 'サービス施設', description: '実用/アメニティ' },
+      l4: { name: '移動戦略', description: 'AI提案' }
     }
   },
   nodeDetail: {

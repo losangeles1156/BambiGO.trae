@@ -105,7 +105,7 @@ export const FacilityEditor: React.FC<FacilityEditorProps> = (props) => {
 
     onAdd({
       type: selectedType,
-      label: facilityDef.label,
+      label: facilityDef.id,
       icon: facilityDef.icon,
       attributes,
       verified
@@ -209,7 +209,7 @@ export const FacilityEditor: React.FC<FacilityEditorProps> = (props) => {
                 )}
               >
                 <span className="text-lg">{f.icon}</span>
-                <span className="font-medium truncate w-full text-center">{f.label}</span>
+                <span className="font-medium truncate w-full text-center">{f.id}</span>
               </button>
             ))}
           </div>
@@ -218,7 +218,7 @@ export const FacilityEditor: React.FC<FacilityEditorProps> = (props) => {
         {/* Dynamic Attributes Form */}
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
           <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-            {L3_FACILITIES_DATA.find(f => f.id === selectedType)?.label} Details
+            {L3_FACILITIES_DATA.find(f => f.id === selectedType)?.id} Details
           </label>
           <div className="bg-gray-50 rounded-lg p-3 border border-gray-100 space-y-1">
             {currentSchema.length > 0 ? (

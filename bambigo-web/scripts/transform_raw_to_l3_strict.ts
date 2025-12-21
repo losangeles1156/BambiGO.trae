@@ -34,14 +34,25 @@ async function main() {
   const rawData: IntermediateRecord[] = JSON.parse(fs.readFileSync(inputPath, 'utf-8'))
   const validRecords: z.infer<typeof L3ServiceFacilitySchema>[] = []
 
+  type L3Category = z.infer<typeof L3ServiceFacilitySchema>['category']
+  const allowedCategories: L3Category[] = [
+    'toilet',
+    'charging',
+    'wifi',
+    'locker',
+    'accessibility',
+    'rest_area',
+    'shelter',
+    'medical_aid',
+    'other',
+  ]
+
   for (const item of rawData) {
     // Map 'accessibility' -> 'accessibility', 'toilet' -> 'toilet'
     // L3CategorySchema values: 'toilet', 'charging', 'wifi', 'locker', 'accessibility', 'rest_area', 'shelter', 'medical_aid', 'other'
     
-    let category: any = item.type
-    if (!['toilet', 'accessibility', 'locker'].includes(category)) {
-      category = 'other'
-    }
+    const rawCategory = String(item.type)
+    const category: L3Category = allowedCategories.includes(rawCategory as L3Category) ? (rawCategory as L3Category) : 'other'
 
     const transform: z.infer<typeof L3ServiceFacilitySchema> = {
       id: uuidv4(),

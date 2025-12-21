@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { StrategyEngine } from '@/lib/ai/strategy';
+import { fetchTransportKnowledge } from '@/lib/ai/knowledge';
 import { derivePersonaFromFacilities } from '@/lib/tagging';
 import type { L1Category } from '@/types/tagging';
 
@@ -100,7 +101,14 @@ export async function POST(
     .eq('id', nodeId)
     .maybeSingle();
 
-  type FacilityRow = { type?: string | null; subCategory?: string | null; attributes?: Record<string, unknown> | null }
+  // 1.5 Fetch Knowledge
+  const userStates = Array.isArray(context.userStates) ? context.userStates : [];
+  const knowledgeMap = await fetchTransportKnowledge({
+    nodeId,
+    userStates
+  });
+
+  type FacilityRow = { type?: string; subCategory?: string; attributes?: Record<string, unknown> }
   const l1Context = deriveL1Context(
     typeof (nodeRow as unknown as { type?: string } | null | undefined)?.type === 'string'
       ? ((nodeRow as unknown as { type?: string }).type as string)
@@ -154,7 +162,9 @@ export async function POST(
       now: typeof context.time === 'string' ? new Date(context.time) : new Date(),
       personaArchetype,
       personaLabels,
-      odptStation
+      odptStation,
+      userStates,
+      knowledgeMap
     }
   );
 

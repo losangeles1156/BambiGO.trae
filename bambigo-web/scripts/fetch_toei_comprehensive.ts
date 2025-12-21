@@ -66,7 +66,7 @@ const STATION_NODE_MAP: Record<string, string> = {
   'tsukijishijo': 'odpt.Station:Toei.Oedo.Tsukijishijo'
 }
 
-async function fetchWithFallback(stationId: string, primaryUrl: string) {
+async function fetchWithFallback(_stationId: string, primaryUrl: string) {
   const variants = [
     primaryUrl,
     primaryUrl.replace('-', ''),
@@ -80,16 +80,24 @@ async function fetchWithFallback(stationId: string, primaryUrl: string) {
       // console.log(`Fetching ${fullUrl}...`)
       const res = await fetch(fullUrl)
       if (res.ok) return await res.text()
-    } catch (e) {
-      // ignore
-    }
+    } catch {}
   }
   return null
 }
 
 async function main() {
   console.log('Phase 1: Data Collection (Taito & Chuo Wards)...')
-  const results = []
+  const results: Array<{
+    stationId: string
+    name: string
+    ward: string
+    line: string
+    nodeId: string
+    counts: { escalator: number; elevator: number }
+    hasAccessibleToilet: boolean
+    facilities: Array<{ name: string; iconUrl: string }>
+    rawData: { barrierFreeText: string }
+  }> = []
 
   for (const station of STATIONS) {
     process.stdout.write(`Processing ${station.name}... `)
@@ -109,7 +117,7 @@ async function main() {
     const hasAccessibleToilet = barrierFreeText.includes('バリアフリートイレ') && barrierFreeText.includes('あり')
 
     // Extract Facilities and Image URLs
-    const facilities: any[] = []
+    const facilities: Array<{ name: string; iconUrl: string }> = []
     $('.facilityList__item img').each((_, img) => {
       const alt = $(img).attr('alt') || ''
       const src = $(img).attr('src') || ''

@@ -10,13 +10,14 @@ async function main() {
     'toei_chuo_l3.json'
   ]
   
-  let masterData: any[] = []
+  let masterData: unknown[] = []
   
   for (const file of files) {
     const filePath = path.resolve(process.cwd(), 'data', file)
     if (fs.existsSync(filePath)) {
       const content = fs.readFileSync(filePath, 'utf-8')
-      const data = JSON.parse(content)
+      const parsed: unknown = JSON.parse(content)
+      const data = Array.isArray(parsed) ? parsed : []
       console.log(`✅ Loaded ${data.length} records from ${file}`)
       masterData = [...masterData, ...data]
     } else {
@@ -25,13 +26,27 @@ async function main() {
   }
   
   // Deduplicate based on node_id + type + subCategory
-  const uniqueMap = new Map()
-  masterData.forEach(item => {
-    const key = `${item.node_id}-${item.type}-${item.attributes.subCategory}`
-    if (!uniqueMap.has(key)) {
-      uniqueMap.set(key, item)
-    }
-  })
+  const uniqueMap = new Map<string, unknown>()
+  const getKey = (item: unknown): string | null => {
+    if (!item || typeof item !== 'object') return null
+    const it = item as Record<string, unknown>
+    const nodeId = it['node_id']
+    const type = it['type']
+    if (typeof nodeId !== 'string' || typeof type !== 'string') return null
+    const attrs = it['attributes']
+    const subCategory =
+      attrs && typeof attrs === 'object'
+        ? (attrs as Record<string, unknown>)['subCategory']
+        : undefined
+    const sub = typeof subCategory === 'string' && subCategory.trim() ? subCategory : 'unknown'
+    return `${nodeId}-${type}-${sub}`
+  }
+
+  for (const item of masterData) {
+    const key = getKey(item)
+    if (!key) continue
+    if (!uniqueMap.has(key)) uniqueMap.set(key, item)
+  }
   
   const consolidated = Array.from(uniqueMap.values())
   

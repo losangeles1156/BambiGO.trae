@@ -13,8 +13,10 @@ type Context = {
     operator?: string
     connecting_railways?: string[]
     exits?: string[]
-    raw?: Record<string, unknown>
+    raw?: unknown
   }
+  userStates?: string[]
+  knowledgeMap?: Record<string, string>
 };
 
 type Facility = {
@@ -93,71 +95,77 @@ export class StrategyEngine {
     if (context.weather === 'rain') {
       if (tags.has('shopping') || hasDining) {
         strategy.push({
+          id: 'rain-shop',
           type: 'primary',
           title: 'Stay Dry & Shop',
           description: 'Indoor options available for rainy weather.',
           rationale: 'Rainy weather with indoor facilities present.',
           tags: ['shopping', 'dining'],
-          actions: [{ label: 'Find Shelter', uri: 'app:filter?indoor=true' }]
+          actions: [{ label: 'Find Shelter', action: 'filter', params: { indoor: true } }]
         });
       }
     }
 
     if ((hasWifi && hasCharging) || personaLabels.has('數位遊牧友好')) {
       strategy.push({
+        id: 'remote-work',
         type: 'secondary',
         title: 'Remote Work Spot',
         description: 'WiFi and power available for work.',
         rationale: 'Connectivity and power readiness detected.',
         tags: ['wifi', 'charging'],
-        actions: [{ label: 'View Workspaces', uri: 'app:filter?tag=wifi' }]
+        actions: [{ label: 'View Workspaces', action: 'filter', params: { tag: 'wifi' } }]
       });
     }
 
     const slot = context.time ? (context.time as string) : getTimeSlot(context);
     if ((slot === 'lunch' || slot === 'dinner') && hasDining && isOpenNowDining(facilities, context.now ?? new Date())) {
       strategy.push({
+        id: 'dining-now',
         type: 'primary',
         title: 'Time to Eat',
         description: 'Dining options available now.',
         rationale: 'Meal time window detected with dining nearby.',
         tags: ['dining'],
-        actions: [{ label: 'See Restaurants', uri: 'app:filter?tag=dining&status=open_now' }]
+        actions: [{ label: 'See Restaurants', action: 'filter', params: { tag: 'dining', status: 'open_now' } }]
       });
     }
 
     if ((hasBabyCare && hasAccessibility) || personaLabels.has('親子友善')) {
       strategy.push({
+        id: 'family-access',
         type: 'primary',
         title: 'Family Easy Access',
         description: 'Baby care and accessible facilities available.',
         rationale: 'Family-friendly and accessibility signals detected.',
         tags: ['baby_care', 'accessible'],
-        actions: [{ label: 'View Family Facilities', uri: 'app:filter?tag=family' }]
+        actions: [{ label: 'View Family Facilities', action: 'filter', params: { tag: 'family' } }]
       });
     }
 
     if (personaArchetype.includes('maze')) {
       strategy.push({
+        id: 'complex-node',
         type: 'secondary',
         title: 'Complex Node Assistance',
         description: 'This node is complex. Plan extra transfer time.',
         rationale: 'Persona indicates high complexity.',
         tags: ['transfer', 'planning'],
-        actions: [{ label: 'Plan Transfer', uri: 'app:guide?mode=transfer' }]
+        actions: [{ label: 'Plan Transfer', action: 'guide', params: { mode: 'transfer' } }]
       });
     }
 
     if (slot === 'night' && !hasAccessibility) {
       strategy.push({
+        id: 'night-safety',
         type: 'secondary',
         title: 'Night Safety Tips',
         description: 'Route via accessible paths and well-lit areas.',
         rationale: 'Night time without strong accessibility signals.',
         tags: ['safety', 'accessible'],
         actions: [
-          { label: 'Locate Accessible Path', uri: 'app:filter?tag=accessible' },
-          { label: 'Find Helpdesk', uri: 'app:filter?tag=service_counter' }
+          { label: 'Locate Accessible Path', action: 'filter', params: { tag: 'accessible' } },
+          { label: 'Find Helpdesk', action: 'filter', params: { tag: 'service_counter' } }
         ]
       });
     }
@@ -165,39 +173,98 @@ export class StrategyEngine {
     if ((context.weather === 'hot' || (context.temperatureC ?? 0) >= 30)) {
       if (hasWaterRefill || hasDining || tags.has('shopping')) {
         strategy.push({
+          id: 'heat-relief',
           type: 'secondary',
           title: 'Beat the Heat',
           description: 'Stay indoors and hydrate when temperatures are high.',
           rationale: 'Heatwave conditions detected.',
           tags: ['indoor', 'water'],
           actions: [
-            { label: 'Find Indoor Spots', uri: 'app:filter?indoor=true' },
-            { label: 'Water Refill', uri: 'app:filter?tag=water_refill' }
+            { label: 'Find Indoor Spots', action: 'filter', params: { indoor: true } },
+            { label: 'Water Refill', action: 'filter', params: { tag: 'water_refill' } }
           ]
         });
       }
     }
 
+    // User State Strategies
+    const userStates = new Set(context.userStates || []);
+    const knowledge = context.knowledgeMap || {};
+
+    if (userStates.has('large_luggage')) {
+      strategy.unshift({
+        id: 'luggage-assist',
+        type: 'primary',
+        title: '電梯優先路徑',
+        description: '檢測到大型行李。建議使用電梯或手扶梯，避免樓梯。',
+        rationale: 'Large luggage detected.',
+        knowledge: knowledge['large_luggage'],
+        tags: ['accessibility', 'elevator'],
+        actions: [{ label: '尋找電梯', action: 'filter', params: { tag: 'elevator' } }]
+      });
+    }
+
+    if (userStates.has('stroller')) {
+      strategy.unshift({
+        id: 'stroller-assist',
+        type: 'primary',
+        title: '無障礙與育嬰指引',
+        description: '已為您篩選寬閘門出口與育嬰室位置。',
+        rationale: 'Stroller detected.',
+        knowledge: knowledge['stroller'],
+        tags: ['accessibility', 'baby_care'],
+        actions: [{ label: '育嬰設施', action: 'filter', params: { tag: 'baby_care' } }]
+      });
+    }
+
+    if (userStates.has('mobility_impaired')) {
+      strategy.unshift({
+        id: 'mobility-assist',
+        type: 'alert',
+        title: '無障礙動線確認',
+        description: '已標記所有無障礙坡道與多功能廁所。',
+        rationale: 'Mobility impairment detected.',
+        knowledge: knowledge['mobility_impaired'],
+        tags: ['accessibility', 'toilet'],
+        actions: [{ label: '無障礙地圖', action: 'map', params: { mode: 'accessible' } }]
+      });
+    }
+
+    if (userStates.has('rush')) {
+      strategy.unshift({
+        id: 'rush-mode',
+        type: 'primary',
+        title: '極速轉乘建議',
+        description: '建議搭乘第 3 或第 7 車廂，下車即達手扶梯。',
+        rationale: 'User is in a rush.',
+        knowledge: knowledge['rush'],
+        tags: ['transport', 'speed'],
+        actions: [{ label: '查看最佳車廂', action: 'guide', params: { mode: 'fast' } }]
+      });
+    }
+
     if (strategy.length === 0) {
       strategy.push({
+        id: 'explore-area',
         type: 'secondary',
         title: 'Explore Area',
         description: `Discover ${facilities.length} spots in this area.`,
         rationale: 'General exploration.',
         tags: Array.from(tags).slice(0, 3),
-        actions: [{ label: 'Explore', uri: 'app:map' }]
+        actions: [{ label: 'Explore', action: 'map' }]
       });
     }
 
     if (context.odptStation) {
       const lineName = context.odptStation.railway?.split(':').pop()?.split('.').pop() || 'Transit'
       strategy.push({
+        id: 'odpt-nav',
         type: 'primary',
         title: `${lineName} 站內導航`,
         description: `包含 ${context.odptStation.exits?.length || 0} 個出口與 ${context.odptStation.connecting_railways?.length || 0} 條轉乘路線資訊。`,
         rationale: 'Transport node with ODPT data',
         tags: ['transport', 'navigation'],
-        actions: [{ label: '查看出口地圖', uri: 'app:exits' }]
+        actions: [{ label: '查看出口地圖', action: 'exits' }]
       })
     }
 

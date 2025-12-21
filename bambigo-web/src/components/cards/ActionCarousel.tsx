@@ -1,7 +1,7 @@
 'use client'
 
 import { L4ActionCard } from '../../types/tagging'
-import { Moon, Sun, Utensils, Wifi, Umbrella, Map as MapIcon, Baby, ArrowRight, Info } from 'lucide-react'
+import { Moon, Sun, Utensils, Wifi, Umbrella, Map as MapIcon, Baby, ArrowRight, Info, AlertTriangle } from 'lucide-react'
 
 type Props = { 
   cards: L4ActionCard[]; 
@@ -142,6 +142,17 @@ export default function ActionCarousel({ cards, onPrimaryClick }: Props) {
               <p className={`text-sm ${style.text} opacity-80 leading-relaxed`}>
                 {c.description}
               </p>
+
+              {c.knowledge && (
+                <div className="mt-3 flex items-start gap-2 bg-white/60 rounded-lg p-2.5 border border-white/40">
+                  <div className="shrink-0 text-amber-500 mt-0.5">
+                    <AlertTriangle size={14} />
+                  </div>
+                  <p className={`text-xs ${style.text} font-bold leading-relaxed`}>
+                    {c.knowledge}
+                  </p>
+                </div>
+              )}
             </div>
             
             {c.actions && c.actions.length > 0 && (

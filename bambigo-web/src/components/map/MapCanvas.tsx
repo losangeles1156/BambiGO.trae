@@ -171,14 +171,13 @@ const MapCanvas = ({
   const nodesRef = useRef(nodes)
   const geolocateControl = useRef<maplibregl.GeolocateControl | null>(null)
   const [loaded, setLoaded] = useState(false)
-  const [mounted, setMounted] = useState(false)
   const activeStyleIndexRef = useRef(styleIndex)
   const initialCenterRef = useRef<[number, number]>(center || [139.7774, 35.7141])
   const initialStyleIndexRef = useRef(styleIndex)
   const lastLocationErrorRef = useRef<{ code: string; at: number } | null>(null)
   const fallbackStyleAppliedRef = useRef(false)
   const pendingViewRef = useRef<{ center: [number, number]; zoom: number; bearing: number; pitch: number } | null>(null)
-  const [debugLogs, setDebugLogs] = useState<string[]>([])
+  const [debugLogs] = useState<string[]>([])
 
   const tapForDetailsLabel = useMemo(() => t('common.tapForDetails'), [t])
 
@@ -204,7 +203,6 @@ const MapCanvas = ({
 
   // Initialize Map
   useEffect(() => {
-    setMounted(true)
     if (!mapContainer.current) return
     if (map.current) return
 
@@ -674,7 +672,6 @@ const MapCanvas = ({
     >
       <div className="absolute top-20 left-0 bg-black/80 text-white text-xs p-2 z-[9999] max-w-[90vw] overflow-y-auto max-h-[50vh] rounded-r pointer-events-auto">
         <div className="font-bold text-yellow-400 mb-1">Debug Info:</div>
-        <div>Mounted: {mounted ? 'Yes' : 'No'}</div>
         <div>Loaded: {loaded ? 'Yes' : 'No'}</div>
         <div className="mt-1 pt-1 border-t border-gray-600">
           {debugLogs.map((log, i) => (

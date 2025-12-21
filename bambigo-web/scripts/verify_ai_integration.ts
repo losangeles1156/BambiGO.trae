@@ -21,8 +21,10 @@ async function main() {
   const facilities = await fsNodeRepo.getFacilities(testNodeId)
   console.log(`✅ Retrieved ${facilities.length} facility records.`)
   facilities.forEach(f => {
-    // Cast attributes to any to access name safely for logging
-    const name = (f.attributes as any).name?.en || 'Unknown'
+    const attrs = f.attributes as Record<string, unknown>
+    const nameObj = attrs['name']
+    const nameEn = nameObj && typeof nameObj === 'object' ? (nameObj as Record<string, unknown>)['en'] : undefined
+    const name = typeof nameEn === 'string' && nameEn.trim() ? nameEn : 'Unknown'
     console.log(`   - [${f.category}] ${name} (${f.subCategory})`)
   })
 

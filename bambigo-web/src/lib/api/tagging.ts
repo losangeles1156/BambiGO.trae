@@ -117,6 +117,7 @@ export const TaggingService = {
        // Fallback or throw
        console.warn('Strategy generation failed, returning fallback');
        return {
+         id: 'fallback-strategy',
          type: 'secondary',
          title: 'Explore',
          description: 'Discover the area manually.',

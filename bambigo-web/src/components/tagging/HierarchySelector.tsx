@@ -121,7 +121,7 @@ export const HierarchySelector: React.FC<HierarchySelectorProps> = ({ onSelect, 
         ) : (
           <div className="space-y-1 animate-in slide-in-from-right-4 fade-in duration-200">
             <div className="px-2 py-1.5 mb-2 bg-blue-50 text-xs text-blue-600 font-semibold uppercase tracking-wider rounded border border-blue-100">
-              {t('tagging.subCategories', { label: selectedMainLabel })}
+              {t('tagging.subCategories').replace('{{label}}', selectedMainLabel)}
             </div>
             {selectedMain?.subCategories.map((sub, i) => {
               const subLabel = t(`tagging.l1.${selectedMain.id}.${sub.id}`);

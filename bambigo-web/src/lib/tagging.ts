@@ -17,6 +17,7 @@ export type AppTag = {
   label: string
   l1?: L1Tag
   l3?: L3Tag
+  context?: Record<string, unknown>
 }
 
 export type TagState = {

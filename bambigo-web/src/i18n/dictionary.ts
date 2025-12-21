@@ -40,6 +40,7 @@ export type Dictionary = {
     version: string
     outOfRange: string
     openGoogleMaps: string
+    refresh: string
     backToCenter: string
     manageTags: string
     swipeUpForDetails: string
@@ -125,6 +126,7 @@ export type Dictionary = {
     arrive: string
     start: string
     straight: string
+    straightLine: string
     fastest: string
     safest: string
     shortest: string
@@ -161,8 +163,148 @@ export type Dictionary = {
     l2Title: string
     l3Title: string
     l4Title: string
+    l1RadiusLabel: string
+    l1NoPlacesPrefix: string
+    l1NoPlacesTryIncrease: string
+    l1OpenNow: string
+    l1Closed: string
+    l1Details: string
+    l1PersonaPlaceholder: string
+    l1PersonaCrowdHint: string
+    l1CenterGps: string
+    l1CenterNode: string
+    l1CenterFallback: string
+    l2AlertsLabel: string
+    l2NoAlerts: string
+    l2TransitNormal: string
+    l2TransitDelayed: string
+    l2TransitSuspended: string
+    l2TransitUnknown: string
+    l3LocationUnknown: string
+    l3ValueLabel: string
+    l3ValuePlaceholder: string
+    l3Mvp: {
+      toilet: string
+      locker: string
+      charging: string
+      atm: string
+      accessibility: string
+      bike: string
+    }
+    l4Contexts: {
+      luggage: string
+      stroller: string
+      wheelchair: string
+      rush: string
+    }
+    l1: {
+      dining: {
+        label: string
+        izakaya: string
+        ramen: string
+        cafe: string
+        restaurant: string
+        fast_food: string
+      }
+      shopping: {
+        label: string
+        drugstore: string
+        convenience_store: string
+        electronics: string
+        supermarket: string
+      }
+      medical: {
+        label: string
+        clinic: string
+        pharmacy: string
+        hospital: string
+        dentist: string
+      }
+      leisure: {
+        label: string
+        park: string
+        museum: string
+        gym: string
+        cinema: string
+        karaoke: string
+      }
+      education: {
+        label: string
+        school: string
+        university: string
+        library: string
+      }
+      finance: {
+        label: string
+        bank: string
+        atm: string
+        currency_exchange: string
+      }
+      accommodation: {
+        label: string
+        hotel: string
+        hostel: string
+        apartment: string
+      }
+      business: {
+        label: string
+        office: string
+        coworking: string
+        factory: string
+      }
+      religion: {
+        label: string
+        shrine: string
+        temple: string
+        church: string
+      }
+      public: {
+        label: string
+        police: string
+        post_office: string
+        government: string
+      }
+      transport: {
+        label: string
+        station: string
+        bus_stop: string
+        parking: string
+      }
+      nature: {
+        label: string
+        scenic_spot: string
+        garden: string
+        mountain: string
+      }
+      residential: {
+        label: string
+        apartment: string
+        house: string
+      }
+    }
+    l2: {
+      odpt: { label: string; normal: string; delay: string; suspended: string }
+      crowd: { label: string; normal: string; high: string; veryHigh: string }
+      weather: { label: string; sunny: string; rain: string; storm: string }
+      mobility: {
+        label: string
+        available: string
+        scarce: string
+      }
+    }
+    l3: {
+      wifi: string
+      toilet: string
+      charging: string
+      locker: string
+      accessibility: string
+      rest_area: string
+      other: string
+    }
+    subCategories: string
     filterBarLabel: string
     serviceFilterPrefix: string
+    serviceTagDistribution: string
     generateStrategy: string
     strategyCardTitle: string
     strategyEngineTitle: string
@@ -175,6 +317,15 @@ export type Dictionary = {
       localVibe: string
       digitalNomadReady: string
       accessibleFriendly: string
+    }
+    addTag: string
+    addL1: string
+    back: string
+    layers: {
+      l1: { name: string, description: string }
+      l2: { name: string, description: string }
+      l3: { name: string, description: string }
+      l4: { name: string, description: string }
     }
   }
 

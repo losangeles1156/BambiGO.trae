@@ -14,6 +14,8 @@ import { FacilityItem } from '../../app/api/facilities/route'
 import NodeDetailCard from '../cards/NodeDetailCard'
 import { WeatherAlert } from '../../lib/weather/jma_rss'
 import type { CategoryCounts } from '../node/FacilityProfile'
+import L2StatusMarquee from './L2StatusMarquee'
+import { getStationIdentity } from '../../config/station-identity'
 
 type Name = { ja?: string; en?: string; zh?: string }
 type Status = { label: string; tone?: 'yellow' | 'blue' | 'red' | 'green' }
@@ -41,6 +43,7 @@ import { useLanguage } from '../../contexts/LanguageContext'
 export default function NodeDashboard({ nodeId, name, weatherAlerts = [], onAction, onRouteHint, filterSuitability, onSystemAlert, onClientLog }: Props) {
   const { t } = useLanguage()
   const { user, session } = useAuth()
+  const identity = useMemo(() => getStationIdentity(nodeId), [nodeId])
   const [text, setText] = useState('')
   const [msgs, setMsgs] = useState<{ role: 'user' | 'ai'; content: string }[]>([])
   const abortRef = useRef<AbortController | null>(null)
@@ -51,6 +54,7 @@ export default function NodeDashboard({ nodeId, name, weatherAlerts = [], onActi
   const [nodeType, setNodeType] = useState<string>('')
   const [nodeZone, setNodeZone] = useState<'core' | 'buffer' | 'outer'>('core')
   const [transitStatus, setTransitStatus] = useState<string | undefined>(undefined)
+  const [transitDelay, setTransitDelay] = useState<number | undefined>(undefined)
   const [isEditingFacilities, setIsEditingFacilities] = useState(false)
   const [isLineBound, setIsLineBound] = useState(false)
   const [isTripGuardActive, setIsTripGuardActive] = useState(false)
@@ -62,8 +66,23 @@ export default function NodeDashboard({ nodeId, name, weatherAlerts = [], onActi
     operator?: string
     connecting_railways?: string[]
     exits?: string[]
-    raw?: Record<string, unknown>
+    raw?: unknown
   } | null>(null)
+
+  // User State Selector
+  const [userStates, setUserStates] = useState<string[]>([])
+  const USER_STATE_OPTIONS = [
+    { id: 'large_luggage', label: '🧳 大型行李', color: 'blue' },
+    { id: 'stroller', label: '👶 推嬰兒車', color: 'pink' },
+    { id: 'mobility_impaired', label: '♿ 行動不便', color: 'purple' },
+    { id: 'rush', label: '⚡ 趕時間', color: 'red' }
+  ]
+
+  const toggleUserState = (id: string) => {
+    setUserStates(prev => 
+      prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
+    )
+  }
 
   const notify = (input: { severity: 'high' | 'medium' | 'low'; title: string; summary: string; ttlMs?: number; dedupeMs?: number }) => {
     onSystemAlert?.(input)
@@ -204,7 +223,8 @@ export default function NodeDashboard({ nodeId, name, weatherAlerts = [], onActi
               time: new Date().toISOString(),
               personaLabels,
               transitStatus: tStatus,
-              odptStation: odptSt
+              odptStation: odptSt,
+              userStates: userStates
             })
           })
           if (sRes.ok) {
@@ -223,28 +243,31 @@ export default function NodeDashboard({ nodeId, name, weatherAlerts = [], onActi
           const availableBikes = sts.reduce((sum, s) => sum + (Number(s.bikes_available) || 0), 0)
           if (availableBikes > 0) {
             newCards.push({
+              id: 'mobility-bike',
               type: 'primary',
               title: t('dashboard.bikeTitle'),
               description: t('dashboard.bikeDesc').replace('{n}', String(sts.length)).replace('{count}', String(availableBikes)),
               rationale: 'Mobility',
               tags: ['transport', 'bike'],
-              actions: [{ label: t('dashboard.bikeAction'), uri: 'app:bike' }]
+              actions: [{ label: t('dashboard.bikeAction'), action: 'app:bike' }]
             })
           }
 
           // Transit Card
           if (tStatus === 'delayed' || tStatus === 'suspended') {
             newCards.push({
+              id: 'transit-alert',
               type: 'alert',
               title: t('dashboard.transitTitle'),
               description: `${t('common.monitoring').split('：')[0]}：${tStatus === 'delayed' ? t('dashboard.transitDelayed') : t('dashboard.transitSuspended')}${typeof delay === 'number' && delay > 0 ? `（${t('dashboard.transitDelayMinutes').replace('{n}', String(delay))}）` : ''}`,
               rationale: 'Alert',
               tags: ['transport', 'warning'],
-              actions: [{ label: t('dashboard.transitAlternative'), uri: 'app:transit' }]
+              actions: [{ label: t('dashboard.transitAlternative'), action: 'app:transit' }]
             })
           }
 
           setTransitStatus(tStatus)
+          setTransitDelay(delay)
           setFacilities(adaptedItems)
           setStations(sts)
           setOdptStation(odptSt)
@@ -269,12 +292,12 @@ export default function NodeDashboard({ nodeId, name, weatherAlerts = [], onActi
       ignore = true
       clearTimeout(timer)
     }
-  }, [nodeId, filterSuitability?.tag, filterSuitability?.minConfidence, t, onClientLog])
+  }, [nodeId, filterSuitability?.tag, filterSuitability?.minConfidence, t, onClientLog, userStates])
 
   const getL1Breadcrumb = () => {
     if (!nodeType) return null
     const l1 = L1_CATEGORIES_DATA.find(c => c.id === nodeType || c.subCategories.some(s => s.id === nodeType))
-    if (l1) return { label: l1.label, icon: l1.icon }
+    if (l1) return { label: t(`tagging.l1.${l1.id}.label`), icon: l1.icon }
     if (nodeType === 'station') return { label: `${t('dashboard.transport')} (${t('header.langLabel') === '日' ? '交通' : 'Transport'})`, icon: '🚉' }
     return { label: nodeType, icon: '📍' }
   }
@@ -333,13 +356,14 @@ export default function NodeDashboard({ nodeId, name, weatherAlerts = [], onActi
               if (obj?.type === 'alerts') {
                 const arr = Array.isArray(obj?.content) ? (obj.content as string[]) : []
                 if (arr.length) {
-                  const alertCards: L4ActionCard[] = arr.map((msg) => ({
+                  const alertCards: L4ActionCard[] = arr.map((msg, i) => ({
+                    id: `alert-${Date.now()}-${i}`,
                     type: 'alert',
                     title: t('dashboard.realTimeAlert'),
                     description: msg,
                     rationale: 'Real-time Alert',
                     tags: ['alert'],
-                    actions: [{ label: t('dashboard.understand'), uri: 'app:dismiss' }]
+                    actions: [{ label: t('dashboard.understand'), action: 'app:dismiss' }]
                   }))
                   setCards((prev) => [...alertCards, ...prev])
                 }
@@ -386,11 +410,12 @@ export default function NodeDashboard({ nodeId, name, weatherAlerts = [], onActi
                   const obj = (a ?? {}) as Record<string, unknown>
                   return {
                     label: String(obj.label || t('dashboard.view')),
-                    uri: String(obj.uri || 'app:open')
+                    action: String(obj.uri || obj.action || 'app:open')
                   }
                 })
               : []
             return {
+              id: String(item.id || `card-${Date.now()}-${Math.random()}`),
               type,
               title: String(item.title || 'Info'),
               description: String(item.description || item.desc || ''),
@@ -410,9 +435,78 @@ export default function NodeDashboard({ nodeId, name, weatherAlerts = [], onActi
   }
   return (
     <div className="flex flex-col h-full bg-gray-50 overflow-hidden">
+      <L2StatusMarquee 
+         weatherAlerts={weatherAlerts} 
+         transitStatus={transitStatus} 
+         transitDelay={transitDelay} 
+      />
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6 pb-24">
         
+        {/* Main Interaction Area: Central AI Agent Chat */}
+        <section className="bg-white rounded-2xl border border-blue-100 shadow-md overflow-hidden relative z-20">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 flex items-center justify-between text-white">
+             <div className="flex items-center gap-2">
+               <MessageSquare size={18} />
+               <h3 className="text-sm font-bold">{t('dashboard.aiGuide')}</h3>
+             </div>
+             <div className="flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded-full">
+               <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+               <span className="text-[10px] font-bold opacity-90">ONLINE</span>
+             </div>
+          </div>
+          <div className="p-4 bg-gradient-to-b from-blue-50/30 to-white">
+            <div className="max-h-[30vh] min-h-[150px] overflow-y-auto space-y-4 mb-4 scrollbar-hide">
+              {msgs.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-6 text-center opacity-70">
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-500 mb-3 animate-bounce">
+                    <MessageSquare size={24} />
+                  </div>
+                  <p className="text-sm text-gray-500 font-bold">{t('dashboard.aiWelcome')}</p>
+                  <p className="text-xs text-gray-400 mt-1">Ask about nearby facilities or route advice.</p>
+                </div>
+              )}
+              {msgs.map((m, i) => (
+                <div key={i} className="flex justify-start">
+                  <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm shadow-sm leading-relaxed ${
+                    m.role === 'user' 
+                      ? 'bg-blue-600 text-white rounded-tr-none ml-auto' 
+                      : 'bg-white text-gray-800 border border-gray-100 rounded-tl-none'
+                  }`}>
+                    {m.content}
+                  </div>
+                </div>
+              ))}
+              {loading && (
+                <div className="flex justify-start">
+                  <div className="bg-gray-100 rounded-2xl px-4 py-2 text-sm text-gray-500 flex gap-1 items-center">
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" />
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]" />
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:0.4s]" />
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex gap-2 relative">
+              <input 
+                className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm" 
+                value={text} 
+                onChange={(e) => setText(e.target.value)} 
+                placeholder={t('common.inputPlaceholder')}
+                onKeyDown={(e) => e.key === 'Enter' && !e.nativeEvent.isComposing && (send(text), setText(''))}
+              />
+              <button 
+                onClick={() => { send(text); setText(''); }}
+                disabled={!text.trim() || loading}
+                className="bg-blue-600 text-white p-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-200 active:scale-95 transition-all hover:bg-blue-700"
+              >
+                <ChevronRight size={20} />
+              </button>
+            </div>
+          </div>
+        </section>
+
         {/* L1-L3 Detail Card Framework */}
         <NodeDetailCard
           name={name}
@@ -435,6 +529,7 @@ export default function NodeDashboard({ nodeId, name, weatherAlerts = [], onActi
           vibeTags={vibeTags}
           persona={Array.isArray(persona) ? persona.join('、') : persona}
           weatherAlerts={weatherAlerts}
+          identity={identity}
         />
 
         {/* Trip Guard / Line Integration (Member Exclusive) */}
@@ -498,22 +593,43 @@ export default function NodeDashboard({ nodeId, name, weatherAlerts = [], onActi
           <div className="absolute bottom-0 left-0 -ml-4 -mb-4 w-24 h-24 bg-black/5 rounded-full blur-xl" />
         </section>
 
-        {/* AI Conversation Entry Point (Third Layer) */}
-        <section className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 group hover:border-blue-200 transition-all cursor-pointer" onClick={() => onAction('ai_assistant')}>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl group-hover:bg-blue-600 group-hover:text-white transition-all">
-                <MessageSquare size={24} />
-              </div>
-              <div>
-                <h3 className="font-bold text-gray-900">{t('dashboard.aiGuide')}</h3>
-                <p className="text-xs text-gray-500">詢問關於此節點的更多細節</p>
-              </div>
-            </div>
-            <ChevronRight size={20} className="text-gray-300 group-hover:text-blue-500 transition-all" />
+
+
+        {/* User State Selector */}
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-1 h-4 bg-purple-500 rounded-full" />
+            <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wider">{t('dashboard.myStatus') || '我的狀態'}</h2>
           </div>
-          <div className="bg-gray-50 rounded-xl p-3 text-sm text-gray-600 italic">
-            &quot;這附近有沒有適合辦公的咖啡廳？&quot;
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            <style jsx>{`
+              div::-webkit-scrollbar { display: none; }
+            `}</style>
+            {USER_STATE_OPTIONS.map(opt => {
+              const isActive = userStates.includes(opt.id)
+              let activeClass = ''
+              let dotClass = ''
+              if (opt.color === 'blue') { activeClass = 'bg-blue-50 border-blue-200 text-blue-700'; dotClass = 'bg-blue-500' }
+              else if (opt.color === 'pink') { activeClass = 'bg-pink-50 border-pink-200 text-pink-700'; dotClass = 'bg-pink-500' }
+              else if (opt.color === 'purple') { activeClass = 'bg-purple-50 border-purple-200 text-purple-700'; dotClass = 'bg-purple-500' }
+              else { activeClass = 'bg-red-50 border-red-200 text-red-700'; dotClass = 'bg-red-500' }
+
+              return (
+                <button
+                  key={opt.id}
+                  onClick={() => toggleUserState(opt.id)}
+                  className={`
+                    flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border
+                    ${isActive 
+                      ? `${activeClass} shadow-sm scale-105` 
+                      : 'bg-white border-gray-100 text-gray-500 hover:bg-gray-50'}
+                  `}
+                >
+                  {opt.label}
+                  {isActive && <div className={`w-1.5 h-1.5 rounded-full ${dotClass} animate-pulse`} />}
+                </button>
+              )
+            })}
           </div>
         </section>
 
@@ -653,68 +769,7 @@ export default function NodeDashboard({ nodeId, name, weatherAlerts = [], onActi
            </section>
         )}
 
-        {/* AI Assistant Chat Section */}
-        <section className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-6">
-          <div className="bg-blue-600 px-4 py-3 flex items-center justify-between text-white">
-             <div className="flex items-center gap-2">
-               <MessageSquare size={18} />
-               <h3 className="text-sm font-bold">{t('dashboard.aiGuide')}</h3>
-             </div>
-             <div className="flex items-center gap-1">
-               <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-               <span className="text-[10px] font-medium opacity-80">Online</span>
-             </div>
-          </div>
-          <div className="p-4">
-            <div className="max-h-60 overflow-y-auto space-y-4 mb-4 scrollbar-hide">
-              {msgs.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-blue-500 mb-3">
-                    <MessageSquare size={24} />
-                  </div>
-                  <p className="text-sm text-gray-500 font-medium">{t('dashboard.aiWelcome')}</p>
-                </div>
-              )}
-              {msgs.map((m, i) => (
-                <div key={i} className="flex justify-start">
-                  <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${
-                    m.role === 'user' 
-                      ? 'bg-blue-600 text-white rounded-tr-none ml-auto' 
-                      : 'bg-gray-100 text-gray-900 rounded-tl-none'
-                  }`}>
-                    {m.content}
-                  </div>
-                </div>
-              ))}
-              {loading && (
-                <div className="flex justify-start">
-                  <div className="bg-gray-100 rounded-2xl px-4 py-2 text-sm text-gray-500 flex gap-1">
-                    <span className="animate-bounce">.</span>
-                    <span className="animate-bounce [animation-delay:0.2s]">.</span>
-                    <span className="animate-bounce [animation-delay:0.4s]">.</span>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            <div className="flex gap-2">
-              <input 
-                className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all" 
-                value={text} 
-                onChange={(e) => setText(e.target.value)} 
-                placeholder={t('common.inputPlaceholder')}
-                onKeyDown={(e) => e.key === 'Enter' && !e.nativeEvent.isComposing && (send(text), setText(''))}
-              />
-              <button 
-                onClick={() => { send(text); setText(''); }}
-                disabled={!text.trim() || loading}
-                className="bg-blue-600 text-white p-2.5 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-blue-200 active:scale-95 transition-transform"
-              >
-                <ChevronRight size={20} />
-              </button>
-            </div>
-          </div>
-        </section>
+
       </div>
     </div>
   )

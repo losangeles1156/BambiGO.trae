@@ -22,15 +22,16 @@ export class FileSystemNodeRepository implements NodeRepository {
       if (fs.existsSync(fullPath)) {
         const content = fs.readFileSync(fullPath, 'utf-8')
         const raw = JSON.parse(content)
-        
-        // Validate but don't crash on single failures, just filter
-        this.data = raw.filter((item: any) => {
+
+        const src = Array.isArray(raw) ? raw : []
+        const next: z.infer<typeof L3ServiceFacilitySchema>[] = []
+        for (const item of src) {
           const result = L3ServiceFacilitySchema.safeParse(item)
-          if (!result.success) {
-            console.warn(`[FileSystemNodeRepository] Invalid item skipped:`, result.error)
-          }
-          return result.success
-        })
+          if (result.success) next.push(result.data)
+          else console.warn(`[FileSystemNodeRepository] Invalid item skipped:`, result.error)
+        }
+
+        this.data = next
         
         this.isLoaded = true
         console.log(`[FileSystemNodeRepository] Loaded ${this.data.length} records`)

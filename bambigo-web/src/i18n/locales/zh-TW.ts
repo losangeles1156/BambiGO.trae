@@ -36,6 +36,7 @@ export const zhTW: Dictionary = {
     version: '版本',
     outOfRange: '超出主要支援範圍：建議回到中心區域，或使用 Google 地圖規劃路線',
     openGoogleMaps: '用 Google 地圖導航',
+    refresh: '重新整理',
     backToCenter: '回到中心區域',
     manageTags: '管理標籤',
     swipeUpForDetails: '上滑查看詳細資訊',
@@ -121,6 +122,7 @@ export const zhTW: Dictionary = {
     arrive: '抵達目的地',
     start: '出發',
     straight: '直行',
+    straightLine: '直線距離',
     fastest: '最快路徑',
     safest: '最安全路徑',
     shortest: '最短距離',
@@ -152,59 +154,43 @@ export const zhTW: Dictionary = {
   tagging: {
     managerRegionLabel: '標籤管理',
     activeTagsLabel: '已選標籤',
-    l1Title: 'L1 類別（結構）',
-    l2Title: 'L2 即時狀態（動態）',
-    l2: {
-      odpt: {
-        label: '列車運行狀況',
-        normal: '正常運行',
-        delay: '誤點/延遲',
-        suspended: '暫停行駛'
-      },
-      weather: {
-        label: '天氣',
-        rain: '雨天',
-        snow: '雪天'
-      },
-      crowd: {
-        label: '人潮',
-        crowded: '擁擠'
-      }
+    l1Title: 'L1 生活機能 (結構)',
+    l2Title: 'L2 即時狀態 (動態)',
+    l3Title: 'L3 服務設施 (靜態)',
+    l4Title: 'L4 行動策略 (可執行)',
+    l1RadiusLabel: '搜尋半徑',
+    l1NoPlacesPrefix: '在',
+    l1NoPlacesTryIncrease: '請嘗試增加範圍。',
+    l1OpenNow: '營業中',
+    l1Closed: '已打烊',
+    l1Details: '詳情',
+    l1PersonaPlaceholder: '尚無足夠資訊',
+    l1PersonaCrowdHint: '營業時間分散',
+    l1CenterGps: 'GPS',
+    l1CenterNode: '節點',
+    l1CenterFallback: '預設',
+    l2AlertsLabel: '氣象/地震警報',
+    l2NoAlerts: '目前沒有警報',
+    l2TransitNormal: '列車正常運行',
+    l2TransitDelayed: '偵測到延誤',
+    l2TransitSuspended: '運轉見合わせ',
+    l2TransitUnknown: '狀態不明',
+    l3LocationUnknown: '位置待補',
+    l3ValueLabel: '數值',
+    l3ValuePlaceholder: '—',
+    l3Mvp: {
+      toilet: '廁所',
+      locker: '置物櫃',
+      charging: '充電',
+      atm: 'ATM',
+      accessibility: '無障礙',
+      bike: '單車'
     },
-    l3Title: 'L3 服務設施（機能）',
-    l4Title: 'L4 行動策略（建議）',
     l4Contexts: {
-      luggage: '攜帶大件行李',
-      stroller: '推嬰兒車',
-      wheelchair: '行動不便/輪椅',
+      luggage: '行李',
+      stroller: '嬰兒車',
+      wheelchair: '輪椅',
       rush: '趕時間'
-    },
-    stationKnowledge: '車站知識經驗',
-    filterBarLabel: '標籤篩選列',
-    serviceFilterPrefix: '服務篩選',
-    serviceTagDistribution: '服務標籤分布',
-    generateStrategy: '生成策略',
-    strategyCardTitle: '移動策略',
-    strategyEngineTitle: 'AI 策略引擎',
-    strategyEngineSubtitle: '情境化 L4 洞察',
-    strategyEmptyBody: '分析標籤、天氣與時間，生成個人化移動建議。',
-    selectNodeToGenerate: '請先選擇節點後再生成策略',
-    personasLabel: '推導畫像',
-    persona: {
-      transitHub: '交通樞紐',
-      localVibe: '在地生活',
-      digitalNomadReady: '數位遊牧友好',
-      accessibleFriendly: '無障礙友善',
-    },
-    addTag: '新增標籤',
-    addL1: '新增生活機能 (L1)',
-    subCategories: '{{label}} 子類別',
-    back: '返回',
-    layers: {
-      l1: { name: '生活機能', description: '結構性/靜態分類' },
-      l2: { name: '空間聚合', description: '區域/氛圍' },
-      l3: { name: '服務設施', description: '實用/設施' },
-      l4: { name: '移動策略', description: 'AI 建議' }
     },
     l1: {
       dining: {
@@ -219,7 +205,7 @@ export const zhTW: Dictionary = {
         label: '購物',
         drugstore: '藥妝店',
         convenience_store: '便利商店',
-        electronics: '3C/電器',
+        electronics: '電器行',
         supermarket: '超市'
       },
       medical: {
@@ -247,7 +233,7 @@ export const zhTW: Dictionary = {
         label: '金融',
         bank: '銀行',
         atm: 'ATM',
-        currency_exchange: '換匯所'
+        currency_exchange: '外幣兌換'
       },
       accommodation: {
         label: '住宿',
@@ -267,11 +253,11 @@ export const zhTW: Dictionary = {
         temple: '寺廟',
         church: '教堂'
       },
-      nature: {
-        label: '自然',
-        scenic_spot: '景點',
-        garden: '庭園',
-        mountain: '山岳'
+      public: {
+        label: '公共',
+        police: '警察局',
+        post_office: '郵局',
+        government: '政府機關'
       },
       transport: {
         label: '交通',
@@ -279,26 +265,77 @@ export const zhTW: Dictionary = {
         bus_stop: '公車站',
         parking: '停車場'
       },
-      public: {
-        label: '公共',
-        police: '警察局',
-        post_office: '郵局',
-        government: '政府機關'
+      nature: {
+        label: '自然',
+        scenic_spot: '景點',
+        garden: '庭園',
+        mountain: '山岳'
       },
       residential: {
         label: '住宅',
-        apartment_complex: '公寓大樓',
-        housing: '住宅區'
+        apartment: '集合住宅',
+        house: '獨棟住宅'
+      }
+    },
+    l2: {
+      odpt: {
+        label: '列車狀態',
+        normal: '正常運行',
+        delay: '誤點',
+        suspended: '暫停行駛'
+      },
+      crowd: {
+        label: '擁擠程度',
+        normal: '正常',
+        high: '擁擠',
+        veryHigh: '非常擁擠'
+      },
+      weather: {
+        label: '天氣',
+        sunny: '晴天',
+        rain: '雨天',
+        storm: '暴風雨'
+      },
+      mobility: {
+        label: '共享交通',
+        available: '可用',
+        scarce: '剩餘少量'
       }
     },
     l3: {
-      wifi: '無線網路',
-      toilet: '廁所',
+      wifi: 'WiFi',
+      toilet: '洗手間',
       charging: '充電',
       locker: '置物櫃',
       accessibility: '無障礙',
       rest_area: '休息區',
       other: '其他'
+    },
+    subCategories: '{{label}} 的子類別',
+    filterBarLabel: '依標籤篩選',
+    serviceFilterPrefix: '服務篩選',
+    serviceTagDistribution: '服務標籤分佈',
+    generateStrategy: '生成',
+    strategyCardTitle: '行動策略',
+    strategyEngineTitle: 'AI 策略引擎',
+    strategyEngineSubtitle: '情境感知 L4 洞察',
+    strategyEmptyBody: '分析標籤、天氣和時間以生成個人化行動建議。',
+    selectNodeToGenerate: '選擇一個節點以生成策略',
+    personasLabel: '衍生人物誌',
+    persona: {
+      transitHub: '交通樞紐',
+      localVibe: '在地氛圍',
+      digitalNomadReady: '數位遊牧友善',
+      accessibleFriendly: '無障礙友善',
+    },
+    addTag: '新增標籤',
+    addL1: '新增生活機能 (L1)',
+    back: '返回',
+    layers: {
+      l1: { name: '生活機能', description: '結構性/靜態分類' },
+      l2: { name: '空間聚合', description: '區域/氛圍' },
+      l3: { name: '服務設施', description: '公用設施/便利設施' },
+      l4: { name: '行動策略', description: 'AI 建議' }
     }
   },
   nodeDetail: {

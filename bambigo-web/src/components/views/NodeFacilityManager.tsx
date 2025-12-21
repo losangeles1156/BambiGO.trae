@@ -141,7 +141,7 @@ export default function NodeFacilityManager({ nodeId, initialFacilities, onUpdat
                 <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-2xl">
                   {cat.icon}
                 </div>
-                <span className="text-sm font-medium text-gray-700">{cat.label}</span>
+                <span className="text-sm font-medium text-gray-700">{cat.id}</span>
               </button>
             ))}
           </div>

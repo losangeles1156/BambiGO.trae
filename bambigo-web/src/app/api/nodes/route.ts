@@ -82,6 +82,27 @@ function parseWKBPoint(hex: string): [number, number] | null {
   }
 }
 
+function parsePoint(value: unknown): [number, number] | null {
+  if (!value) return null
+  if (typeof value === 'string') {
+    const s = value.trim()
+    const mPoint = s.match(/POINT\s*\(\s*([-+]?\d*\.?\d+)\s+([-+]?\d*\.?\d+)\s*\)/i)
+    if (mPoint) return [parseFloat(mPoint[1]), parseFloat(mPoint[2])]
+    if (/^[0-9a-f]+$/i.test(s) && s.length >= 16) return parseWKBPoint(s)
+    return null
+  }
+  if (typeof value === 'object') {
+    const v = value as Record<string, unknown>
+    const coords = v.coordinates
+    if (Array.isArray(coords) && coords.length >= 2) {
+      const lon = Number(coords[0])
+      const lat = Number(coords[1])
+      if (Number.isFinite(lon) && Number.isFinite(lat)) return [lon, lat]
+    }
+  }
+  return null
+}
+
 export async function GET(req: Request) {
   const rateCfg = process.env.NODES_RATE_LIMIT
   if (rateCfg && !/^\s*(off|false|0)\s*$/i.test(rateCfg)) {
@@ -123,6 +144,7 @@ export async function GET(req: Request) {
   const bboxParam = url.searchParams.get('bbox')
   const typeParam = url.searchParams.get('type') || url.searchParams.get('category')
   const limitParam = url.searchParams.get('limit')
+  const includeSpokes = /^(1|true|yes|on)$/i.test(url.searchParams.get('include_spokes') || '')
   
   let bbox = defaultBbox
   if (bboxParam) {
@@ -145,11 +167,11 @@ export async function GET(req: Request) {
     }
   }
 
-  const allowedTypes = new Set(['station', 'bus_stop'])
+  const allowedTypes = new Set(['station', 'facility', 'attraction', 'shop', 'hub'])
   const typeFilter = typeParam || null
   if (typeFilter && !allowedTypes.has(typeFilter)) {
     return new NextResponse(
-      JSON.stringify({ error: { code: 'INVALID_PARAMETER', message: 'type must be one of station,bus_stop', details: { type: typeFilter } } }),
+      JSON.stringify({ error: { code: 'INVALID_PARAMETER', message: `type must be one of: ${Array.from(allowedTypes).join(', ')}`, details: { type: typeFilter } } }),
       { status: 400, headers: { 'Content-Type': 'application/json', 'X-API-Version': 'v4.1-strict' } }
     )
   }
@@ -162,36 +184,92 @@ export async function GET(req: Request) {
     }> = []
 
     const canUseAdmin = !!process.env.SUPABASE_SERVICE_ROLE_KEY
-    if (canUseAdmin) {
+    // RPC get_nodes_in_bbox is enabled and updated to use the correct 'location' and 'type' columns.
+    const useRpc = canUseAdmin 
+    if (useRpc) {
       try {
         const { data, error } = await supabaseAdmin.rpc('get_nodes_in_bbox', {
           min_lon: bbox.minLon,
           min_lat: bbox.minLat,
           max_lon: bbox.maxLon,
           max_lat: bbox.maxLat,
-          p_type: typeFilter || null,
+          p_type: typeFilter, // Allow null to fetch all types if no filter is provided
           p_limit: limit,
         })
         if (error) throw error
-        // RPC returns an array of GeoJSON Features already
+        
+        // RPC returns an array of GeoJSON Features
         if (Array.isArray(data)) {
-          features = data as Array<{ type: 'Feature'; geometry: { type: 'Point'; coordinates: [number, number] }; properties: Record<string, unknown> }>
+          features = (data as any[])
+            .map((item: any) => {
+              if (item.type === 'Feature') return item
+              // Convert to Feature if it's a raw row
+              const props = { ...item }
+              delete props.location
+              const coords = parsePoint(item.location)
+              if (!coords) return null
+              return {
+                type: 'Feature' as const,
+                geometry: { type: 'Point' as const, coordinates: coords },
+                properties: props,
+              }
+            })
+            .filter((f): f is NonNullable<typeof f> => {
+              if (!f) return false
+              // 實施單一節點過濾：除非明確要求包含附屬站點，否則只顯示 Hub 或獨立節點
+              if (!includeSpokes) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const props = f.properties as any
+                const isHub = props.is_hub === true
+                const hasParent = !!props.parent_hub_id
+                if (!isHub && hasParent) return false
+              }
+              // 再次確保排除非鐵路車站
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const type = (f.properties as any).type as string
+              return type === 'station'
+            })
         }
       } catch (e) {
-        console.warn('RPC get_nodes_in_bbox unavailable, falling back:', e)
+        console.warn('RPC get_nodes_in_bbox failed, falling back:', e)
       }
     }
 
     if (features.length === 0) {
-      let query = supabase.from('nodes').select('id, name, type, location, metadata, external_links')
-      if (typeFilter) query = query.eq('type', typeFilter)
+      // Corrected schema: select type and location (not node_type and coordinates)
+      let query = supabase.from('nodes').select('id, name, type, location, parent_hub_id')
+      
+      // Explicitly exclude bus_stops and only include stations
+      if (typeFilter) {
+        query = query.eq('type', typeFilter)
+      } else {
+        query = query.eq('type', 'station')
+      }
+
+      // Use RPC for spatial query if possible, but fallback to client-side filtering
+      // Note: Client-side filtering on 'location' column (hex string) is tricky because Supabase JS client doesn't decode WKB automatically in all versions.
+      // But we are selecting 'location' column which is geography(Point, 4326). PostgREST returns it as WKB hex string.
+      // Our parseWKBPoint handles hex string.
+      
+      // OPTIMIZATION: Use PostGIS filter in query if possible. 
+      // But supabase-js .filter() for geometry is limited.
+      // We rely on limit() and client-side filter for now as fallback.
+      
+      // Let's try to fetch ALL nodes (up to a reasonable limit like 5000) if no RPC.
+      // Or better, let's fix the RPC call logic or assume RPC works.
+      
+      // If fallback is used, we MUST fetch enough data.
       query = query.limit(limit)
       const { data, error } = await query
       if (error) throw error
-      type NodeRow = { id: string; name: Record<string, unknown>; type: string; location?: string; metadata?: Record<string, unknown>; external_links?: Record<string, unknown> }
+      type NodeRow = { id: string; name: Record<string, unknown>; type: string; location?: unknown; is_hub?: boolean | null; parent_hub_id?: string | null }
       features = (data || []).reduce((acc: { type: 'Feature'; geometry: { type: 'Point'; coordinates: [number, number] }; properties: Record<string, unknown> }[], node: NodeRow) => {
         if (!node.location) return acc
-        const coords = parseWKBPoint(node.location)
+        if (!includeSpokes && node.parent_hub_id) return acc
+        
+        // Parse coordinates from location
+        const coords = parsePoint(node.location)
+
         if (!coords) return acc
         const [lon, lat] = coords
         if (lon < bbox.minLon || lon > bbox.maxLon || lat < bbox.minLat || lat > bbox.maxLat) return acc
@@ -201,11 +279,11 @@ export async function GET(req: Request) {
           properties: {
             id: node.id,
             name: node.name,
-            type: node.type,
-            supply_tags: node.type === 'station' ? ['has_train'] : node.type === 'bus_stop' ? ['has_bus'] : [],
+            type: node.type, // Map type to type for frontend
+            supply_tags: node.type === 'station' ? ['has_train'] : [],
             suitability_tags: [],
-            external_links: node.external_links,
-            metadata: node.metadata,
+            is_hub: !node.parent_hub_id,
+            parent_hub_id: node.parent_hub_id,
           },
         })
         return acc

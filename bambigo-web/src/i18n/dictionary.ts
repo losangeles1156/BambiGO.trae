@@ -46,6 +46,8 @@ export type Dictionary = {
     swipeUpForDetails: string
     remove: string
     tapForDetails: string
+    error: string
+    retry: string
   },
   header: {
     youAreAt: string
@@ -68,6 +70,7 @@ export type Dictionary = {
     manage: string
     quickActions: string
     realTimeAlert: string
+    loadFailed: string
     loginRequired: string
     bikeTitle: string
     bikeDesc: string
@@ -336,9 +339,18 @@ export type Dictionary = {
     serviceFacilitiesTitle: string
     trafficTitle: string
     crowdTitle: string
+    crowdPrompt: string
+    crowdCommunityLabel: string
+    crowdReportCountPrefix: string
+    crowdReportCountSuffix: string
+    crowdEmpty: string
     crowdHistorical: string
     crowdTrendLabel: string
+    crowdVeryComfort: string
     crowdComfort: string
+    crowdOk: string
+    crowdCrowded: string
+    crowdVeryCrowded: string
     crowdMedium: string
     crowdHigh: string
     trendUp: string

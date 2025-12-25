@@ -53,6 +53,18 @@ export type LiveResponse = {
   updated_at: string
 }
 
+function isDbUnavailableError(e: unknown): boolean {
+  const anyE = e as { code?: unknown; errors?: unknown } | null
+  const msg = e instanceof Error ? e.message : String(e)
+  const code = anyE && typeof anyE === 'object' ? String(anyE.code || '') : ''
+  const joined = `${msg} ${code} ${String(e)}`.toLowerCase()
+  if (joined.includes('econnrefused') || joined.includes('connection') || joined.includes('connect') || joined.includes('password')) return true
+  if (anyE && typeof anyE === 'object' && Array.isArray((anyE as { errors?: unknown[] }).errors)) {
+    return (anyE as { errors: unknown[] }).errors.some(isDbUnavailableError)
+  }
+  return false
+}
+
 export async function GET(req: Request) {
   // Configurable rate limit via LIVE_RATE_LIMIT env, format "<max>,<windowSec>"
   const rateCfg = process.env.LIVE_RATE_LIMIT
@@ -92,6 +104,20 @@ export async function GET(req: Request) {
   }
 
   const url = new URL(req.url)
+  const globalMode = (process.env.BAMBIGO_DATA_MODE || process.env.NEXT_PUBLIC_BAMBIGO_DATA_MODE || '').trim().toLowerCase()
+  const routeMockParam = (url.searchParams.get('mock') || '').trim().toLowerCase()
+  const routeMock = routeMockParam === '1' || routeMockParam === 'true' || routeMockParam === 'on'
+  const mockEnabled = globalMode === 'mock' || (process.env.BAMBIGO_MOCK_LIVE || '').trim() === '1' || routeMock
+
+  const delayParam = url.searchParams.get('delay_ms')
+  const delayMs = Math.max(
+    0,
+    Number.isFinite(Number(delayParam))
+      ? Math.floor(Number(delayParam))
+      : Math.floor(Number((process.env.BAMBIGO_MOCK_DELAY_MS || '').trim() || 0))
+  )
+
+  const errorParam = (url.searchParams.get('mock_error') || '').trim().toLowerCase()
   const nodeId = url.searchParams.get('node_id')
   const bboxParam = url.searchParams.get('bbox')
   const limitParam = url.searchParams.get('limit')
@@ -122,6 +148,108 @@ export async function GET(req: Request) {
     limit = Math.min(1000, Math.max(1, Math.floor(n)))
   }
 
+  const hasDbConfig = !!(process.env.DATABASE_URL || process.env.SUPABASE_DB_URL)
+  const useMock = mockEnabled || (!hasDbConfig && !!nodeId && nodeId.startsWith('mock-'))
+
+  if (useMock) {
+    if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs))
+    if (errorParam) {
+      return new NextResponse(
+        JSON.stringify({ error: { code: 'MOCK_ERROR', message: 'Simulated error', details: { mock_error: errorParam } } }),
+        { status: 500, headers: { 'Content-Type': 'application/json', 'X-API-Version': 'v4.1-strict' } }
+      )
+    }
+
+    const resolvedTransit = (simTransit && ['normal', 'delayed', 'suspended'].includes(simTransit))
+      ? (simTransit as 'normal' | 'delayed' | 'suspended')
+      : 'normal'
+
+    const payload: LiveResponse = {
+      node_id: nodeId,
+      bbox,
+      transit: {
+        status: resolvedTransit,
+        delay_minutes: resolvedTransit === 'delayed' ? 7 : 0,
+        events: resolvedTransit === 'normal'
+          ? []
+          : [{ railway: 'mock.Railway', section: 'mock.section', status: resolvedTransit, delay: resolvedTransit === 'delayed' ? 7 : 0, text: 'Mock live status' }],
+      },
+      mobility: {
+        stations: (nodeId === 'mock-ueno')
+          ? [
+              {
+                id: 'mock-mobility-ueno-1',
+                system_id: 'mock-bike',
+                system_name: 'Mock Bike Share',
+                name: 'Ueno Park',
+                lon: 139.7718,
+                lat: 35.7167,
+                capacity: 28,
+                vehicle_types: ['bicycle'],
+                bikes_available: 9,
+                docks_available: 19,
+                is_renting: true,
+                is_returning: true,
+                status_updated_at: new Date().toISOString(),
+                app_deeplink: 'https://example.com/mock-bike',
+              },
+              {
+                id: 'mock-mobility-ueno-2',
+                system_id: 'mock-bike',
+                system_name: 'Mock Bike Share',
+                name: 'Ueno Station Front',
+                lon: 139.7774,
+                lat: 35.7141,
+                capacity: 20,
+                vehicle_types: ['bicycle'],
+                bikes_available: 0,
+                docks_available: 20,
+                is_renting: true,
+                is_returning: true,
+                status_updated_at: new Date().toISOString(),
+              },
+              {
+                id: 'mock-mobility-ueno-3',
+                system_id: 'mock-scooter',
+                system_name: 'Mock Scooter',
+                name: 'Ameyoko',
+                lon: 139.7752,
+                lat: 35.7119,
+                capacity: 16,
+                vehicle_types: ['scooter'],
+                bikes_available: 3,
+                docks_available: 13,
+                is_renting: true,
+                is_returning: false,
+                status_updated_at: new Date().toISOString(),
+              },
+            ]
+          : [],
+      },
+      odpt_station: nodeId === 'mock-ueno'
+        ? {
+            station_code: 'mock.Ueno',
+            railway: 'mock.Railway',
+            operator: 'mock.Operator',
+            connecting_railways: ['mock.LineA', 'mock.LineB'],
+            exits: ['A1', 'A2', 'B1'],
+            raw: { 'odpt:exit': ['A1', 'A2', 'B1'] },
+          }
+        : undefined,
+      updated_at: new Date().toISOString(),
+    }
+
+    return new NextResponse(JSON.stringify(payload), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store',
+        'X-API-Version': 'v4.1-strict',
+        'X-API-Mode': 'mock',
+      },
+    })
+  }
+
   // 1. Redis Cache Check
   // Key format: live:v1:<nodeId>:<bbox>:<limit>:<simTransit>
   const cacheKey = `live:v1:${nodeId || 'all'}:${bboxParam || 'none'}:${limit || 'def'}:${simTransit || 'none'}`
@@ -142,6 +270,24 @@ export async function GET(req: Request) {
     } catch (e) {
       console.warn('[LiveAPI] Redis get error:', e)
     }
+  }
+
+  if (!hasDbConfig) {
+    const payload: LiveResponse = {
+      node_id: nodeId,
+      bbox,
+      transit: { status: 'unknown', delay_minutes: 0 },
+      mobility: { stations: [] },
+      updated_at: new Date().toISOString(),
+    }
+    return new NextResponse(JSON.stringify(payload), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Warn': 'DB_NOT_CONFIGURED',
+        'X-API-Version': 'v4.1-strict',
+      },
+    })
   }
 
   const now = Date.now()
@@ -491,12 +637,12 @@ export async function GET(req: Request) {
       },
     })
   } catch (e) {
-    const errMsg = e instanceof Error ? e.message : String(e)
-    if (errMsg.includes('ECONNREFUSED') || errMsg.includes('connection')) {
+    if (isDbUnavailableError(e)) {
       dbUnavailableUntil = Date.now() + DB_BACKOFF_MS
       const at = Date.now()
       if (at - dbUnavailableLastLogAt > DB_LOG_THROTTLE_MS) {
         dbUnavailableLastLogAt = at
+        const errMsg = e instanceof Error ? e.message : String(e)
         console.warn('[LiveAPI] DB unavailable:', errMsg)
       }
     } else {

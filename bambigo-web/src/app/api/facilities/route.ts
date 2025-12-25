@@ -67,14 +67,67 @@ const mockFacilities: Record<string, FacilityItem[]> = {
     {
       id: 'f-ueno-1', node_id: 'mock-ueno', city_id: null, type: 'toilet', name: { en: 'East Exit Toilet', zh: '東口洗手間' },
       has_wheelchair_access: true, has_baby_care: true, is_free: true, is_24h: true, current_status: 'available',
-      attributes: { cleanliness: 'high' }
+      attributes: { cleanliness: 'high', floor: '1F', direction: 'East Exit' },
+      suitability_tags: [{ tag: 'accessibility', confidence: 0.95 }, { tag: 'family', confidence: 0.9 }],
+    },
+    {
+      id: 'f-ueno-2', node_id: 'mock-ueno', city_id: null, type: 'elevator', name: { en: 'Platform Elevator', zh: '月台電梯' },
+      has_wheelchair_access: true, has_baby_care: false, is_free: true, is_24h: true, current_status: 'maintenance',
+      status_updated_at: new Date().toISOString(),
+      attributes: { service_notice: 'Under maintenance', floor: 'B1-1F', direction: 'Central Gate' },
+      suitability_tags: [{ tag: 'accessibility', confidence: 0.98 }],
+    },
+    {
+      id: 'f-ueno-3', node_id: 'mock-ueno', city_id: null, type: 'locker', name: { en: 'Coin Lockers', zh: '置物櫃' },
+      has_wheelchair_access: true, has_baby_care: false, is_free: false, is_24h: true, current_status: 'available',
+      attributes: { sizes: ['S', 'M', 'L'], payment: ['cash', 'ic_card'], floor: '1F' },
+      suitability_tags: [{ tag: 'travel', confidence: 0.8 }, { tag: 'shopping', confidence: 0.6 }],
+    },
+    {
+      id: 'f-ueno-4', node_id: 'mock-ueno', city_id: null, type: 'wifi', name: { en: 'Station Wi‑Fi', zh: '站內 Wi‑Fi' },
+      has_wheelchair_access: true, has_baby_care: false, is_free: true, is_24h: true, current_status: 'available',
+      attributes: { ssid: 'BambiGO-Free', auth: 'none' },
+      suitability_tags: [{ tag: 'business', confidence: 0.7 }, { tag: 'travel', confidence: 0.7 }],
+    },
+    {
+      id: 'f-ueno-5', node_id: 'mock-ueno', city_id: null, type: 'charging', name: { en: 'Phone Charging', zh: '手機充電' },
+      has_wheelchair_access: true, has_baby_care: false, is_free: false, is_24h: false, current_status: 'closed',
+      attributes: { pricing: '200 JPY / 30 min', floor: 'B1', direction: 'Near ticket gates' },
+      suitability_tags: [{ tag: 'travel', confidence: 0.6 }],
     }
   ],
   'mock-tokyo': [
     {
       id: 'f-tokyo-1', node_id: 'mock-tokyo', city_id: null, type: 'shop', name: { en: 'Souvenir Shop', zh: '伴手禮店' },
       has_wheelchair_access: true, has_baby_care: false, is_free: false, is_24h: false, current_status: 'open',
-      attributes: { category: 'food' }
+      attributes: { category: 'food', floor: '1F', payment: ['cash', 'card', 'ic_card'] },
+      suitability_tags: [{ tag: 'shopping', confidence: 0.9 }, { tag: 'travel', confidence: 0.7 }],
+    },
+    {
+      id: 'f-tokyo-2', node_id: 'mock-tokyo', city_id: null, type: 'toilet', name: { en: 'Accessible Toilet', zh: '無障礙洗手間' },
+      has_wheelchair_access: true, has_baby_care: true, is_free: true, is_24h: true, current_status: 'available',
+      attributes: { floor: 'B1', direction: 'Marunouchi side' },
+      suitability_tags: [{ tag: 'accessibility', confidence: 0.95 }, { tag: 'family', confidence: 0.85 }],
+    },
+    {
+      id: 'f-tokyo-3', node_id: 'mock-tokyo', city_id: null, type: 'rest_area', name: { en: 'Rest Area', zh: '休息區' },
+      has_wheelchair_access: true, has_baby_care: false, is_free: true, is_24h: false, current_status: 'open',
+      attributes: { seats: 24, floor: '2F' },
+      suitability_tags: [{ tag: 'family', confidence: 0.6 }, { tag: 'business', confidence: 0.5 }],
+    }
+  ],
+  'mock-ginza': [
+    {
+      id: 'f-ginza-1', node_id: 'mock-ginza', city_id: null, type: 'toilet', name: { en: 'Concourse Toilet', zh: '大廳洗手間' },
+      has_wheelchair_access: false, has_baby_care: false, is_free: true, is_24h: false, current_status: 'open',
+      attributes: { floor: 'B1', direction: 'Ginza Line concourse' },
+      suitability_tags: [{ tag: 'shopping', confidence: 0.4 }],
+    },
+    {
+      id: 'f-ginza-2', node_id: 'mock-ginza', city_id: null, type: 'wifi', name: { en: 'Public Wi‑Fi', zh: '公共 Wi‑Fi' },
+      has_wheelchair_access: true, has_baby_care: false, is_free: true, is_24h: true, current_status: 'available',
+      attributes: { ssid: 'Ginza-Free', auth: 'captive_portal' },
+      suitability_tags: [{ tag: 'business', confidence: 0.75 }, { tag: 'dining', confidence: 0.55 }],
     }
   ]
 }
@@ -120,6 +173,28 @@ async function handler(req: Request) {
   }
 
   const url = new URL(req.url)
+  const globalMode = (process.env.BAMBIGO_DATA_MODE || process.env.NEXT_PUBLIC_BAMBIGO_DATA_MODE || '').trim().toLowerCase()
+  const routeMockParam = (url.searchParams.get('mock') || '').trim().toLowerCase()
+  const routeMock = routeMockParam === '1' || routeMockParam === 'true' || routeMockParam === 'on'
+  const mockEnabled = globalMode === 'mock' || (process.env.BAMBIGO_MOCK_FACILITIES || '').trim() === '1' || routeMock
+
+  const delayParam = url.searchParams.get('delay_ms')
+  const delayMs = Math.max(
+    0,
+    Number.isFinite(Number(delayParam))
+      ? Math.floor(Number(delayParam))
+      : Math.floor(Number((process.env.BAMBIGO_MOCK_DELAY_MS || '').trim() || 0))
+  )
+
+  const errorParam = (url.searchParams.get('mock_error') || '').trim().toLowerCase()
+  if (mockEnabled && errorParam) {
+    if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs))
+    return new NextResponse(
+      JSON.stringify({ error: { code: 'MOCK_ERROR', message: 'Simulated error', details: { mock_error: errorParam } } }),
+      { status: 500, headers: { 'Content-Type': 'application/json', 'X-API-Version': 'v4.1-strict' } }
+    )
+  }
+
   const nodeId = url.searchParams.get('node_id')
   const bboxParam = url.searchParams.get('bbox')
   const typeParam = url.searchParams.get('type')
@@ -147,10 +222,47 @@ async function handler(req: Request) {
     )
   }
 
-  if (nodeId && (nodeId === 'mock-ueno' || nodeId === 'mock-tokyo')) {
-    const items = mockFacilities[nodeId] || []
-    return new NextResponse(JSON.stringify({ items }), {
-      headers: { 'Content-Type': 'application/json', 'X-API-Version': 'v4.1-strict' }
+  if (nodeId && mockFacilities[nodeId]) {
+    if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs))
+    let items = [...(mockFacilities[nodeId] || [])]
+    if (typeParam) items = items.filter((i) => String(i.type || '').toLowerCase() === String(typeParam).toLowerCase())
+    let minConfidence = 0
+    if (minConfidenceParam !== null) {
+      const n = Number(minConfidenceParam)
+      if (Number.isFinite(n) && n >= 0 && n <= 1) minConfidence = n
+    }
+    if (suitTag) {
+      const target = String(suitTag)
+      items = items.filter((i) => {
+        const tags = Array.isArray(i.suitability_tags) ? i.suitability_tags : []
+        return tags.some((t) => t.tag === target && typeof t.confidence === 'number' && t.confidence >= minConfidence)
+      })
+    }
+    let limit: number | undefined = undefined
+    if (limitParam !== null) {
+      const n = Number(limitParam)
+      if (Number.isFinite(n) && n > 0) limit = Math.min(500, Math.max(1, Math.floor(n)))
+    }
+    if (typeof limit === 'number') items = items.slice(0, limit)
+    return new NextResponse(JSON.stringify({ items } satisfies FacilitiesResponse), {
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store',
+        'X-API-Version': 'v4.1-strict',
+        'X-API-Mode': 'mock',
+      }
+    })
+  }
+
+  if (mockEnabled && nodeId) {
+    if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs))
+    return new NextResponse(JSON.stringify({ items: [] } satisfies FacilitiesResponse), {
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store',
+        'X-API-Version': 'v4.1-strict',
+        'X-API-Mode': 'mock',
+      }
     })
   }
 

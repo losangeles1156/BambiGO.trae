@@ -14,6 +14,7 @@ export default function L2StatusMarquee({ weatherAlerts, transitStatus, transitD
 
   const hasWeatherAlerts = weatherAlerts.length > 0
   const hasTransitIssues = transitStatus === 'delayed' || transitStatus === 'suspended'
+  const latestWeatherAlert = weatherAlerts[0]
 
   if (!hasWeatherAlerts && !hasTransitIssues) {
     return (
@@ -54,12 +55,12 @@ export default function L2StatusMarquee({ weatherAlerts, transitStatus, transitD
                         {transitDelay && transitDelay > 0 ? ` (+${transitDelay}min)` : ''}
                     </span>
                 )}
-                {weatherAlerts.map((alert, i) => (
-                    <span key={i} className="flex items-center gap-1">
-                        <CloudRain size={12} />
-                        {alert.title} ({alert.severity})
-                    </span>
-                ))}
+                {latestWeatherAlert && (
+                  <span className="flex items-center gap-1">
+                    <CloudRain size={12} />
+                    {latestWeatherAlert.title} ({latestWeatherAlert.severity})
+                  </span>
+                )}
             </div>
         </div>
       </div>

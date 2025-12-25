@@ -1,5 +1,5 @@
 "use client"
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   AlertTriangle,
   Bike,
@@ -53,6 +53,7 @@ type WeatherAlert = {
 export default function TagManager({ value, onChange, nodeId }: Props) {
   const { t } = useLanguage()
   const [state, setState] = useState<TagState>(value || { tags: [] })
+  const didSyncRef = useRef(false)
   const [strategy, setStrategy] = useState<L4ActionCard | null>(null)
   const [strategyLoading, setStrategyLoading] = useState(false)
 
@@ -75,13 +76,17 @@ export default function TagManager({ value, onChange, nodeId }: Props) {
     if (value) setState(value)
   }, [value])
 
+  useEffect(() => {
+    if (!didSyncRef.current) {
+      didSyncRef.current = true
+      return
+    }
+    onChange?.(state)
+  }, [state, onChange])
+
   const apply = useCallback((updater: (prev: TagState) => TagState) => {
-    setState((prev) => {
-      const next = updater(prev)
-      onChange?.(next)
-      return next
-    })
-  }, [onChange])
+    setState((prev) => updater(prev))
+  }, [])
 
   const refreshLive = useCallback(async () => {
     if (!nodeId) {
@@ -107,7 +112,7 @@ export default function TagManager({ value, onChange, nodeId }: Props) {
       const res = await fetch('/api/weather/alerts', { method: 'GET' })
       if (!res.ok) throw new Error(String(res.status))
       const data = (await res.json()) as { alerts?: WeatherAlert[] }
-      setAlerts(Array.isArray(data.alerts) ? data.alerts : [])
+      setAlerts(Array.isArray(data.alerts) ? data.alerts.slice(0, 1) : [])
     } catch {
       setAlerts([])
     } finally {
@@ -370,7 +375,7 @@ export default function TagManager({ value, onChange, nodeId }: Props) {
                 <div className="text-[11px] text-gray-500">{t('tagging.l2NoAlerts')}</div>
               ) : (
                 <div className="space-y-2">
-                  {alerts.slice(0, 3).map((a) => {
+                  {alerts.slice(0, 1).map((a) => {
                     const emergency = isEmergencyAlert(a)
                     return (
                       <a
@@ -439,9 +444,6 @@ export default function TagManager({ value, onChange, nodeId }: Props) {
                         {loc}
                       </div>
                     </div>
-                  </div>
-                  <div className={clsx('text-[10px] font-semibold', has ? 'text-emerald-700' : 'text-gray-400')}>
-                    {has ? t('common.monitoring') : t('common.paused')}
                   </div>
                 </div>
 

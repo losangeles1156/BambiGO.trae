@@ -175,7 +175,7 @@ export default function BottomSheet({ mode = 'collapsed', onModeChange, collapse
         
         <div className={clsx("px-4 pb-4", isDesktop ? "flex-1 overflow-y-auto pt-4 scrollbar-thin scrollbar-thumb-gray-200" : "")}>
           {isDesktop ? (
-            current === 'collapsed' ? collapsedContent : (fullContent || halfContent)
+            current === 'collapsed' ? collapsedContent : (current === 'full' ? (fullContent || halfContent) : halfContent)
           ) : (
             <>
               {current === 'collapsed' && collapsedContent}

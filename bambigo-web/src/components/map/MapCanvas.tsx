@@ -171,6 +171,7 @@ const MapCanvas = ({
   const nodesRef = useRef(nodes)
   const geolocateControl = useRef<maplibregl.GeolocateControl | null>(null)
   const [loaded, setLoaded] = useState(false)
+  const [e2eMode, setE2eMode] = useState(false)
   const activeStyleIndexRef = useRef(styleIndex)
   const initialCenterRef = useRef<[number, number]>(center || [139.7774, 35.7141])
   const initialStyleIndexRef = useRef(styleIndex)
@@ -203,8 +204,15 @@ const MapCanvas = ({
 
   // Initialize Map
   useEffect(() => {
+    if (e2eMode) return
     if (!mapContainer.current) return
     if (map.current) return
+
+    const shouldE2E = Boolean((window as unknown as { __BAMBIGO_E2E__?: boolean }).__BAMBIGO_E2E__)
+    if (shouldE2E) {
+      const t = window.setTimeout(() => setE2eMode(true), 0)
+      return () => window.clearTimeout(t)
+    }
 
     const initialCenter = initialCenterRef.current
     const mapInstance = new maplibregl.Map({
@@ -378,7 +386,7 @@ const MapCanvas = ({
       mapInstance.remove()
       map.current = null
     }
-  }, [])
+  }, [e2eMode])
 
   // Handle Bus Layer Visibility
   useEffect(() => {
@@ -586,8 +594,6 @@ const MapCanvas = ({
     }
   }, [styleIndex]) // Removed 'loaded' from dependencies to avoid loop
 
-  const e2eMode =
-    (typeof window !== 'undefined' && Boolean((window as unknown as { __BAMBIGO_E2E__?: boolean }).__BAMBIGO_E2E__))
   if (e2eMode) {
     const langCode = effectiveLocale.split('-')[0]
     const pts = (nodes?.features || []).filter((f): f is Feature => f.geometry.type === 'Point')

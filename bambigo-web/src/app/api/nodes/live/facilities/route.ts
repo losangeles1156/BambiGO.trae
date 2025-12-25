@@ -53,6 +53,23 @@ async function handler(req: Request) {
   }
 
   const url = new URL(req.url)
+  const globalMode = (process.env.BAMBIGO_DATA_MODE || process.env.NEXT_PUBLIC_BAMBIGO_DATA_MODE || '').trim().toLowerCase()
+  const routeMockParam = (url.searchParams.get('mock') || '').trim().toLowerCase()
+  const routeMock = routeMockParam === '1' || routeMockParam === 'true' || routeMockParam === 'on'
+  const mockEnabled = globalMode === 'mock' || (process.env.BAMBIGO_MOCK_AGG || '').trim() === '1' || routeMock
+
+  const delayParam = url.searchParams.get('delay_ms')
+  const delayMs = Math.max(0, Number.isFinite(Number(delayParam)) ? Math.floor(Number(delayParam)) : 0)
+
+  const errorParam = (url.searchParams.get('mock_error') || '').trim().toLowerCase()
+  if (mockEnabled && errorParam) {
+    if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs))
+    return new NextResponse(
+      JSON.stringify({ error: { code: 'MOCK_ERROR', message: 'Simulated error', details: { mock_error: errorParam } } }),
+      { status: 500, headers: { 'Content-Type': 'application/json', 'X-API-Version': 'v4.1-strict' } }
+    )
+  }
+
   const nodeId = url.searchParams.get('node_id')
   const bboxParam = url.searchParams.get('bbox')
 
@@ -63,6 +80,7 @@ async function handler(req: Request) {
   const limitFacilities = url.searchParams.get('limit_facilities')
   const suitabilityTag = url.searchParams.get('suitability')
   const minConfidence = url.searchParams.get('min_confidence')
+  const simTransit = url.searchParams.get('sim_transit')
 
   // Require at least node_id or bbox to make the aggregation meaningful
   if (!nodeId && !bboxParam) {
@@ -91,11 +109,16 @@ async function handler(req: Request) {
   if (bboxParam) nodesUrl.searchParams.set('bbox', bboxParam)
   if (typeParam) nodesUrl.searchParams.set('type', typeParam)
   if (limitNodes) nodesUrl.searchParams.set('limit', limitNodes)
+  if (routeMockParam) nodesUrl.searchParams.set('mock', routeMockParam)
+  if (delayParam) nodesUrl.searchParams.set('delay_ms', delayParam)
 
   const liveUrl = new URL(`${origin}/api/live`)
   if (nodeId) liveUrl.searchParams.set('node_id', nodeId)
   if (bboxParam) liveUrl.searchParams.set('bbox', bboxParam)
   if (limitMobility) liveUrl.searchParams.set('limit', limitMobility)
+  if (simTransit) liveUrl.searchParams.set('sim_transit', simTransit)
+  if (routeMockParam) liveUrl.searchParams.set('mock', routeMockParam)
+  if (delayParam) liveUrl.searchParams.set('delay_ms', delayParam)
 
   const facilitiesUrl = new URL(`${origin}/api/facilities`)
   if (nodeId) facilitiesUrl.searchParams.set('node_id', nodeId)
@@ -103,6 +126,8 @@ async function handler(req: Request) {
   if (limitFacilities) facilitiesUrl.searchParams.set('limit', limitFacilities)
   if (suitabilityTag) facilitiesUrl.searchParams.set('suitability', suitabilityTag)
   if (minConfidence) facilitiesUrl.searchParams.set('min_confidence', minConfidence)
+  if (routeMockParam) facilitiesUrl.searchParams.set('mock', routeMockParam)
+  if (delayParam) facilitiesUrl.searchParams.set('delay_ms', delayParam)
 
   const forwardedHeaders: Record<string, string> = {}
   const xf = req.headers.get('x-forwarded-for')
@@ -193,6 +218,7 @@ async function handler(req: Request) {
       'Content-Type': 'application/json',
       'Cache-Control': 'public, max-age=10, stale-while-revalidate=60',
       'X-API-Version': 'v4.1-strict',
+      ...(mockEnabled ? { 'X-API-Mode': 'mock' } : {}),
     },
   })
 }

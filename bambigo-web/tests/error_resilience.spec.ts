@@ -6,6 +6,11 @@ import { GET as AggregatorGET } from '../src/app/api/nodes/live/facilities/route
 describe('Error Resilience & Boundary Tests', () => {
   
   it('NodesAPI: should handle WKB buffer overflow gracefully', async () => {
+    process.env.NEXT_PUBLIC_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://test'
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'test'
+    delete process.env.BAMBIGO_DATA_MODE
+    delete process.env.NEXT_PUBLIC_BAMBIGO_DATA_MODE
+    delete process.env.BAMBIGO_MOCK_NODES
     // Mock a request with a short WKB-like hex string that would cause overflow
     // Standard Point WKB is ~21 bytes. We'll simulate a scenario where parsing might fail.
     // This is hard to trigger via public API without DB control, but we can test the handler logic

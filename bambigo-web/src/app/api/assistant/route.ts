@@ -48,6 +48,7 @@ import { DifyClient } from '@/lib/integrations/dify'
 import { N8nClient } from '@/lib/integrations/n8n'
 
 import { withMonitor } from '@/lib/monitor'
+import { answerTimeQueryJst } from '@/lib/time'
 
 export const GET = withMonitor(async (req: Request) => {
   const rate = checkRate(req)
@@ -302,6 +303,15 @@ export const GET = withMonitor(async (req: Request) => {
   const envProvider = (process.env.AI_PROVIDER || '').toLowerCase()
   const provider = (providerOverride === 'dify' || providerOverride === 'n8n') ? providerOverride : envProvider
   const mode = routeMode(q)
+
+  const timeResult = answerTimeQueryJst(q, new Date())
+  if (timeResult.ok || /新年|元旦|日本.*(幾點|時間)|jst/i.test(q)) {
+    const card = { title: '時間資訊', desc: timeResult.answer, primary: '了解' }
+    return new NextResponse(
+      JSON.stringify({ fallback: { primary: card, secondary: [] }, echo: { q } }),
+      { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-API-Version': 'v1' } }
+    )
+  }
 
   if (mode === 'tool') {
     return await buildToolFallback(req, nodeId || null, q)

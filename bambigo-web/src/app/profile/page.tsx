@@ -7,6 +7,7 @@ import { ArrowLeft, Settings, User, Heart, Shield, LogOut, Loader2 } from 'lucid
 import { RecommendationCard } from '../../components/cards/RecommendationCard';
 import { useAuth } from '../../components/auth/AuthContext';
 import { supabase } from '../../lib/supabase';
+import TimePanel from '../../components/time/TimePanel';
 
 // Type for the joined data from Supabase
 type SavedLocation = {
@@ -178,6 +179,8 @@ export default function ProfilePage() {
              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition transition-transform ${elderlyMode ? 'translate-x-6' : 'translate-x-1'}`} />
            </button>
         </div>
+
+        <TimePanel />
       </div>
 
       {/* Tabs */}

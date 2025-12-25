@@ -83,6 +83,42 @@ function parseWKBPoint(hex: string): [number, number] | null {
 }
 
 export async function GET(req: Request) {
+  const url = new URL(req.url)
+
+  const hasSupabaseEnv = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+  const globalMode = (process.env.BAMBIGO_DATA_MODE || process.env.NEXT_PUBLIC_BAMBIGO_DATA_MODE || '').trim().toLowerCase()
+  const routeMockParam = (url.searchParams.get('mock') || '').trim().toLowerCase()
+  const routeMock = routeMockParam === '1' || routeMockParam === 'true' || routeMockParam === 'on'
+  const mockEnabled = globalMode === 'mock' || (process.env.BAMBIGO_MOCK_NODES || '').trim() === '1' || routeMock || !hasSupabaseEnv
+
+  const delayParam = url.searchParams.get('delay_ms')
+  const delayMs = Math.max(
+    0,
+    Number.isFinite(Number(delayParam))
+      ? Math.floor(Number(delayParam))
+      : Math.floor(Number((process.env.BAMBIGO_MOCK_DELAY_MS || '').trim() || 0))
+  )
+
+  const errorParam = (url.searchParams.get('mock_error') || '').trim().toLowerCase()
+  if (mockEnabled && errorParam) {
+    return new NextResponse(
+      JSON.stringify({ error: { code: 'MOCK_ERROR', message: 'Simulated error', details: { mock_error: errorParam } } }),
+      { status: 500, headers: { 'Content-Type': 'application/json', 'X-API-Version': 'v4.1-strict' } }
+    )
+  }
+
+  if (mockEnabled) {
+    if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs))
+    return new NextResponse(JSON.stringify({ type: 'FeatureCollection', features: mockNodes }), {
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store',
+        'X-API-Version': 'v4.1-strict',
+        'X-API-Mode': 'mock',
+      },
+    })
+  }
+
   const rateCfg = process.env.NODES_RATE_LIMIT
   if (rateCfg && !/^\s*(off|false|0)\s*$/i.test(rateCfg)) {
     let max = 100
@@ -119,7 +155,6 @@ export async function GET(req: Request) {
     }
   }
 
-  const url = new URL(req.url)
   const bboxParam = url.searchParams.get('bbox')
   const typeParam = url.searchParams.get('type') || url.searchParams.get('category')
   const limitParam = url.searchParams.get('limit')

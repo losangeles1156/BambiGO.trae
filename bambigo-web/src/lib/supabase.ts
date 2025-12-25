@@ -48,25 +48,36 @@ if (supabaseUrl && supabaseAnonKey) {
 } else {
   // Graceful fallback for test environments without Supabase configuration
   const warnedTables = new Set<string>()
+  type PostgrestResult<T> = { data: T; error: null; count?: number | null }
+
+  function createBuilder<T>(result: PostgrestResult<T>) {
+    const builder = {
+      then: (onFulfilled: (value: PostgrestResult<T>) => unknown, onRejected?: (reason: unknown) => unknown) =>
+        Promise.resolve(result).then(onFulfilled, onRejected),
+      catch: (onRejected: (reason: unknown) => unknown) => Promise.resolve(result).catch(onRejected),
+      finally: (onFinally: () => void) => Promise.resolve(result).finally(onFinally),
+      eq: () => builder,
+      match: () => builder,
+      order: () => builder,
+      limit: () => builder,
+      single: async () => ({ data: null, error: null }),
+      maybeSingle: async () => ({ data: null, error: null }),
+    }
+    return builder
+  }
+
   const unconfigured = {
     from(table: string) {
       if (!warnedTables.has(table)) {
         warnedTables.add(table)
         console.warn(`Supabase not configured, mocking table: ${table}`)
       }
+      const listResult: PostgrestResult<unknown[]> = { data: [], error: null, count: 0 }
       return {
-        select: () => ({
-          eq: () => ({
-            single: async () => ({ data: null, error: null }),
-            order: () => ({ limit: async () => ({ data: [], error: null }) }),
-            limit: async () => ({ data: [], error: null }),
-          }),
-          match: () => ({ data: [], error: null }),
-          limit: async () => ({ data: [], error: null, count: 0 }),
-        }),
-        insert: async () => ({ data: null, error: null }),
-        update: async () => ({ data: null, error: null }),
-        upsert: async () => ({ data: null, error: null }),
+        select: () => createBuilder(listResult),
+        insert: () => createBuilder({ data: null, error: null }),
+        update: () => createBuilder({ data: null, error: null }),
+        upsert: () => createBuilder({ data: null, error: null }),
       }
     },
     auth: {

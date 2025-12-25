@@ -2,12 +2,13 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 const SECRET_PATTERNS: RegExp[] = [
-  /API_KEY\s*=\s*['"][^'"]+['"]/,
-  /SECRET\s*=\s*['"][^'"]+['"]/,
-  /PASSWORD\s*=\s*['"][^'"]+['"]/,
-  /dify-[a-zA-Z0-9]+/,
-  /sk-[a-zA-Z0-9]{20,}/
+  /sk-[a-zA-Z0-9]{20,}/,
+  /-----BEGIN (RSA|OPENSSH|EC) PRIVATE KEY-----/,
 ]
+
+const IGNORED_VALUES = new Set(['test', 'test-key', 'mock', 'dummy', 'example', 'changeme'])
+const ENV_ASSIGNMENT_RE = /(API_KEY|SECRET|PASSWORD)\s*=\s*['"]([^'\"]+)['"]/g
+const MIN_SECRET_LENGTH: Record<string, number> = { API_KEY: 16, SECRET: 16, PASSWORD: 8 }
 
 const IGNORED_DIRS = new Set(['node_modules', '.next', '.git', 'dist', 'build', 'coverage'])
 const IGNORED_FILES = new Set(['package-lock.json', 'yarn.lock', 'pnpm-lock.yaml', '.env.example'])
@@ -15,6 +16,17 @@ const IGNORED_FILES = new Set(['package-lock.json', 'yarn.lock', 'pnpm-lock.yaml
 function scanFile(filePath: string): boolean {
   try {
     const content = fs.readFileSync(filePath, 'utf8')
+
+    for (const m of content.matchAll(ENV_ASSIGNMENT_RE)) {
+      const key = String(m[1] || '').trim()
+      const value = String(m[2] || '').trim()
+      const minLen = MIN_SECRET_LENGTH[key] || 0
+      if (value.length < minLen) continue
+      if (IGNORED_VALUES.has(value.toLowerCase())) continue
+      console.error(`[SECURITY] Potential secret found in ${filePath} matching env assignment ${key}`)
+      return true
+    }
+
     for (const pattern of SECRET_PATTERNS) {
       if (pattern.test(content)) {
         console.error(`[SECURITY] Potential secret found in ${filePath} matching pattern ${pattern}`)

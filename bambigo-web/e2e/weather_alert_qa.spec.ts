@@ -36,6 +36,7 @@ test.describe('Weather Alert QA', () => {
               id: 'test-alert-1',
               title: 'Test High Severity Alert',
               summary: 'This is a high severity test alert for QA.',
+              updated: '2025-12-25T10:00:00.000Z',
               severity: 'high',
               type: 'earthquake',
               tags: { l4: 'seek_shelter' }
@@ -44,6 +45,7 @@ test.describe('Weather Alert QA', () => {
               id: 'test-alert-2',
               title: 'Test Medium Severity Alert',
               summary: 'This is a medium severity test alert for QA.',
+              updated: '2025-12-25T09:00:00.000Z',
               severity: 'medium',
               type: 'weather',
               tags: { l4: 'bring_umbrella' }
@@ -75,8 +77,7 @@ test.describe('Weather Alert QA', () => {
     await expect(highAlert).toHaveClass(/bg-red-50/); // High severity style
 
     const mediumAlert = page.locator('div[role="alert"]').filter({ has: page.locator('[data-testid="alert-title"]:text("Test Medium Severity Alert")') });
-    await expect(mediumAlert).toBeVisible();
-    await expect(mediumAlert).toHaveClass(/bg-yellow-50/); // Medium severity style
+    await expect(mediumAlert).toHaveCount(0);
 
     // 2. Check Design Compliance (Icons, Tags)
     // The earthquake icon is Zap with pulse animation

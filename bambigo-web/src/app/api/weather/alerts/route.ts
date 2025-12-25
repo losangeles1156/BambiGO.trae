@@ -89,8 +89,22 @@ export async function GET(req: Request) {
       }
     }
 
+    const toEpoch = (s: string) => {
+      const t = Date.parse(s)
+      return Number.isFinite(t) ? t : 0
+    }
+
+    const latest = alerts.reduce<WeatherAlert | null>((best, cur) => {
+      if (!best) return cur
+      const bt = toEpoch(best.updated)
+      const ct = toEpoch(cur.updated)
+      if (ct > bt) return cur
+      if (ct < bt) return best
+      return cur
+    }, null)
+
     return NextResponse.json({ 
-      alerts,
+      alerts: latest ? [latest] : [],
       meta: { source, timestamp: new Date().toISOString() }
     }, {
       headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' }

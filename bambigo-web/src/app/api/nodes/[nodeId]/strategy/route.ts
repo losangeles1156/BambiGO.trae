@@ -95,11 +95,17 @@ export async function POST(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const { data: nodeRow } = await supabase
+  const { data: nodeRows, error: nodeError } = await supabase
     .from('nodes')
     .select('metadata, persona_prompt, type')
     .eq('id', nodeId)
-    .maybeSingle();
+    .limit(1)
+
+  if (nodeError) {
+    return NextResponse.json({ error: nodeError.message }, { status: 500 })
+  }
+
+  const nodeRow = Array.isArray(nodeRows) ? nodeRows[0] : nodeRows
 
   // 1.5 Fetch Knowledge
   const userStates = Array.isArray(context.userStates) ? context.userStates : [];

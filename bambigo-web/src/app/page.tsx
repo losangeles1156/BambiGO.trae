@@ -400,7 +400,23 @@ export default function Home() {
     fetch('/api/weather/alerts')
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        if (!ignore && Array.isArray(data?.alerts)) setWeatherAlerts(data.alerts)
+        if (ignore) return
+        if (!Array.isArray(data?.alerts)) {
+          setWeatherAlerts([])
+          return
+        }
+        const alerts = data.alerts as WeatherAlert[]
+        const latest = alerts.reduce<WeatherAlert | null>((best, cur) => {
+          if (!best) return cur
+          const bt = Date.parse(best.updated)
+          const ct = Date.parse(cur.updated)
+          const btv = Number.isFinite(bt) ? bt : 0
+          const ctv = Number.isFinite(ct) ? ct : 0
+          if (ctv > btv) return cur
+          if (ctv < btv) return best
+          return cur
+        }, null)
+        setWeatherAlerts(latest ? [latest] : [])
       })
       .catch(() => {})
     return () => {

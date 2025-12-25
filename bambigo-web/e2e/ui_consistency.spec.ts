@@ -5,7 +5,7 @@ test.describe('UI Consistency and i18n Verification', () => {
     await page.addInitScript(() => {
       ;(window as unknown as { __BAMBIGO_E2E__?: boolean }).__BAMBIGO_E2E__ = true
     })
-    await page.goto('/');
+    await page.goto('/?mock=1');
 
     const collapse = page.getByRole('button', { name: 'Collapse issues badge' })
     if (await collapse.isVisible()) {
@@ -30,6 +30,27 @@ test.describe('UI Consistency and i18n Verification', () => {
     // Header should now show "上野站"
     const locationBtn = page.locator('.ui-header button.text-blue-600');
     await expect(locationBtn).toContainText(/上野站|Ueno Station|上野駅/);
+  });
+
+  test('should render loading state during simulated delay', async ({ page }) => {
+    await page.goto('/?mock=1&delay_ms=1200');
+
+    const uenoMarker = page.getByTestId('marker-mock-ueno');
+    await expect(uenoMarker).toBeVisible({ timeout: 15000 });
+    await uenoMarker.click();
+
+    await expect(page.getByText(/載入中|Loading/)).toBeVisible({ timeout: 3000 });
+    await expect(page.getByText(/載入中|Loading/)).toBeHidden({ timeout: 15000 });
+  });
+
+  test('should render error state when dashboard API fails', async ({ page }) => {
+    await page.goto('/?mock=1&mock_error=1');
+
+    const uenoMarker = page.getByTestId('marker-mock-ueno');
+    await expect(uenoMarker).toBeVisible({ timeout: 15000 });
+    await uenoMarker.click();
+
+    await expect(page.getByText(/載入資料失敗|Load failed|読み込みに失敗/)).toBeVisible({ timeout: 15000 });
   });
 
   test('should open map layer picker and switch map styles', async ({ page }) => {

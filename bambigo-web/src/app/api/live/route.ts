@@ -430,16 +430,29 @@ export async function GET(req: Request) {
     g.__odptCache = g.__odptCache || { infos: { t: 0, data: [] }, trains: { t: 0, data: [] }, stations: { t: 0, data: [] } }
     const cache = g.__odptCache!
 
+    // GTFS-RT Cache (separate from JSON cache)
+    const gtfsTtlMs = 30000
+    type GtfsCache = { t: number; data: any }
+    const gGtfs = globalThis as { __gtfsCache?: Record<string, GtfsCache> }
+    gGtfs.__gtfsCache = gGtfs.__gtfsCache || {}
+    const gtfsCache = gGtfs.__gtfsCache!
+
     let delayMinutes = 0
     const transitEvents: Array<{ railway?: string; section?: string; status?: string; delay?: number; text?: string }> = []
+    
+    // Existing ODPT JSON aggregation
     if (transitStatus === 'normal') {
       try {
         const odpt = new OdptClient({ cacheTtlSec: 60, throttleMs: 50 })
+        
+        // 1. Fetch ODPT JSON Train Information
         const infos = (now - cache.infos.t < ttlMs) ? cache.infos.data : await odpt.trainInformationAll()
         if (infos !== cache.infos.data) { cache.infos = { t: now, data: infos as UnknownRec[] } }
         const items = Array.isArray(infos) ? (infos as UnknownRec[]) : []
+        
         let suspended = false
         let maxDelay = 0
+        
         for (const it of items) {
           const op = String(it['odpt:operator'] || '')
           const txt = String(it['odpt:trainInformationText'] || '')
@@ -448,17 +461,83 @@ export async function GET(req: Request) {
           const railway = String(it['odpt:railway'] || '')
           const isTarget = op.includes('TokyoMetro') || op.includes('Toei') || op.includes('JR')
           if (!isTarget) continue
+          
           if (stat && /運休|suspend/i.test(stat)) suspended = true
           if (!Number.isNaN(d)) maxDelay = Math.max(maxDelay, d)
           if (!d && txt && /(延誤|遅延|delay)/i.test(txt)) maxDelay = Math.max(maxDelay, 5)
-          transitEvents.push({ railway, section: labelFromRailway(railway), status: stat || undefined, delay: Number.isFinite(d) ? d : undefined, text: txt || undefined })
+          
+          transitEvents.push({ 
+            railway, 
+            section: labelFromRailway(railway), 
+            status: stat || undefined, 
+            delay: Number.isFinite(d) ? d : undefined, 
+            text: txt || undefined 
+          })
         }
+
+        // 2. Fetch GTFS-RT Trip Updates for finer granularity
+         // Supported operators in ODPT GTFS-RT: tokyo_metro, jr_east, toei
+         const gtfsOperators = ['tokyo_metro', 'jr_east', 'toei']
+         for (const gtfsOp of gtfsOperators) {
+           try {
+             const cacheKey = `gtfs_rt:${gtfsOp}:trip_updates`
+             let feed: any
+             if (gtfsCache[cacheKey] && (now - gtfsCache[cacheKey].t < gtfsTtlMs)) {
+               feed = gtfsCache[cacheKey].data
+             } else {
+               feed = await odpt.fetchGtfsRealtime(gtfsOp, 'trip_updates')
+               gtfsCache[cacheKey] = { t: now, data: feed }
+             }
+
+             if (feed?.entity) {
+               for (const entity of feed.entity) {
+                 if (entity.tripUpdate) {
+                   const tu = entity.tripUpdate
+                   const routeId = tu.trip?.routeId
+                   const delaySec = tu.stopTimeUpdate?.[0]?.arrival?.delay || tu.stopTimeUpdate?.[0]?.departure?.delay || 0
+                   const dMin = Math.floor(delaySec / 60)
+                   
+                   if (dMin > 0) {
+                     maxDelay = Math.max(maxDelay, dMin)
+                     // Try to map routeId to a readable name or existing railway
+                     // For ODPT GTFS, routeId is often just the line name
+                     let operatorPrefix = 'TokyoMetro'
+                     if (gtfsOp === 'jr_east') operatorPrefix = 'JR-East'
+                     else if (gtfsOp === 'toei') operatorPrefix = 'Toei'
+                     
+                     const mappedRailway = `odpt.Railway:${operatorPrefix}.${routeId}`
+                    
+                    // Avoid duplicate events for the same railway if we already have one from JSON
+                    const existing = transitEvents.find(e => e.railway === mappedRailway)
+                    if (existing) {
+                      existing.delay = Math.max(existing.delay || 0, dMin)
+                      if (dMin >= 5 && !existing.status) existing.status = 'delayed'
+                    } else if (dMin >= 5) {
+                      transitEvents.push({
+                        railway: mappedRailway,
+                        section: labelFromRailway(mappedRailway),
+                        status: 'delayed',
+                        delay: dMin,
+                        text: `GTFS-RT: ${dMin} min delay detected`
+                      })
+                    }
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            console.warn(`[LiveAPI] GTFS-RT fetch failed for ${gtfsOp}:`, e)
+          }
+        }
+
         if (suspended) transitStatus = 'suspended'
         else if (maxDelay > 0) {
           transitStatus = 'delayed'
           delayMinutes = maxDelay
         }
-      } catch {}
+      } catch (e) {
+        console.error('[LiveAPI] ODPT/GTFS-RT fetch error:', e)
+      }
     }
 
     try {

@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "gtfs-realtime-bindings": "^1.1.1",
+    "protobufjs": "^7.5.4"
+  }
+}

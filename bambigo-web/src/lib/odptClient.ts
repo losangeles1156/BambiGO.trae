@@ -146,6 +146,64 @@ export class OdptClient {
     }
   }
 
+  private async requestBuffer(pathname: string, params: Record<string, string | number | boolean> = {}) {
+    const url = new URL(this.baseUrl + '/' + pathname.replace(/^\//, ''))
+    url.searchParams.set('acl:consumerKey', this.token)
+    for (const [k, v] of Object.entries(params)) {
+      url.searchParams.set(k, String(v))
+    }
+
+    let attempt = 0
+    let delay = 300
+    while (true) {
+      try {
+        const res = await this.fetchFn(url, {
+          headers: {
+            'Accept': 'application/x-protobuf, */*',
+            'User-Agent': this.userAgent,
+          },
+        })
+        if (!res.ok) {
+          if ((res.status === 429 || res.status === 503) && attempt < this.maxRetries) {
+            attempt++
+            await this.sleep(delay + Math.floor(Math.random() * 150))
+            delay = Math.min(5000, delay * 2)
+            continue
+          }
+          throw new Error(`ODPT HTTP ${res.status}`)
+        }
+        const buffer = await res.arrayBuffer()
+        return Buffer.from(buffer)
+      } catch (e: unknown) {
+        if (attempt < this.maxRetries) {
+          attempt++
+          await this.sleep(delay + Math.floor(Math.random() * 150))
+          delay = Math.min(5000, delay * 2)
+          continue
+        }
+        throw e
+      }
+    }
+  }
+
+  /**
+   * Fetch GTFS Realtime data from ODPT
+   * @param operator Operator name (e.g., 'tokyo_metro', 'toei', 'jr_east')
+   * @param type Feed type
+   */
+  async fetchGtfsRealtime(operator: string, type: 'trip_updates' | 'vehicle_positions' | 'alerts') {
+    // ODPT GTFS-RT endpoint pattern: /gtfs/realtime/{operator}_{type}
+    // Note: Some operators might have different naming conventions
+    const endpoint = `gtfs/realtime/${operator}_${type}`
+    const buffer = await this.requestBuffer(endpoint)
+    const feed = transit_realtime.FeedMessage.decode(buffer)
+    return transit_realtime.FeedMessage.toObject(feed, {
+      longs: String,
+      enums: String,
+      bytes: String,
+    })
+  }
+
   // High-level resources
   async stationsByOperator(operators: string[]) {
     const out: unknown[] = []
